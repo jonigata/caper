@@ -1,0 +1,12 @@
+%token A<int>;
+%namespace conflict;
+%dont_use_stl;
+
+sequence<int> : [Foo]
+	      | [] maybeword
+              | [] sequence A
+              ;
+
+maybeword<int> : [Bar]
+               | [] A
+               ;

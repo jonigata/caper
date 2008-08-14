@@ -1,0 +1,16 @@
+%token Hello;
+%namespace empty_hello;
+%dont_use_stl;
+
+S<int>
+       : [DoS] Empty0 Empty1 Hello
+       ;
+
+Empty0<int>
+       : [DoEmpty0]
+       ;
+
+Empty1<int>
+       : [DoEmpty1]
+       ;
+

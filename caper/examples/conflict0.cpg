@@ -1,0 +1,10 @@
+%token A<int> B<int> C<int>;
+%namespace conflict;
+%dont_use_stl;
+
+a<int> : [] A b C
+       ;
+
+b<int> : []
+       | [] C
+       ;

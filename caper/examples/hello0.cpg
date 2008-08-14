@@ -1,0 +1,5 @@
+%token Hello World;
+%namespace hello_world;
+%dont_use_stl;
+
+HelloWorld<int> : [] Hello World;

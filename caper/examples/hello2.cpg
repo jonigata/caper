@@ -1,0 +1,5 @@
+%token Hello<std::string> World<std::string>;
+%namespace hello_world;
+%dont_use_stl;
+
+HelloWorld<std::string> : [Greet] Hello(0) World(1);

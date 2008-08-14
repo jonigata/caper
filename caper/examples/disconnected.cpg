@@ -1,0 +1,10 @@
+%token a b;
+%namespace hello_world;
+%dont_use_stl;
+
+A<int> : [] a b;
+
+B<int> : [] a b;
+
+
+

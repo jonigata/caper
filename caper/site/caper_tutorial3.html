@@ -3,42 +3,43 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>caper -- LALR(1) パーサジェネレータ</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS"/>
     <style type="text/css">
-      <!--
-	  @import url("global.css");
-	-->
+	  <!--
+		  @import url("global.css");
+		-->
     </style>
-    <link rel="stylesheet" href="global.css" type="text/css">
+    <link rel="stylesheet" href="global.css" type="text/css"/>
   </head>
   <body>
     <div id="container">
-      <div id="banner">
-	<div id="header"><a href="caper.html">caper</a></div>
-	<div id="subtext">Tutorials > Tutorial3</div>
-      </div>
-      <div id="right">
-	<div class="title">Main</div>
-	<a href="caper.html">About Caper</a>
-	<a href="caper_more.html">More About Caper</a>
-	<a href="caper_inside.html">Inside Caper</a>
-	<a href="caper_future.html">Future Works</a>
-	<a href="caper_license.html">License</a>
-	<a href="caper_download.html">Download</a>
-	<a href="caper_contact.html">Contact</a>
-	<div class="title">Tutorials</div>
-	<a href="caper_tutorial0.html">Tutorial0</a>
-	<a href="caper_tutorial1.html">Tutorial1</a>
-	<a href="caper_tutorial2.html">Tutorial2</a>
-	<a href="caper_tutorial3.html">Tutorial3 *</a>
-	<a href="caper_tutorial4.html">Tutorial4</a>
-	<a href="caper_tutorial5.html">Tutorial5</a>
-      </div>
-      <div id="content">
-	<h1><a name="i0"> </a> tutorial 3 -- 電卓 α</h1>
-	<p>次は演算を含むサンプルです。</p>
+	  <div id="banner">
+		<div id="header"><a href="caper.html">caper</a></div>
+		<div id="subtext">Tutorials > Tutorial3</div>
+	  </div>
+	  <div id="right">
+		<div class="title">Main</div>
+		<a href="caper.html">About Caper</a>
+		<a href="caper_more.html">More About Caper</a>
+		<a href="caper_inside.html">Inside Caper</a>
+		<a href="caper_future.html">Future Works</a>
+		<a href="caper_license.html">License</a>
+		<a href="caper_download.html">Download</a>
+		<a href="caper_contact.html">Contact</a>
+		<a href="caper_capella.html">Capella</a>
+		<div class="title">Tutorials</div>
+		<a href="caper_tutorial0.html">Tutorial0</a>
+		<a href="caper_tutorial1.html">Tutorial1</a>
+		<a href="caper_tutorial2.html">Tutorial2</a>
+		<a href="caper_tutorial3.html">Tutorial3 *</a>
+		<a href="caper_tutorial4.html">Tutorial4</a>
+		<a href="caper_tutorial5.html">Tutorial5</a>
+	  </div>
+	  <div id="content">
+		<h1><a name="i0"> </a> tutorial 3 -- 電卓 α</h1>
+		<p>次は演算を含むサンプルです。</p>
 
-	<h2><a name="i1"> </a> 文法ファイル</h2>
+		<h2><a name="i1"> </a> 文法ファイル</h2>
 <pre>
 %token Number&lt;int&gt; Add Sub Mul Div;
 %namespace calc;
@@ -54,9 +55,9 @@ Term&lt;int&gt; : [Identity] Number(0)
           | [MakeDiv] Term(0) Div Number(1)
           ;
 </pre>
-	<p>BNFを使った経験があれば、見た目でおおよそわかると思います。前述のように、規則の中で(数値)が後ろにつかない要素は、トークン種別だけが重要で、セマンティックアクションでは用いられないことを意味しています。</p>
+		  <p>BNFを使った経験があれば、見た目でおおよそわかると思います。前述のように、規則の中で(数値)が後ろにつかない要素は、トークン種別だけが重要で、セマンティックアクションでは用いられないことを意味しています。</p>
 
-	<h2><a name="i2"> </a> 操作ファイル</h2>
+		  <h2><a name="i2"> </a> 操作ファイル</h2>
 <pre>
 #include &quot;calc0.hpp&quot;
 #include &lt;iostream&gt;
@@ -193,17 +194,17 @@ int main( int, char** )
 }
 </pre>
 
-	<p>今回はスキャナが必要なので、手書きのスキャナを用意しました。難しいことはしていないので、内容に関してはソースを読んでください。手書きが面倒ならば、いまどきは<code>boost::regex</code>を使うなど色々な方法があると思います。</p>
-	<p>セマンティックアクションでは、新しい要素は登場していません。</p>
-	<p><code>main</code>関数では、以下の新しい要素が導入されています。</p>
+		<p>今回はスキャナが必要なので、手書きのスキャナを用意しました。難しいことはしていないので、内容に関してはソースを読んでください。手書きが面倒ならば、いまどきは<code>boost::regex</code>を使うなど色々な方法があると思います。</p>
+		<p>セマンティックアクションでは、新しい要素は登場していません。</p>
+		<p><code>main</code>関数では、以下の新しい要素が導入されています。</p>
 
-	<h4><a name="i3"> </a> <code>parser.post</code>の戻り値</h4>
-	<p>全体を受理したとき、もしくはエラーを検出したときには<code>true</code>を、まだ受理が終わってない場合には<code>false</code>を返します。</p>
-	<h4><a name="i4"> </a> <code>parser.accept</code>の戻り値</h4>
-	<p><code>parser.accept</code>は<code>parser.post</code>が<code>true</code>を返して後でだけ有効です。errorの場合は<code>v</code>は不定になり、<code>false</code>が帰ります。正常終了の場合は<code>v</code>にルート文法の左辺に関連付けられた値が代入され、<code>true</code>を返します。</p>
-	<p>yacc等を使った経験があれば、特に難しいことはないと思います。</p>
+		<h4><a name="i3"> </a> <code>parser.post</code>の戻り値</h4>
+		<p>全体を受理したとき、もしくはエラーを検出したときには<code>true</code>を、まだ受理が終わってない場合には<code>false</code>を返します。</p>
+		<h4><a name="i4"> </a> <code>parser.accept</code>の戻り値</h4>
+		<p><code>parser.accept</code>は<code>parser.post</code>が<code>true</code>を返して後でだけ有効です。errorの場合は<code>v</code>は不定になり、<code>false</code>が帰ります。正常終了の場合は<code>v</code>にルート文法の左辺に関連付けられた値が代入され、<code>true</code>を返します。</p>
+		<p>yacc等を使った経験があれば、特に難しいことはないと思います。</p>
 
-	<h2><a name="i5"> </a> 実行</h2>
+		<h2><a name="i5"> </a> 実行</h2>
 <pre>
 % ./calc0
 8+3*7
@@ -216,7 +217,7 @@ accepted
 
       </div>
 
-      <div id="footer">Content &copy; 2006 Naoyuki HIRAYAMA</div>
+      <div id="footer">Content &copy; 2006-2008 Naoyuki HIRAYAMA</div>
       <!-- Designed by and (c) Copyright 2005 Shady-Sock ( http://www.oswd.org/userinfo.phtml?user=Shady-Sock ). Email ( sani.sarip@gmail.com ). Do not remove this. -->
     </div>
   </body>

@@ -3,45 +3,46 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>caper -- LALR(1) パーサジェネレータ</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS"/>
     <style type="text/css">
-      <!--
-          @import url("global.css");
+	  <!--
+		  @import url("global.css");
         -->
     </style>
-    <link rel="stylesheet" href="global.css" type="text/css">
+    <link rel="stylesheet" href="global.css" type="text/css"/>
   </head>
   <body>
-    <div id="container">
-      <div id="banner">
-	<div id="header"><a href="caper.html">caper</a></div>
-        <div id="subtext">Tutorials > Tutorial5</div>
-      </div>
-      <div id="right">
-        <div class="title">Main</div>
-        <a href="caper.html">About Caper</a>
-        <a href="caper_more.html">More About Caper</a>
-        <a href="caper_inside.html">Inside Caper</a>
-        <a href="caper_future.html">Future Works</a>
-        <a href="caper_license.html">License</a>
-        <a href="caper_download.html">Download</a>
-        <a href="caper_contact.html">Contact</a>
-        <div class="title">Tutorials</div>
-        <a href="caper_tutorial0.html">Tutorial0</a>
-        <a href="caper_tutorial1.html">Tutorial1</a>
-        <a href="caper_tutorial2.html">Tutorial2</a>
-        <a href="caper_tutorial3.html">Tutorial3</a>
-        <a href="caper_tutorial4.html">Tutorial4</a>
-        <a href="caper_tutorial5.html">Tutorial5 *</a>
-      </div>
-      <div id="content">
+	<div id="container">
+	  <div id="banner">
+		<div id="header"><a href="caper.html">caper</a></div>
+		<div id="subtext">Tutorials > Tutorial5</div>
+	  </div>
+	  <div id="right">
+		<div class="title">Main</div>
+		<a href="caper.html">About Caper</a>
+		<a href="caper_more.html">More About Caper</a>
+		<a href="caper_inside.html">Inside Caper</a>
+		<a href="caper_future.html">Future Works</a>
+		<a href="caper_license.html">License</a>
+		<a href="caper_download.html">Download</a>
+		<a href="caper_contact.html">Contact</a>
+		<a href="caper_capella.html">Capella</a>
+		<div class="title">Tutorials</div>
+		<a href="caper_tutorial0.html">Tutorial0</a>
+		<a href="caper_tutorial1.html">Tutorial1</a>
+		<a href="caper_tutorial2.html">Tutorial2</a>
+		<a href="caper_tutorial3.html">Tutorial3</a>
+		<a href="caper_tutorial4.html">Tutorial4</a>
+		<a href="caper_tutorial5.html">Tutorial5 *</a>
+	  </div>
+	  <div id="content">
 
-        <h1><a name="i0"> </a> tutorial 5 -- 電卓 γ</h1>
-        <p>次のサンプルは、ASTに<code>boost::variant</code>を使う例です。関数型言語っぽいプログラムが組めます。(<code>boost::apply_visitor</code>がocaml等のパターンマッチに似ている)</p>
+		<h1><a name="i0"> </a> tutorial 5 -- 電卓 γ</h1>
+		<p>次のサンプルは、ASTに<code>boost::variant</code>を使う例です。関数型言語っぽいプログラムが組めます。(<code>boost::apply_visitor</code>がocaml等のパターンマッチに似ている)</p>
 
-        <p>結構強烈です。コンパイル時間の長さとコンパイルエラーのわかりづらさも強烈ですが……</p>
+		<p>結構強烈です。コンパイル時間の長さとコンパイルエラーのわかりづらさも強烈ですが……</p>
 
-        <h2><a name="i1"> </a> ASTファイル</h2>
+		<h2><a name="i1"> </a> ASTファイル</h2>
 <pre>
 #include &lt;boost/variant.hpp&gt;
 #include &lt;iostream&gt;
@@ -351,7 +352,7 @@ struct calculator : public boost::static_visitor&lt;int&gt; {
 
       </div>
 
-      <div id="footer">Content &copy; 2006 Naoyuki HIRAYAMA</div>
+      <div id="footer">Content &copy; 2006-2008 Naoyuki HIRAYAMA</div>
       <!-- Designed by and (c) Copyright 2005 Shady-Sock ( http://www.oswd.org/userinfo.phtml?user=Shady-Sock ). Email ( sani.sarip@gmail.com ). Do not remove this. -->
     </div>
   </body>

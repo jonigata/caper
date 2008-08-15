@@ -3,57 +3,58 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>caper -- LALR(1) パーサジェネレータ</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS">
+    <meta http-equiv="Content-Type" content="text/html; charset=Shift_JIS"/>
     <style type="text/css">
       <!--
-	  @import url("global.css");
-	-->
+		  @import url("global.css");
+		-->
     </style>
-    <link rel="stylesheet" href="global.css" type="text/css">
+    <link rel="stylesheet" href="global.css" type="text/css"/>
   </head>
   <body>
     <div id="container">
       <div id="banner">
-	<div id="header"><a href="caper.html">caper</a></div>
-	<div id="subtext">Main > Download</div>
+		<div id="header"><a href="caper.html">caper</a></div>
+		<div id="subtext">Main > Download</div>
       </div>
       <div id="right">
-	<div class="title">Main</div>
-	<a href="caper.html">About Caper</a>
-	<a href="caper_more.html">More About Caper</a>
-	<a href="caper_inside.html">Inside Caper</a>
-	<a href="caper_future.html">Future Works</a>
-	<a href="caper_license.html">License</a>
-	<a href="caper_download.html">Download *</a>
-	<a href="caper_contact.html">Contact</a>
-	<div class="title">Tutorials</div>
-	<a href="caper_tutorial0.html">Tutorial0</a>
-	<a href="caper_tutorial1.html">Tutorial1</a>
-	<a href="caper_tutorial2.html">Tutorial2</a>
-	<a href="caper_tutorial3.html">Tutorial3</a>
-	<a href="caper_tutorial4.html">Tutorial4</a>
-	<a href="caper_tutorial5.html">Tutorial5</a>
+		<div class="title">Main</div>
+		<a href="caper.html">About Caper</a>
+		<a href="caper_more.html">More About Caper</a>
+		<a href="caper_inside.html">Inside Caper</a>
+		<a href="caper_future.html">Future Works</a>
+		<a href="caper_license.html">License</a>
+		<a href="caper_download.html">Download *</a>
+		<a href="caper_contact.html">Contact</a>
+		<a href="caper_capella.html">Capella</a>
+		<div class="title">Tutorials</div>
+		<a href="caper_tutorial0.html">Tutorial0</a>
+		<a href="caper_tutorial1.html">Tutorial1</a>
+		<a href="caper_tutorial2.html">Tutorial2</a>
+		<a href="caper_tutorial3.html">Tutorial3</a>
+		<a href="caper_tutorial4.html">Tutorial4</a>
+		<a href="caper_tutorial5.html">Tutorial5</a>
       </div>
       <div id="content">
-	<h2><a name="i3"> </a>ダウンロード</h2>
-	<p>
-	  最新版 <a href="caper-2008-03-24-1.zip"><code>caper-2008-03-24-1.zip</code></a><br/>
-	  一つ前 <a href="caper-2008-03-12-2.zip"><code>caper-2008-03-12-2.zip</code></a><br/>
-	  二つ前 <a href="caper-2008-03-12-1.zip"><code>caper-2008-03-12-1.zip</code></a><br/>
-	  三つ前 <a href="caper-2008-02-16-1.zip"><code>caper-2008-02-16-1.zip</code></a><br/>
-	</p>
-	<p>
-	  <a href="http://code.google.com/p/caper/">Google Project(準備中)</a>
-	</p>
+		<h2><a name="i3"> </a>ダウンロード</h2>
+		<p>
+		  最新版 <a href="caper-2008-03-24-1.zip"><code>caper-2008-03-24-1.zip</code></a><br/>
+		  一つ前 <a href="caper-2008-03-12-2.zip"><code>caper-2008-03-12-2.zip</code></a><br/>
+		  二つ前 <a href="caper-2008-03-12-1.zip"><code>caper-2008-03-12-1.zip</code></a><br/>
+		  三つ前 <a href="caper-2008-02-16-1.zip"><code>caper-2008-02-16-1.zip</code></a><br/>
+		</p>
+		<p>
+		  <a href="http://code.google.com/p/caper/">Google Project(準備中)</a>
+		</p>
 
-	<h2><a name="i4"> </a>インストール</h2>
-	<p>いまのところインストーラ等は用意していません。<br/>
-	  linuxでは、解凍後にmakeしてください。サンプルのビルドはexamplesディレクトリでmakeです。</p>
-	<p>windowsでは、中にプロジェクトファイルが入っているのでそれを使ってください(VS2008用)。<br/>
-	  一応実行ファイルも入れておきます。</p>
-	<p>※ビルドにはboostが必要です。使うだけならいりません。</p>
+		<h2><a name="i4"> </a>インストール</h2>
+		<p>いまのところインストーラ等は用意していません。<br/>
+		  linuxでは、解凍後にmakeしてください。サンプルのビルドはexamplesディレクトリでmakeです。</p>
+		<p>windowsでは、中にプロジェクトファイルが入っているのでそれを使ってください(VS2008用)。<br/>
+		  一応実行ファイルも入れておきます。</p>
+		<p>※ビルドにはboostが必要です。使うだけならいりません。</p>
 
-	<h2><a name="i5"> </a>実行方法</h2>
+		<h2><a name="i5"> </a>実行方法</h2>
 <pre>
         % ./caper input_file output_file
 </pre>
@@ -101,25 +102,26 @@
 	  <li>JavaScriptジェネレータでセマンティックアクションに渡される引数が無意味なデータだったのを修正。</li>
 	  <li>token_prefixで識別子を省略する(%token_prefix;とする)ことでトークン前置詞を削除可能にした。</li>
 	</ul>
-	<p>2006年10月30日</p>
-	<ul>
-	  <li>高速版LALR(1)エンジン搭載。</li>
-	</ul>
-	<p>2006年10月22日</p>
-	<ul>
-	  <li>JavaScriptジェネレータ追加</li>
-	  <li>ソース分割</li>
-	</ul>
-	<p>2006年10月19日</p>
-	<ul>
-	  <li>同じ内容の規則があるとエラーにするようにした。</li>
-	  <li>ルートからつながってない規則があるとエラーにするようにした。</li>
-	  <li>exeファイルがランタイムを必要としていたのを修正。</li>
-	</ul>
-	<p>2006年10月19日より前 --- 忘れた</p>
+		<p>2006年10月30日</p>
+		<ul>
+		  <li>高速版LALR(1)エンジン搭載。</li>
+		</ul>
+		<p>2006年10月22日</p>
+		<ul>
+		  <li>JavaScriptジェネレータ追加</li>
+		  <li>ソース分割</li>
+		</ul>
+		<p>2006年10月19日</p>
+		<ul>
+		  <li>同じ内容の規則があるとエラーにするようにした。</li>
+		  <li>ルートからつながってない規則があるとエラーにするようにした。</li>
+		  <li>exeファイルがランタイムを必要としていたのを修正。</li>
+		</ul>
+		<p>2006年10月19日より前 --- 忘れた</p>
 
       </div>
-      <div id="footer">Content &copy; 2006 Naoyuki HIRAYAMA</div>
+      <div id="footer">Content &copy; 2006-2008 Naoyuki HIRAYAMA</div>
       <!-- Designed by and (c) Copyright 2005 Shady-Sock ( http://www.oswd.org/userinfo.phtml?user=Shady-Sock ). Email ( sani.sarip@gmail.com ). Do not remove this. -->
+	</div>
   </body>
 </html>

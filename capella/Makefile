@@ -38,6 +38,8 @@ depend: $(OBJS:.o=.d)
 $(TARGET): $(OBJS)
 	$(CC) $(CPPFLAGS) -o $@ $^
 
+capella.d : capella.hpp
+
 capella.hpp : capella.cpg
 	caper capella.cpg capella.hpp
 

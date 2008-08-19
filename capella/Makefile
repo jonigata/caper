@@ -1,4 +1,4 @@
-.SUFFIXES: .o .c .cpp .d
+.SUFFIXES: .o .c .cpp .d .hpp
 
 CC		= g++
 CPPFLAGS	= -g -Wall -DLINUX
@@ -37,6 +37,9 @@ depend: $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
 	$(CC) $(CPPFLAGS) -o $@ $^
+
+capella.hpp : capella.cpg
+	caper capella.cpg capella.hpp
 
 clean:
 	rm -f $(TARGET) $(OBJS)

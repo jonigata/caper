@@ -24,10 +24,10 @@ VPATH = ./depend
 	@echo '$*.o : $*.d' >> $(DEPENDDIR)/$*.d	
 
 .cpp.o:
-	g++ -g -Wall -c -DLINUX -o $@ $<
+	g++ -g -Wall -c -DLINUX $(CPPFLAGS) -o $@ $<
 
 .c.o:
-	gcc -g -Wall -c -DLINUX -o $@ $<
+	gcc -g -Wall -c -DLINUX $(CPPFLAGS) -o $@ $<
 
 all:
 	mkdir -p depend

@@ -16,6 +16,7 @@
 #include <fstream>
 #include <iostream>
 #include <iterator>
+#include <cstring>
 
 using namespace capella;
 

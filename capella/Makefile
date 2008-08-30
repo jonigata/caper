@@ -41,7 +41,7 @@ $(TARGET): $(OBJS)
 capella.d : capella.hpp
 
 capella.hpp : capella.cpg
-	caper capella.cpg capella.hpp
+	../caper/caper capella.cpg capella.hpp
 
 clean:
 	rm -f $(TARGET) $(OBJS)

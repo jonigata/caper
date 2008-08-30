@@ -41,7 +41,7 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(TARGET) $(OBJS)
-	rm -f $(DEPENDDIR)/*.d
+	rm -rf $(DEPENDDIR)
 
 publish:
 	rm -rf /tmp/caper /tmp/caper-*

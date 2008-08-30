@@ -61,6 +61,10 @@ FunSig<leaf::FunSig*>
 // FormalArgList FormalArgs FormalArg
 FormalArgList<leaf::FormalArgs*>
 	: [makeFormalArgs0] LPar RPar
+	| [badFormalArgs0] LPar Semicolon
+	| [badFormalArgs1] LPar FormalArgs Semicolon
+	| [badFormalArgs2] LPar RBra
+	| [badFormalArgs3] LPar FormalArgs RBra
 	| [identity] LPar FormalArgs(0) RPar
 	;
 
@@ -201,11 +205,26 @@ Multiplicative<leaf::Multiplicative*>
 ////////////////////////////////////////////////////////////////
 // PrimExpr
 PrimExpr<leaf::PrimExpr*>
-	: [identity] LiteralBoolean(0)
+	: [mismatchParen0] LPar Expr Semicolon
+	| [mismatchParen1] LPar Expr RBra
+	| [mismatchParen2] LPar RPar
+	| [mismatchParen3] LPar Semicolon
+	| [mismatchParen4] LPar RBra
+	| [identity] LiteralBoolean(0)
 	| [identity] LiteralInteger(0)
 	| [identity] LiteralChar(0)
 	| [makeVarRef] Identifier(0)
+	| [identity] FunCall(0)
 	| [makeParenthized] LPar Expr(0) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+//
+FunCall<leaf::FunCall*>
+	: [badActualArgs0] Identifier LPar Semicolon
+	| [badActualArgs1] Identifier LPar RBra
+	| [badActualArgs2] Identifier LPar ActualArgs Semicolon
+	| [badActualArgs3] Identifier LPar ActualArgs RBra
 	| [makeFunCall0] Identifier(0) LPar RPar
 	| [makeFunCall1] Identifier(0) LPar ActualArgs(1) RPar
 	;

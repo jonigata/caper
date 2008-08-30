@@ -1,3 +1,7 @@
+all:
+	cd caper; make
+	cd capella; make
+
 publish:
 	rm -rf /tmp/caper /tmp/caper-*
 	svn export . /tmp/caper

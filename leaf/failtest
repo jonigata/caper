@@ -1,0 +1,11 @@
+#!/bin/sh
+
+./leaf tsuite/$1.leaf tsuite/$1.ll >& tsuite/$1.error
+cat tsuite/$1.error
+diff tsuite/$1.error tsuite/$1.expected
+if [ "$?" -eq 0 ]
+then
+	echo 'OK'
+else
+	echo 'NG'
+fi

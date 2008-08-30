@@ -1,0 +1,1 @@
+leaf: context mismatch: <bool> appeared where <int> required; file: tsuite/bar0000.leaf, line: 5, column: 8

@@ -1,0 +1,11 @@
+require leaf;
+
+fun main(): int
+{
+	if( 3 ) {
+		1;
+	} else {
+		2;
+	}
+	0;
+}

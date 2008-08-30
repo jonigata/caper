@@ -1,0 +1,76 @@
+// 2008/08/11 Naoyuki Hirayama
+
+/*!
+	@file	  calc_node.hpp
+	@brief	  <ŠT—v>
+
+	<à–¾>
+*/
+
+#ifndef CALC_NODE_HPP_
+#define CALC_NODE_HPP_
+
+#include "leaf_type.hpp"
+
+namespace llvm {
+class Module;
+class Value;
+class Type;
+}
+
+namespace leaf {
+
+struct EncodeContext;
+struct EntypeContext;
+
+struct Symbol {
+	std::string s;
+
+	Symbol( const std::string& x ) : s(x) {}
+};
+
+typedef Type* type_t;
+typedef Symbol* symbol_t;
+typedef std::vector<type_t> typevec;
+
+struct Header {
+	int		id;
+	int		beg;
+	int		end;
+	type_t	t;
+
+	Header(){ id = beg = end = -1; t = NULL; }
+	Header( int aid, const Header& h )
+		: id(aid), beg(h.beg), end(h.end), t(NULL) {}
+	Header( int aid, int abeg, int aend )
+		: id(aid), beg(abeg), end(aend), t(NULL) {}
+
+	Header operator+( const Header& h ) const
+	{
+		Header r( *this );
+		r.beg = (std::min)( beg, h.beg );
+		r.end = (std::max)( end, h.end );
+		return r;
+	}
+	Header& operator+=( const Header& h )
+	{
+		beg = (std::min)( beg, h.beg );
+		end = (std::max)( end, h.end );
+		return *this;
+	}
+};
+
+struct Node {
+	Header h;
+	
+	virtual ~Node(){}
+	virtual llvm::Value*	encode( EncodeContext& ) { return NULL; }
+	virtual void			entype( EntypeContext&, type_t ) {}
+
+	void encode( llvm::Module* );
+	void entype();
+};
+
+}
+
+#endif // CALC_NODE_HPP_

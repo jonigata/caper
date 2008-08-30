@@ -1,0 +1,30 @@
+require leaf;
+
+fun main(): int
+{
+	if( false && false ) {
+		puti(0);
+	} else { 0; }
+	if( false && true ) {
+		puti(1);
+	} else { 0; }
+	if( false || false ) {
+		puti(2);
+	} else { 0; }
+	if( false || true ) {
+		puti(3);
+	} else { 0; }
+	if( true && false ) {
+		puti(4);
+	} else { 0; }
+	if( true && true ) {
+		puti(5);
+	} else { 0; }
+	if( true || false ) {
+		puti(6);
+	} else { 0; }
+	if( true || true ) {
+		puti(7);
+	} else { 0; }
+    0;
+}

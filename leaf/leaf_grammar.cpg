@@ -1,0 +1,224 @@
+%token Req;
+%token LiteralBoolean<leaf::LiteralBoolean*>;
+%token LiteralInteger<leaf::LiteralInteger*>;
+%token LiteralChar<leaf::LiteralChar*>;
+%token Identifier<leaf::Identifier*>;
+%token Var Fun If Else;
+%token Add Sub Mul Div Assign LPar RPar LBra RBra Comma Semicolon Colon;
+%token Lt Gt Le Ge Eq Ne Not And Or;
+%token BitAnd BitOr;
+%token TypeVoid<leaf::TypeRef*>;
+%token TypeLong<leaf::TypeRef*>;
+%token TypeInt<leaf::TypeRef*>;
+%token TypeShort<leaf::TypeRef*>;
+%token TypeChar<leaf::TypeRef*>;
+%namespace leaf;
+
+////////////////////////////////////////////////////////////////
+// Module
+Module<leaf::Module*>
+	: [makeModule] TopElems(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// TopElems TopElem
+TopElems<leaf::TopElems*>
+	: [makeTopElems0] TopElem(0)
+	| [makeTopElems1] TopElems(0) TopElem(1)
+	;
+
+TopElem<leaf::TopElem*>
+	: [identity] Require(0)
+	| [identity] FunDecl(0)
+	| [identity] FunDef(0)
+	;	
+
+////////////////////////////////////////////////////////////////
+// Require
+Require<leaf::Require*>
+	: [makeRequire] Req Identifier(0) Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
+// FunDecl
+FunDecl<leaf::FunDecl*>
+	: [makeFunDecl] FunSig(0) Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
+// FunDef
+FunDef<leaf::FunDef*>
+	: [makeFunDef] FunSig(0) Block(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// FunSig
+FunSig<leaf::FunSig*>
+	: [makeFunSig1] Fun Identifier(0) FormalArgList(1) Colon Types(2)
+	;
+
+////////////////////////////////////////////////////////////////
+// FormalArgList FormalArgs FormalArg
+FormalArgList<leaf::FormalArgs*>
+	: [makeFormalArgs0] LPar RPar
+	| [identity] LPar FormalArgs(0) RPar
+	;
+
+FormalArgs<leaf::FormalArgs*>
+	: [makeFormalArgs1] FormalArg(0)
+	| [makeFormalArgs2] FormalArgs(0) Comma FormalArg(1)
+	;
+
+FormalArg<leaf::FormalArg*>
+	: [makeFormalArg0] Identifier(0)
+	| [makeFormalArg1] Identifier(0) Colon TypeExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Block
+Block<leaf::Block*>
+	: [makeBlock] LBra Statements(0) RBra
+	;
+
+////////////////////////////////////////////////////////////////
+// Statements Statement
+Statements<leaf::Statements*>
+	: [makeStatements0]
+	| [makeStatements1] Statements(0) Statement(1)
+	;
+
+Statement<leaf::Statement*>
+	: [identity] VarDecl(0) Semicolon
+	| [identity] IfThenElse(0)
+	| [identity] Expr(0) Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
+// VarDecl
+VarDecl<leaf::VarDecl*>
+	: [makeVarDecl0] Var Identifier(0) Assign Expr(1)
+	| [makeVarDecl1] Var Identifier(0) Colon TypeExpr(1) Assign Expr(2)
+	;
+
+////////////////////////////////////////////////////////////////
+// IfThenElse
+IfThenElse<leaf::IfThenElse*>
+	: [makeIfThenElse0] If LPar Expr(0) RPar Block(1) Else Block(2)
+	| [makeIfThenElse1] If LPar Expr(0) RPar Block(1) Else IfThenElse(2)
+	;
+
+////////////////////////////////////////////////////////////////
+// TypeExpr
+TypeExpr<leaf::TypeRef*>
+	: [identity] SimpleType(0)
+	| [identity] FunctionType(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// SimpleType
+SimpleType<leaf::TypeRef*>
+	: [makeTypeVoid] TypeVoid
+	| [makeTypeLong] TypeLong
+	| [makeTypeInt] TypeInt
+	| [makeTypeShort] TypeShort
+	| [makeTypeChar] TypeChar
+	;
+
+////////////////////////////////////////////////////////////////
+// FunctionType
+FunctionType<leaf::TypeRef*>
+	: [makeFunctionType] Fun TypeList(0) Colon TypeList(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// TypeList
+TypeList<leaf::Types*>
+	: [makeTypes0] LPar RPar
+	| [identity] LPar Types(0) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+// Types
+Types<leaf::Types*>
+	: [makeTypes1] TypeExpr(0)
+	| [makeTypes2] Types(0) Comma TypeExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Expr
+Expr<leaf::Expr*>
+	: [identity] LogicalOr(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// LogicalOr
+LogicalOr<leaf::LogicalOr*>
+	: [makeLogicalOr0] LogicalAnd(0)
+	| [makeLogicalOr1] LogicalOr(0) Or LogicalAnd(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// LogicalAnd
+LogicalAnd<leaf::LogicalAnd*>
+	: [makeLogicalAnd0] Equality(0)
+	| [makeLogicalAnd1] LogicalAnd(0) And Equality(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Equality
+Equality<leaf::Equality*>
+	: [identity] Relational(0)
+	| [makeEq] Equality(0) Eq Relational(1)
+	| [makeNe] Equality(0) Ne Relational(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Relational
+Relational<leaf::Relational*>
+	: [identity] Additive(0)
+	| [makeLt] Relational(0) Lt Additive(1)
+	| [makeGt] Relational(0) Gt Additive(1)
+	| [makeLe] Relational(0) Le Additive(1)
+	| [makeGe] Relational(0) Ge Additive(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Additive
+Additive<leaf::Additive*>
+	: [identity] Multiplicative(0)
+	| [makeAdd] Additive(0) Add Multiplicative(1)
+	| [makeSub] Additive(0) Sub Multiplicative(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Multiplicative
+Multiplicative<leaf::Multiplicative*>
+	: [identity] PrimExpr(0)
+	| [makeMul] Multiplicative(0) Mul PrimExpr(1)
+	| [makeDiv] Multiplicative(0) Div PrimExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// PrimExpr
+PrimExpr<leaf::PrimExpr*>
+	: [identity] LiteralBoolean(0)
+	| [identity] LiteralInteger(0)
+	| [identity] LiteralChar(0)
+	| [makeVarRef] Identifier(0)
+	| [makeParenthized] LPar Expr(0) RPar
+	| [makeFunCall0] Identifier(0) LPar RPar
+	| [makeFunCall1] Identifier(0) LPar ActualArgs(1) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+// ActualArgs
+ActualArgs<leaf::ActualArgs*>
+	: [makeActualArgs0] ActualArg(0)
+	| [makeActualArgs1] ActualArgs(0) Comma ActualArg(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// ActualArg
+ActualArg<leaf::ActualArg*>
+	: [makeActualArg] Expr(0)
+	;

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+opt -std-compile-opts tsuite/$1.bc -o tsuite/$1a.bc -f
+llvm-dis tsuite/$1a.bc -o - 

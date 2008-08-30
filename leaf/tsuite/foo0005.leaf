@@ -1,0 +1,14 @@
+require leaf;
+
+fun main(): int
+{
+	puti( 'a' );
+	puti( 'b' );
+	puti( '\0' );
+	puti( '\n' );
+	puti( '\t' );
+	putc( 'a' );
+	putc( 'b' );
+	putc( '\n' );
+	0;
+}

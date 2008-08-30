@@ -1,0 +1,13 @@
+#!/bin/sh
+
+./leaf tsuite/$1.leaf tsuite/$1.ll
+llvm-as -f tsuite/$1.ll
+llvm-link -f tsuite/$1.bc rtl/leaf_rt.bc -o tsuite/$1x.bc
+lli tsuite/$1x.bc | tee tsuite/$1.result
+diff tsuite/$1.result tsuite/$1.expected
+if [ "$?" -eq 0 ]
+then
+	echo 'OK'
+else
+	echo 'NG'
+fi

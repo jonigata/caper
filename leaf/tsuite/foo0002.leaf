@@ -1,0 +1,16 @@
+require leaf;
+
+fun fib( n: int ): int
+{
+    if( n == 1 || n == 2 ) {
+        1;
+    } else {
+        fib(n-1)+fib(n-2);
+    }
+}
+
+fun main(): int
+{
+    puti(fib(7));
+    0;
+}

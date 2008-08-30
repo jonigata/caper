@@ -1,0 +1,13 @@
+require leaf;
+
+fun main(): int
+{
+	if( false ) {
+		puti(0);
+	} else if( 1 == 2 ) {
+		puti(1);
+	} else {
+		puti(2);
+	}
+	0;
+}

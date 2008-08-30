@@ -1,0 +1,2 @@
+fun puti( n: int ): void;
+fun putc( c: int ): void;

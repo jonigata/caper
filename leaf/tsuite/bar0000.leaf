@@ -1,0 +1,7 @@
+require leaf;
+
+fun main(): int
+{
+	puti(3*false+7);
+	0;
+}

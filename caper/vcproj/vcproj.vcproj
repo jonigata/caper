@@ -168,6 +168,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="公開用にコピー"
+				CommandLine="copy Release\caper.exe ..\.."
 			/>
 		</Configuration>
 	</Configurations>

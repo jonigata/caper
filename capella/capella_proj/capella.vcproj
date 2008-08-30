@@ -165,6 +165,8 @@
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
+				Description="公開用にコピー"
+				CommandLine="copy Release\capella.exe ..\.."
 			/>
 		</Configuration>
 	</Configurations>

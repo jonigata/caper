@@ -1,1 +1,1 @@
-leaf: type mismatch: <int> at true-clause with <bool> at false-clause; file: tsuite/bar0002.leaf, line: 5, column: 5
+leaf: function returns no value: <int> required; file: tsuite/bar0002.leaf, line: 3, column: 4

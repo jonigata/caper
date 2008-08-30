@@ -1,5 +1,5 @@
 .SUFFIXES: .o .c .cpp .d .hpp
-CPPFLAGS	= -D__STDC_LIMIT_MACROS
+CPPFLAGS	= -D__STDC_LIMIT_MACROS --input-charset=cp932
 TARGET		= leaf
 OBJS		= $(TARGET).o leaf_node.o leaf_type.o leaf_compile.o
 DEPENDDIR	= ./depend
@@ -70,9 +70,11 @@ test : leaf rtl/leaf_rt.bc
 		./failtest bar0001
 		./failtest bar0002
 		./failtest bar0003
+		./failtest bar0004
+		./failtest bar0005
 
 try : leaf rtl/leaf_rt.bc
 		chmod 755 failtest
-		./failtest bar0003
+		./failtest bar0005
 
 -include $(addprefix $(DEPENDDIR)/,$(OBJS:.o=.d))

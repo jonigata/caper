@@ -316,8 +316,8 @@ llvm::Value* FunDef::encode( EncodeContext& context, bool )
 
     context.env.pop();
 
-    if( !v ) {
-        throw noreturn( h.end );
+    if( h.t->getReturnType() != Type::getVoidType() && !v ) {
+        throw noreturn( h.beg, Type::getDisplay( h.t->getReturnType() ) );
     }
     context.bb->getInstList().push_back(llvm::ReturnInst::Create(v));
 
@@ -425,7 +425,7 @@ void Block::entype( EntypeContext& te, bool, type_t t )
 // Statements
 llvm::Value* Statements::encode( EncodeContext& context, bool )
 {
-    llvm::Value* vv;
+    llvm::Value* vv = NULL;
     for( size_t i = 0 ; i < v.size() ; i++ ) {
         vv = v[i]->encode( context, i != v.size() - 1  );
     }
@@ -1061,7 +1061,8 @@ void FunCall::entype( EntypeContext& te, bool, type_t t )
         throw wrong_arity(
             h.beg,
             aargs->v.size(),
-            ft->getArgumentType()->getElements().size() );
+            ft->getArgumentType()->getElements().size(),
+            func->s->s );
     }
 
     // Àˆø”‚ÌŒ^•t‚¯

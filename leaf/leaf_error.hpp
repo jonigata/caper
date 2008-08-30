@@ -41,113 +41,104 @@ public:
 
 class syntax_error : public error {
 public:
-    syntax_error( int a, const std::string& t ) : error(a), at_token(t)
+    syntax_error( int a, const std::string& at_token ) : error(a)
     {
         std::stringstream ss;
         ss << "syntax error around '" << at_token << "'";
         set_message( ss.str() );
     }
     ~syntax_error() throw () {}
-    std::string     at_token;
 };
 
 class noreturn : public error {
 public:
-    noreturn( int a ) : error(a)
+    noreturn( int a, const std::string& type ) : error(a)
     {
-        set_message( "function must have at least 1 expression" );
+        set_message( "function returns no value: " + type + " required" );
     }
     ~noreturn() throw () {}
 };
 
 class unexpected_char : public error {
 public:
-    unexpected_char( int a, int c ) : error(a), ch(c)
+    unexpected_char( int a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "unexpected char: '" << char(ch) << ",";
         set_message( ss.str() );
     }
     ~unexpected_char() throw () {}
-    int             ch;
 };
 
 class mismatch_paren : public error {
 public:
-    mismatch_paren( int a, int c ) : error(a), ch(c)
+    mismatch_paren( int a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "expected ')' before '" << char(ch) << "' token";
         set_message( ss.str() );
     }
     ~mismatch_paren() throw () {}
-    int             ch;
 };
 
 class primexpr_expected : public error {
 public:
-    primexpr_expected( int a, int c ) : error(a), ch(c)
+    primexpr_expected( int a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "expected ')' before '" << char(ch) << "' token";
         set_message( ss.str() );
     }
     ~primexpr_expected() throw () {}
-    int             ch;
 };
 
 class no_such_variable : public error {
 public:
-    no_such_variable( int a, const std::string& v )
-        : error(a), variable_name(v)
+    no_such_variable( int a, const std::string& var ) : error(a)
     {
         std::stringstream ss;
-        ss << "no such variable: \"" << v << "\"";
+        ss << "no such variable: \"" << var << "\"";
         set_message( ss.str() );
     }
     ~no_such_variable() throw () {}
-    std::string     variable_name;
 };
 
 class no_such_function : public error {
 public:
-    no_such_function( int a, const std::string& v )
-        : error(a), function_name(v)
+    no_such_function( int a, const std::string& func ) : error(a)
     {
         std::stringstream ss;
-        ss << "no such function: \"" << v << "\"";
+        ss << "no such function: \"" << func << "\"";
         set_message( ss.str() );
     }
     ~no_such_function() throw () {}
-    std::string     function_name;
 };
 
 class require_fail : public error {
 public:
-    require_fail( int a, const std::string& v )
-        : error(a), module_name(v)
+    require_fail( int a, const std::string& module ) : error(a)
     {
         std::stringstream ss;
-        ss << "require failed ( no such file ): \"" << v << "\"";
+        ss << "require failed ( cannot open ): \"" << module << "\"";
         set_message( ss.str() );
     }
     ~require_fail() throw () {}
-    std::string     module_name;
 };
 
 class wrong_arity : public error {
 public:
-    wrong_arity( int a, int fa, int aa )
-        : error(a), farity(fa), aarity(aa)
+    wrong_arity( int a, int fa, int aa, const std::string& func )
+        : error(a)
     {
         std::stringstream ss;
-        ss << "wrong arity: # of " << aarity << " arguments appared "
-           << "where " << farity <<" arguments required";
+        if( aa < fa ) {
+            ss << "too many argument to function " << func;
+        } else if( fa < aa ) {
+            ss << "too few argument to function " << func;
+        }
         set_message( ss.str() );
     }
     ~wrong_arity() throw () {}
-    int             farity;
-    int             aarity;
 };
 
 class inexplicit_return_type : public error {
@@ -179,22 +170,21 @@ public:
 
 class type_mismatch : public error {
 public:
-    type_mismatch( int a, const std::string& at, const std::string& ft )
-        : error(a), atype(at), ftype(ft)
+    type_mismatch( int a, const std::string& atype, const std::string& ftype )
+        : error(a)
     {
         std::stringstream ss;
         ss << "type mismatch: " << atype << " with " << ftype;
         set_message( ss.str() );
     }
     ~type_mismatch() throw () {}
-    std::string     atype;
-    std::string     ftype;
 };
 
 class context_mismatch : public error {
 public:
-    context_mismatch( int a, const std::string& at, const std::string& ft )
-        : error(a), atype(at), ftype(ft)
+    context_mismatch(
+        int a, const std::string& atype, const std::string& ftype )
+        : error(a)
     {
         std::stringstream ss;
         ss << "context mismatch: "
@@ -202,34 +192,28 @@ public:
         set_message( ss.str() );
     }
     ~context_mismatch() throw () {}
-    std::string     atype;
-    std::string     ftype;
 };
 
 class uncallable : public error {
 public:
-    uncallable( int a, const std::string& v )
-        : error(a), func(v)
+    uncallable( int a, const std::string& func ) : error(a)
     {
         std::stringstream ss;
-        ss << "can't call: \"" << func << "\"";
+        ss << "'" << func << "' cannot be used as a function";
         set_message( ss.str() );
     }
     ~uncallable() throw () {}
-    std::string     func;
 };
 
 class formalarg_must_be_typed : public error {
 public:
-    formalarg_must_be_typed( int a, const std::string& v )
-        : error(a), formalarg(v)
+    formalarg_must_be_typed( int a, const std::string& formalarg ) : error(a)
     {
         std::stringstream ss;
         ss << "argument \"" << formalarg << "\" must be typed";
         set_message( ss.str() );
     }
     ~formalarg_must_be_typed() throw () {}
-    std::string     formalarg;
 };
 
 } // namespace leaf

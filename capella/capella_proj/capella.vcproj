@@ -184,7 +184,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="..\..\parser\vcproj\Release\caper.exe $(InputPath) $(InputDir)$(InputName).hpp"
+						CommandLine="..\..\caper\vcproj\Release\caper.exe $(InputPath) $(InputDir)$(InputName).hpp&#x0D;&#x0A;"
 						Outputs="$(InputDir)$(InputName).hpp"
 					/>
 				</FileConfiguration>
@@ -193,7 +193,7 @@
 					>
 					<Tool
 						Name="VCCustomBuildTool"
-						CommandLine="..\..\parser\vcproj\Release\caper.exe $(InputPath) $(InputDir)$(InputName).hpp"
+						CommandLine="..\..\caper\vcproj\Release\caper.exe $(InputPath) $(InputDir)$(InputName).hpp&#x0D;&#x0A;"
 						Outputs="$(InputDir)$(InputName).hpp"
 					/>
 				</FileConfiguration>

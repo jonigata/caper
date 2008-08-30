@@ -68,6 +68,7 @@ test : leaf rtl/leaf_rt.bc
 		./failtest bar0000
 		./failtest bar0001
 		./failtest bar0002
+		./failtest bar0003
 
 try : leaf rtl/leaf_rt.bc
 		chmod 755 failtest

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+./leaf tsuite/$1.leaf tsuite/$1.ll >& tsuite/$1.expected
+cat tsuite/$1.expected

@@ -1,6 +1,11 @@
 #!/bin/sh
 
 ./leaf tsuite/$1.leaf tsuite/$1.ll
+if [ "$?" -ne 0 ]
+then
+	exit;
+fi
+
 llvm-as -f tsuite/$1.ll
 llvm-link -f tsuite/$1.bc rtl/leaf_rt.bc -o tsuite/$1x.bc
 lli tsuite/$1x.bc | tee tsuite/$1.result

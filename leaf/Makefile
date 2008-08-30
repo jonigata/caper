@@ -58,13 +58,14 @@ clean_tsuite:
 	rm -f tsuite/*.result tsuite/*.ll tsuite/*.bc
 
 test : leaf rtl/leaf_rt.bc
-		chmod 755 dotest
-		./dotest foo0000
-		./dotest foo0001
-		./dotest foo0002
-		./dotest foo0003
-		./dotest foo0004
-		./dotest foo0005
+		chmod 755 succtest
+		chmod 755 failtest
+		./succtest foo0000
+		./succtest foo0001
+		./succtest foo0002
+		./succtest foo0003
+		./succtest foo0004
+		./succtest foo0005
 		./failtest bar0000
 		./failtest bar0001
 		./failtest bar0002

@@ -109,8 +109,8 @@ binary_operator(
     llvm::Instruction::BinaryOps    op )
 {
     char reg[256]; make_reg( reg, id );
-    llvm::Value* v0 = lhs->encode( context );
-    llvm::Value* v1 = rhs->encode( context );
+    llvm::Value* v0 = lhs->encode( context, false );
+    llvm::Value* v1 = rhs->encode( context, false );
 
     llvm::Instruction* inst = llvm::BinaryOperator::create(
         op, v0, v1, reg );
@@ -137,16 +137,16 @@ void check_int_expr_type( const Header& h, type_t t )
 template < class T > inline
 void entype_int_compare( EntypeContext& te, T& x )
 {
-    x.lhs->entype( te, Type::getIntType() );
-    x.rhs->entype( te, Type::getIntType() );
+    x.lhs->entype( te, false, Type::getIntType() );
+    x.rhs->entype( te, false, Type::getIntType() );
     x.h.t = Type::getBoolType();
 }
 
 template < class T > inline
 void entype_int_binary_arithmetic( EntypeContext& te, T& x )
 {
-    x.lhs->entype( te, Type::getIntType() );
-    x.rhs->entype( te, Type::getIntType() );
+    x.lhs->entype( te, false, Type::getIntType() );
+    x.rhs->entype( te, false, Type::getIntType() );
     x.h.t = Type::getIntType();
 }
 
@@ -158,70 +158,70 @@ void Node::encode( llvm::Module* m )
     context.m = m;
     context.f = NULL;
     context.bb = NULL;
-    encode( context );
+    encode( context, false );
 }
 void Node::entype()
 {
     EntypeContext te;
     te.env.push();
-    entype( te, NULL );
+    entype( te, false, NULL );
     te.env.pop();
 }
 
 ////////////////////////////////////////////////////////////////
 // Module
-llvm::Value* Module::encode( EncodeContext& context )
+llvm::Value* Module::encode( EncodeContext& context, bool )
 {
-    return topelems->encode( context );
+    return topelems->encode( context, false );
 }
-void Module::entype( EntypeContext& te, type_t t )
+void Module::entype( EntypeContext& te, bool, type_t t )
 {
-    topelems->entype( te, t );
+    topelems->entype( te, false, t );
 }
 
 ////////////////////////////////////////////////////////////////
 // TopElems
-llvm::Value* TopElems::encode( EncodeContext& context )
+llvm::Value* TopElems::encode( EncodeContext& context, bool )
 {
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        v[i]->encode( context );
+        v[i]->encode( context, false );
     }
     return NULL;
 }
-void TopElems::entype( EntypeContext& te, type_t t )
+void TopElems::entype( EntypeContext& te, bool, type_t t )
 {
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        v[i]->entype( te, t );
+        v[i]->entype( te, false, t );
     }
 }
 
 ////////////////////////////////////////////////////////////////
 // TopElem
-llvm::Value* TopElem::encode( EncodeContext& context )
+llvm::Value* TopElem::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void TopElem::entype( EntypeContext& te, type_t t )
+void TopElem::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // Require
-llvm::Value* Require::encode( EncodeContext& context )
+llvm::Value* Require::encode( EncodeContext& context, bool )
 {
-    module->encode( context );
+    module->encode( context, false );
     return NULL;
 }
-void Require::entype( EntypeContext& te, type_t t )
+void Require::entype( EntypeContext& te, bool, type_t t )
 {
-    module->entype( te, t );
+    module->entype( te, false, t );
 }
 
 ////////////////////////////////////////////////////////////////
 // FunDecl
-llvm::Value* FunDecl::encode( EncodeContext& context )
+llvm::Value* FunDecl::encode( EncodeContext& context, bool )
 {
     // signature
     std::vector< const llvm::Type* > types;
@@ -241,7 +241,7 @@ llvm::Value* FunDecl::encode( EncodeContext& context )
 
     return NULL;
 }
-void FunDecl::entype( EntypeContext& te, type_t t )
+void FunDecl::entype( EntypeContext& te, bool, type_t t )
 {
     // 戻り値の型
     if( !sig->result_type ) {
@@ -276,7 +276,7 @@ void FunDecl::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // FunDef
-llvm::Value* FunDef::encode( EncodeContext& context )
+llvm::Value* FunDef::encode( EncodeContext& context, bool )
 {
     // signature
     std::vector< const llvm::Type* > types;
@@ -312,7 +312,7 @@ llvm::Value* FunDef::encode( EncodeContext& context )
 
     context.bb = bb;
     context.f = f;
-    llvm::Value* v = body->encode( context );
+    llvm::Value* v = body->encode( context, false );
 
     context.env.pop();
 
@@ -324,7 +324,7 @@ llvm::Value* FunDef::encode( EncodeContext& context )
 
     return NULL;
 }
-void FunDef::entype( EntypeContext& te, type_t t )
+void FunDef::entype( EntypeContext& te, bool, type_t t )
 {
     // 関数定義ではコンテキスト型を無視
 
@@ -365,56 +365,56 @@ void FunDef::entype( EntypeContext& te, type_t t )
     }
 
     // 関数の戻り値になるコンテキストでは正規化
-    body->entype( te, Type::normalize( result_type ) );
+    body->entype( te, false, Type::normalize( result_type ) );
     te.env.pop();
 }
 
 ////////////////////////////////////////////////////////////////
 // FunSig
-llvm::Value* FunSig::encode( EncodeContext& context )
+llvm::Value* FunSig::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void FunSig::entype( EntypeContext& te, type_t t )
+void FunSig::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // FormalArgs
-llvm::Value* FormalArgs::encode( EncodeContext& context )
+llvm::Value* FormalArgs::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void FormalArgs::entype( EntypeContext& te, type_t t )
+void FormalArgs::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // FormalArg
-llvm::Value* FormalArg::encode( EncodeContext& context )
+llvm::Value* FormalArg::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void FormalArg::entype( EntypeContext& te, type_t t )
+void FormalArg::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // Block
-llvm::Value* Block::encode( EncodeContext& context )
+llvm::Value* Block::encode( EncodeContext& context, bool )
 {
-    return statements->encode( context );
+    return statements->encode( context, false );
 }
-void Block::entype( EntypeContext& te, type_t t )
+void Block::entype( EntypeContext& te, bool, type_t t )
 {
     //std::cerr << "block " << Type::getDisplay( t ) << std::endl;
-    statements->entype( te, t );
+    statements->entype( te, false, t );
 
     if( !statements->v.empty() ) {
         h.t = statements->v.back()->h.t;
@@ -423,49 +423,45 @@ void Block::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Statements
-llvm::Value* Statements::encode( EncodeContext& context )
+llvm::Value* Statements::encode( EncodeContext& context, bool )
 {
     llvm::Value* vv;
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        vv = v[i]->encode( context );
-
-#if 0
-        // call puti
-        if( vv ) {
-            llvm::CallInst::Create(
-                context.m->getFunction( "puti" ), vv, "", context.bb );
-        }
-#endif
+        vv = v[i]->encode( context, i != v.size() - 1  );
     }
     return vv;
 }
-void Statements::entype( EntypeContext& te, type_t t )
+void Statements::entype( EntypeContext& te, bool, type_t t )
 {
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        v[i]->entype( te, i == v.size() - 1 ? t : NULL );
+        if( i != v.size() - 1 ) {
+            v[i]->entype( te, true, NULL );
+        } else {
+            v[i]->entype( te, false, t );
+        }
     }
 }
 
 ////////////////////////////////////////////////////////////////
 // Statement
-llvm::Value* Statement::encode( EncodeContext& context )
+llvm::Value* Statement::encode( EncodeContext& context, bool )
 {
     assert(0);
-    return NULL;
+ return NULL;
 }
-void Statement::entype( EntypeContext& te, type_t t )
+void Statement::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // VarDecl
-llvm::Value* VarDecl::encode( EncodeContext& context )
+llvm::Value* VarDecl::encode( EncodeContext& context, bool )
 {
-    context.env.bind( name->s, value->encode( context ) );
+    context.env.bind( name->s, value->encode( context, false ) );
     return NULL;
 }
-void VarDecl::entype( EntypeContext& te, type_t t )
+void VarDecl::entype( EntypeContext& te, bool, type_t t )
 {
     te.env.bind( name->s, this->t->t );
     h.t = NULL;
@@ -473,18 +469,22 @@ void VarDecl::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // IfThenElse
-llvm::Value* IfThenElse::encode( EncodeContext& context )
+llvm::Value* IfThenElse::encode( EncodeContext& context, bool drop_value )
 {
-    llvm::Value* cond_value = cond->encode( context );
+    llvm::Value* cond_value = cond->encode( context, false );
 
     char if_r[256]; sprintf( if_r, "if_r%d", h.id );
     char if_v[256]; sprintf( if_v, "if_v%d", h.id );
 
-    llvm::Instruction* ifresult =
-        new llvm::AllocaInst( 
-            llvm::Type::Int32Ty,
-            if_r,
-            context.bb );
+    llvm::Instruction* ifresult = NULL;
+
+    if( !drop_value ) {
+        ifresult =
+            new llvm::AllocaInst( 
+                llvm::Type::Int32Ty,
+                if_r,
+                context.bb );
+    }
 
     char if_t_label[256]; sprintf( if_t_label, "IF_T%d", h.id );
     char if_f_label[256]; sprintf( if_f_label, "IF_F%d", h.id );
@@ -500,34 +500,45 @@ llvm::Value* IfThenElse::encode( EncodeContext& context )
     llvm::BranchInst::Create( tbb, fbb, cond_value, context.bb );
 
     context.bb = tbb;
-    new llvm::StoreInst( 
-        iftrue->encode( context ),
-        ifresult,
-        context.bb );
+
+    llvm::Value* tvalue = iftrue->encode( context, false );
+    if( ifresult ) {
+        new llvm::StoreInst( 
+            tvalue,
+            ifresult,
+            context.bb );
+    }
     llvm::BranchInst::Create( jbb, context.bb );
     
     context.bb = fbb;
-    new llvm::StoreInst(
-        iffalse->encode( context ),
-        ifresult,
-        context.bb );
+
+    llvm::Value* fvalue = iffalse->encode( context, false );
+    if( ifresult ) {
+        new llvm::StoreInst(
+            fvalue,
+            ifresult,
+            context.bb );
+    }
     llvm::BranchInst::Create( jbb, context.bb );
 
     context.bb = jbb;
 
-    llvm::Instruction* loaded_result =
-        new llvm::LoadInst( ifresult, if_v, context.bb );
+    llvm::Instruction* loaded_result = NULL;
+    
+    if( ifresult ) {
+        loaded_result = new llvm::LoadInst( ifresult, if_v, context.bb );
+    }
     
     return loaded_result;
 }
-void IfThenElse::entype( EntypeContext& te, type_t t )
+void IfThenElse::entype( EntypeContext& te, bool drop_value, type_t t )
 {
-    cond->entype( te, Type::getBoolType() );
+    cond->entype( te, false, Type::getBoolType() );
 
-    iftrue->entype( te, t );
-    iffalse->entype( te, t );
+    iftrue->entype( te, false, t );
+    iffalse->entype( te, false, t );
 
-    if( !t ) {
+    if( !drop_value && !t ) {
         if( !iftrue->h.t && !iffalse->h.t ) {
 
         } else if( iftrue->h.t && iffalse->h.t ) {
@@ -538,9 +549,9 @@ void IfThenElse::entype( EntypeContext& te, type_t t )
                     Type::getDisplay( iffalse->h.t ) + " at false-clause" );
             }
         } else if( iftrue->h.t && !iffalse->h.t ) {
-            iffalse->entype( te, iftrue->h.t );
+            iffalse->entype( te, false, iftrue->h.t );
         } else if( !iftrue->h.t && iffalse->h.t ) {
-            iftrue->entype( te, iffalse->h.t );
+            iftrue->entype( te, false, iffalse->h.t );
         }
     }
 
@@ -549,46 +560,46 @@ void IfThenElse::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Types
-llvm::Value* Types::encode( EncodeContext& context )
+llvm::Value* Types::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Types::entype( EntypeContext& te, type_t t )
+void Types::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // TypeRef
-llvm::Value* TypeRef::encode( EncodeContext& context )
+llvm::Value* TypeRef::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void TypeRef::entype( EntypeContext& te, type_t t )
+void TypeRef::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // Expr
-llvm::Value* Expr::encode( EncodeContext& context )
+llvm::Value* Expr::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Expr::entype( EntypeContext& te, type_t t )
+void Expr::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // LogicalOr
-llvm::Value* LogicalOr::encode( EncodeContext& context )
+llvm::Value* LogicalOr::encode( EncodeContext& context, bool )
 {
     if( v.size() == 1 ) {
-        return v[0]->encode( context );
+        return v[0]->encode( context, false );
     }
 
     // 結果レジスタ
@@ -622,7 +633,7 @@ llvm::Value* LogicalOr::encode( EncodeContext& context )
     llvm::BranchInst::Create( final, success );
 
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        llvm::Value* vv = v[i]->encode( context );
+        llvm::Value* vv = v[i]->encode( context, false );
         
         llvm::BranchInst::Create( success, bb[i], vv, context.bb );
         context.bb = bb[i];
@@ -632,25 +643,25 @@ llvm::Value* LogicalOr::encode( EncodeContext& context )
     sprintf( label, "or_s%d_value", h.id );
     return new llvm::LoadInst( orresult, label, final );
 }
-void LogicalOr::entype( EntypeContext& te, type_t t )
+void LogicalOr::entype( EntypeContext& te, bool, type_t t )
 {
     if( v.size() == 1 ) {
-        v[0]->entype( te, t );
+        v[0]->entype( te, false, t );
         h.t = v[0]->h.t;
     } else {
         check_bool_expr_type( h, t );
         for( size_t i = 0 ; i < v.size(); i++ ) {
-            v[i]->entype( te, Type::getBoolType() );
+            v[i]->entype( te, false, Type::getBoolType() );
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////
 // LogicalAnd
-llvm::Value* LogicalAnd::encode( EncodeContext& context )
+llvm::Value* LogicalAnd::encode( EncodeContext& context, bool )
 {
     if( v.size() == 1 ) {
-        return v[0]->encode( context );
+        return v[0]->encode( context, false );
     }
 
     // 結果レジスタ
@@ -684,7 +695,7 @@ llvm::Value* LogicalAnd::encode( EncodeContext& context )
     llvm::BranchInst::Create( final, failure );
 
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        llvm::Value* vv = v[i]->encode( context );
+        llvm::Value* vv = v[i]->encode( context, false );
         
         llvm::BranchInst::Create( bb[i], failure, vv, context.bb );
         context.bb = bb[i];
@@ -694,44 +705,44 @@ llvm::Value* LogicalAnd::encode( EncodeContext& context )
     sprintf( label, "and_s%d_value", h.id );
     return new llvm::LoadInst( andresult, label, final );
 }
-void LogicalAnd::entype( EntypeContext& te, type_t t )
+void LogicalAnd::entype( EntypeContext& te, bool, type_t t )
 {
     if( v.size() == 1 ) {
-        v[0]->entype( te, t );
+        v[0]->entype( te, false, t );
         h.t = v[0]->h.t;
     } else {
         check_bool_expr_type( h, t );
         for( size_t i = 0 ; i < v.size(); i++ ) {
-            v[i]->entype( te, Type::getBoolType() );
+            v[i]->entype( te, false, Type::getBoolType() );
         }
     }
 }
 
 ////////////////////////////////////////////////////////////////
 // Equality
-llvm::Value* Equality::encode( EncodeContext& context )
+llvm::Value* Equality::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Equality::entype( EntypeContext& te, type_t t )
+void Equality::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // EqualityEq
-llvm::Value* EqualityEq::encode( EncodeContext& context )
+llvm::Value* EqualityEq::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_EQ,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "eq",
             context.bb );
 }
-void EqualityEq::entype( EntypeContext& te, type_t t )
+void EqualityEq::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -739,17 +750,17 @@ void EqualityEq::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // EqualityNe
-llvm::Value* EqualityNe::encode( EncodeContext& context )
+llvm::Value* EqualityNe::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_NE,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "ne",
             context.bb );
 }
-void EqualityNe::entype( EntypeContext& te, type_t t )
+void EqualityNe::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -757,29 +768,29 @@ void EqualityNe::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Relational
-llvm::Value* Relational::encode( EncodeContext& context )
+llvm::Value* Relational::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Relational::entype( EntypeContext& te, type_t t )
+void Relational::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // RelationalLt
-llvm::Value* RelationalLt::encode( EncodeContext& context )
+llvm::Value* RelationalLt::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_SLT,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "lt",
             context.bb );
 }
-void RelationalLt::entype( EntypeContext& te, type_t t )
+void RelationalLt::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -787,17 +798,17 @@ void RelationalLt::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // RelationalGt
-llvm::Value* RelationalGt::encode( EncodeContext& context )
+llvm::Value* RelationalGt::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_SGT,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "gt",
             context.bb );
 }
-void RelationalGt::entype( EntypeContext& te, type_t t )
+void RelationalGt::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -805,17 +816,17 @@ void RelationalGt::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // RelationalLe
-llvm::Value* RelationalLe::encode( EncodeContext& context )
+llvm::Value* RelationalLe::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_SLE,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "le",
             context.bb );
 }
-void RelationalLe::entype( EntypeContext& te, type_t t )
+void RelationalLe::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -823,17 +834,17 @@ void RelationalLe::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // RelationalGe
-llvm::Value* RelationalGe::encode( EncodeContext& context )
+llvm::Value* RelationalGe::encode( EncodeContext& context, bool )
 {
     return 
         new llvm::ICmpInst(
             llvm::ICmpInst::ICMP_SGE,
-            lhs->encode( context ),
-            rhs->encode( context ),
+            lhs->encode( context, false ),
+            rhs->encode( context, false ),
             "ge",
             context.bb );
 }
-void RelationalGe::entype( EntypeContext& te, type_t t )
+void RelationalGe::entype( EntypeContext& te, bool, type_t t )
 {
     check_bool_expr_type( h, t );
     entype_int_compare( te, *this );
@@ -841,23 +852,23 @@ void RelationalGe::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Additive
-llvm::Value* Additive::encode( EncodeContext& context )
+llvm::Value* Additive::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Additive::entype( EntypeContext& te, type_t t )
+void Additive::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // AddExpr
-llvm::Value* AddExpr::encode( EncodeContext& context )
+llvm::Value* AddExpr::encode( EncodeContext& context, bool )
 {
     return binary_operator( h.id, context, lhs, rhs, llvm::Instruction::Add );
 }
-void AddExpr::entype( EntypeContext& te, type_t t )
+void AddExpr::entype( EntypeContext& te, bool, type_t t )
 {
     check_int_expr_type( h, t );
     entype_int_binary_arithmetic( te, *this );
@@ -865,11 +876,11 @@ void AddExpr::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // SubExpr
-llvm::Value* SubExpr::encode( EncodeContext& context )
+llvm::Value* SubExpr::encode( EncodeContext& context, bool )
 {
     return binary_operator( h.id, context, lhs, rhs, llvm::Instruction::Sub );
 }
-void SubExpr::entype( EntypeContext& te, type_t t )
+void SubExpr::entype( EntypeContext& te, bool, type_t t )
 {
     check_int_expr_type( h, t );
     entype_int_binary_arithmetic( te, *this );
@@ -877,23 +888,23 @@ void SubExpr::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Multiplicative
-llvm::Value* Multiplicative::encode( EncodeContext& context )
+llvm::Value* Multiplicative::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Multiplicative::entype( EntypeContext& te, type_t t )
+void Multiplicative::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // MulExpr
-llvm::Value* MulExpr::encode( EncodeContext& context )
+llvm::Value* MulExpr::encode( EncodeContext& context, bool )
 {
     return binary_operator( h.id, context, lhs, rhs, llvm::Instruction::Mul );
 }
-void MulExpr::entype( EntypeContext& te, type_t t )
+void MulExpr::entype( EntypeContext& te, bool, type_t t )
 {
     check_int_expr_type( h, t );
     entype_int_binary_arithmetic( te, *this );
@@ -901,11 +912,11 @@ void MulExpr::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // DivExpr
-llvm::Value* DivExpr::encode( EncodeContext& context )
+llvm::Value* DivExpr::encode( EncodeContext& context, bool )
 {
     return binary_operator( h.id, context, lhs, rhs, llvm::Instruction::SDiv );
 }
-void DivExpr::entype( EntypeContext& te, type_t t )
+void DivExpr::entype( EntypeContext& te, bool, type_t t )
 {
     check_int_expr_type( h, t );
     entype_int_binary_arithmetic( te, *this );
@@ -913,25 +924,25 @@ void DivExpr::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // PrimExpr
-llvm::Value* PrimExpr::encode( EncodeContext& context )
+llvm::Value* PrimExpr::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void PrimExpr::entype( EntypeContext& te, type_t t )
+void PrimExpr::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // LiteralBoolean
-llvm::Value* LiteralBoolean::encode( EncodeContext& context )
+llvm::Value* LiteralBoolean::encode( EncodeContext& context, bool )
 {
     return value ?
         llvm::ConstantInt::getTrue() :
         llvm::ConstantInt::getFalse();
 }
-void LiteralBoolean::entype( EntypeContext& te, type_t t )
+void LiteralBoolean::entype( EntypeContext& te, bool, type_t t )
 {
     if( t && t != Type::getBoolType() ) {
         throw context_mismatch( h.beg, "<bool>", Type::getDisplay( t ) );
@@ -941,11 +952,11 @@ void LiteralBoolean::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // LiteralInteger
-llvm::Value* LiteralInteger::encode( EncodeContext& context )
+llvm::Value* LiteralInteger::encode( EncodeContext& context, bool )
 {
     return llvm::ConstantInt::get( llvm::Type::Int32Ty, value );
 }
-void LiteralInteger::entype( EntypeContext& te, type_t t )
+void LiteralInteger::entype( EntypeContext& te, bool, type_t t )
 {
     if( t && t != Type::getIntType() ) {
         throw context_mismatch( h.beg, "<int>", Type::getDisplay( t ) );
@@ -955,11 +966,11 @@ void LiteralInteger::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // LiteralChar
-llvm::Value* LiteralChar::encode( EncodeContext& context )
+llvm::Value* LiteralChar::encode( EncodeContext& context, bool )
 {
     return llvm::ConstantInt::get( llvm::Type::Int32Ty, value );
 }
-void LiteralChar::entype( EntypeContext& te, type_t t )
+void LiteralChar::entype( EntypeContext& te, bool, type_t t )
 {
     if( t && t != Type::getIntType() ) {
         throw context_mismatch( h.beg, "<int>", Type::getDisplay( t ) );
@@ -969,7 +980,7 @@ void LiteralChar::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // VarRef
-llvm::Value* VarRef::encode( EncodeContext& context )
+llvm::Value* VarRef::encode( EncodeContext& context, bool )
 {
     llvm::Value* v = context.env.find( name->s );
     if( !v ) {
@@ -979,7 +990,7 @@ llvm::Value* VarRef::encode( EncodeContext& context )
 
     return v;
 }
-void VarRef::entype( EntypeContext& te, type_t t )
+void VarRef::entype( EntypeContext& te, bool, type_t t )
 {
     if( !t ) {
         type_t vt = te.env.find( name->s );
@@ -996,19 +1007,19 @@ void VarRef::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Parenthized
-llvm::Value* Parenthized::encode( EncodeContext& context )
+llvm::Value* Parenthized::encode( EncodeContext& context, bool )
 {
-    return expr->encode( context );
+    return expr->encode( context, false );
 }
-void Parenthized::entype( EntypeContext& te, type_t t )
+void Parenthized::entype( EntypeContext& te, bool, type_t t )
 {
-    expr->entype( te, t );
+    expr->entype( te, false, t );
     h.t = expr->h.t;
 }
 
 ////////////////////////////////////////////////////////////////
 // FunCall
-llvm::Value* FunCall::encode( EncodeContext& context )
+llvm::Value* FunCall::encode( EncodeContext& context, bool )
 {
     llvm::Function* f = context.m->getFunction( func->s->s );
     if( !f ) {
@@ -1017,7 +1028,7 @@ llvm::Value* FunCall::encode( EncodeContext& context )
 
     std::vector< llvm::Value* > args;
     for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
-        args.push_back( aargs->v[i]->encode( context ) );
+        args.push_back( aargs->v[i]->encode( context, false ) );
     }
 
     char reg[256];
@@ -1027,7 +1038,7 @@ llvm::Value* FunCall::encode( EncodeContext& context )
         context.m->getFunction( func->s->s ),
         args.begin(), args.end(), reg, context.bb );
 }
-void FunCall::entype( EntypeContext& te, type_t t )
+void FunCall::entype( EntypeContext& te, bool, type_t t )
 {
     type_t ft = te.env.find( func->s );
     if( !Type::isFunction( ft ) ) {
@@ -1055,7 +1066,8 @@ void FunCall::entype( EntypeContext& te, type_t t )
 
     // 実引数の型付け
     for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
-        aargs->v[i]->entype( te, ft->getArgumentType()->getElements()[i] );
+        aargs->v[i]->entype(
+            te, false, ft->getArgumentType()->getElements()[i] );
     }
 
     h.t = ft->getReturnType();
@@ -1063,36 +1075,36 @@ void FunCall::entype( EntypeContext& te, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // ActualArgs
-llvm::Value* ActualArgs::encode( EncodeContext& context )
+llvm::Value* ActualArgs::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void ActualArgs::entype( EntypeContext& te, type_t t )
+void ActualArgs::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // ActualArg
-llvm::Value* ActualArg::encode( EncodeContext& context )
+llvm::Value* ActualArg::encode( EncodeContext& context, bool )
 {
-    return expr->encode( context );
+    return expr->encode( context, false );
 }
-void ActualArg::entype( EntypeContext& te, type_t t )
+void ActualArg::entype( EntypeContext& te, bool, type_t t )
 {
-    expr->entype( te, t );
+    expr->entype( te, false, t );
     h.t = expr->h.t;
 }
 
 ////////////////////////////////////////////////////////////////
 // Identifier
-llvm::Value* Identifier::encode( EncodeContext& context )
+llvm::Value* Identifier::encode( EncodeContext& context, bool )
 {
     assert(0);
     return NULL;
 }
-void Identifier::entype( EntypeContext& te, type_t t )
+void Identifier::entype( EntypeContext& te, bool, type_t t )
 {
     assert(0);
 }

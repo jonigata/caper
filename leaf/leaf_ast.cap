@@ -11,8 +11,8 @@ module-footer = @{
 }@
 
 class-footer = @{
-    llvm::Value*    encode( EncodeContext& );
-    void			entype( EntypeContext&, type_t );
+    llvm::Value*    encode( EncodeContext&, bool );
+    void			entype( EntypeContext&, bool, type_t );
 }@
 
 atom = bool, char, int, symbol_t, type_t;

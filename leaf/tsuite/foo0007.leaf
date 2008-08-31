@@ -1,0 +1,14 @@
+require leaf;
+
+fun main(): int
+{
+	var m = 3 + 2;
+
+	fun foo( n: int ): int
+	{
+		m * n ;
+	}
+
+	puti( foo(4) );
+	0;
+}

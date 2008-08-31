@@ -1,0 +1,8 @@
+require leaf;
+
+fun main(): int
+{
+	var m = 3+2;
+	puti( 3+2 );
+	0;
+}

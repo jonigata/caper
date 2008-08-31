@@ -92,6 +92,17 @@ public:
     ~primexpr_expected() throw () {}
 };
 
+class bad_formalarg : public error {
+public:
+    bad_formalarg( int a ) : error(a)
+    {
+        std::stringstream ss;
+        ss << "function argument must be '<type>: <varname>'";
+        set_message( ss.str() );
+    }
+    ~bad_formalarg() throw () {}
+};
+
 class no_such_variable : public error {
 public:
     no_such_variable( int a, const std::string& var ) : error(a)
@@ -214,6 +225,17 @@ public:
         set_message( ss.str() );
     }
     ~formalarg_must_be_typed() throw () {}
+};
+
+class unused_variable : public error {
+public:
+    unused_variable( int a, const std::string& var ) : error(a)
+    {
+        std::stringstream ss;
+        ss << "unused variable '" << var << "'";
+        set_message( ss.str() );
+    }
+    ~unused_variable() throw () {}
 };
 
 } // namespace leaf

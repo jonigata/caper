@@ -64,6 +64,11 @@ token_representation( leaf::Token token, leaf::Node* v )
     case leaf::token_RPar:          return ")";
     case leaf::token_Semicolon:     return ";";
     case leaf::token_Sub:           return "-";
+    case leaf::token_TypeChar:      return "<char>";
+    case leaf::token_TypeInt:       return "<int>";
+    case leaf::token_TypeLong:      return "<long>";
+    case leaf::token_TypeShort:     return "<short>";
+    case leaf::token_TypeVoid:      return "<void>";
     case leaf::token_Var:           return "var";
     default:
         return "<<<UNKNOWN TOKEN>>>";
@@ -95,7 +100,6 @@ leaf::Node* read_from_file(
                 s.addr(), token_representation( token, v ) );
         }
         if( parser.accept( v ) ) {
-            v->entype();
             return v;
         }
     }
@@ -126,6 +130,7 @@ void compile(
 
     // AST‚©‚ç•ÏŠ·
     try {
+        n->entype();
         n->encode( module.get() );
     }
     catch( leaf::error& e ) {

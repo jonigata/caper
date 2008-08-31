@@ -31,7 +31,8 @@ struct Symbol {
 
 typedef Type* type_t;
 typedef Symbol* symbol_t;
-typedef std::vector<type_t> typevec;
+typedef std::vector< type_t > typevec_t;
+typedef std::map< symbol_t, type_t > symmap_t;
 
 struct Header {
     int     id;

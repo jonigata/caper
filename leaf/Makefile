@@ -31,6 +31,7 @@ all:
 	mkdir -p depend
 	make depend
 	make $(TARGET)
+	make rtl
 
 leaf.d : leaf_grammar.hpp leaf_ast.hpp
 
@@ -39,6 +40,8 @@ leaf_grammar.hpp : leaf_grammar.cpg
 
 leaf_ast.hpp : leaf_ast.cap
 		capella leaf_ast.cap leaf_ast.hpp
+
+rtl: rtl/leaf_rt.bc
 
 rtl/leaf_rt.bc : rtl/leaf_rt.ll
 		llvm-as -f rtl/leaf_rt.ll
@@ -66,6 +69,8 @@ test : leaf rtl/leaf_rt.bc
 		./succtest foo0003
 		./succtest foo0004
 		./succtest foo0005
+		./succtest foo0006
+		./succtest foo0007
 		./failtest bar0000
 		./failtest bar0001
 		./failtest bar0002
@@ -74,7 +79,7 @@ test : leaf rtl/leaf_rt.bc
 		./failtest bar0005
 
 try : leaf rtl/leaf_rt.bc
-		chmod 755 failtest
-		./failtest bar0005
+		chmod 755 succtest
+		./succtest foo0007
 
 -include $(addprefix $(DEPENDDIR)/,$(OBJS:.o=.d))

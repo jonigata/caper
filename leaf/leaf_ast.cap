@@ -15,16 +15,16 @@ class-footer = @{
     void			entype( EntypeContext&, bool, type_t );
 }@
 
-atom = bool, char, int, symbol_t, type_t;
+atom = bool, char, int, symbol_t, type_t, symmap_t;
 
 type Module = TopElems(topelems);
 
 type TopElems = TopElem*(v);
-type TopElem = Require | FunDecl | FunDef;
+type TopElem = Require | TopLevelFunDecl | TopLevelFunDef;
 
 type Require = Identifier(name), Module(module);
-type FunDecl = FunSig(sig);
-type FunDef = FunSig(sig), Block(body);
+type TopLevelFunDecl = FunDecl(fundecl);
+type TopLevelFunDef = FunDef(fundef);
 
 type FunSig = Identifier(name), FormalArgs(fargs), Types(result_type);
 type FormalArgs = FormalArg*(v);
@@ -33,7 +33,10 @@ type FormalArg = Identifier(name), TypeRef(t);
 type Block = Statements(statements);
 
 type Statements = Statement*(v);
-type Statement = VarDecl | IfThenElse | Expr;
+type Statement = FunDecl | FunDef | VarDecl | IfThenElse | Expr;
+
+type FunDecl = FunSig(sig);
+type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
 
 type VarDecl = Identifier(name), TypeRef(t), Expr(value);
 

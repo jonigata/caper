@@ -124,6 +124,16 @@ struct SemanticAction {
         return h( i->h, cage.allocate<leaf::Require>( i, m ) );
     }
 
+    leaf::TopLevelFunDecl* makeTopLevelFunDecl( leaf::FunDecl* f )
+    {
+        return cage.allocate<leaf::TopLevelFunDecl>( f );
+    }
+
+    leaf::TopLevelFunDef* makeTopLevelFunDef( leaf::FunDef* f )
+    {
+        return cage.allocate<leaf::TopLevelFunDef>( f );
+    }
+
     leaf::FunDecl* makeFunDecl( leaf::FunSig* s )
     {
         return h( s->h, cage.allocate<leaf::FunDecl>( s ) );
@@ -131,7 +141,8 @@ struct SemanticAction {
 
     leaf::FunDef* makeFunDef( leaf::FunSig* s, leaf::Block* b )
     {
-        return h( s->h + b->h, cage.allocate<leaf::FunDef>( s, b ) );
+        leaf::symmap_t sm;
+        return h( s->h + b->h, cage.allocate<leaf::FunDef>( s, b, sm ) );
     }
 
     leaf::FunSig* makeFunSig0( leaf::Identifier* i,
@@ -414,6 +425,11 @@ struct SemanticAction {
     leaf::FormalArgs* badFormalArgs3()
     {
         throw leaf::primexpr_expected( -1, '}' );
+    }
+
+    leaf::FormalArg* badFormalArg0()
+    {
+        throw leaf::bad_formalarg( -1 );
     }
 
     leaf::FunCall* badActualArgs0()

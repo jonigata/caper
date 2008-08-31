@@ -29,14 +29,47 @@ TopElems<leaf::TopElems*>
 
 TopElem<leaf::TopElem*>
 	: [identity] Require(0)
-	| [identity] FunDecl(0)
-	| [identity] FunDef(0)
+	| [identity] TopLevelFunDecl(0)
+	| [identity] TopLevelFunDef(0)
 	;	
 
 ////////////////////////////////////////////////////////////////
 // Require
 Require<leaf::Require*>
 	: [makeRequire] Req Identifier(0) Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
+// TopLevelFunDecl
+TopLevelFunDecl<leaf::TopLevelFunDecl*>
+	: [makeTopLevelFunDecl] FunDecl(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// TopLevelFunDef
+TopLevelFunDef<leaf::TopLevelFunDef*>
+	: [makeTopLevelFunDef] FunDef(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// Block
+Block<leaf::Block*>
+	: [makeBlock] LBra Statements(0) RBra
+	;
+
+////////////////////////////////////////////////////////////////
+// Statements Statement
+Statements<leaf::Statements*>
+	: [makeStatements0]
+	| [makeStatements1] Statements(0) Statement(1)
+	;
+
+Statement<leaf::Statement*>
+	: [identity] FunDecl(0)
+	| [identity] FunDef(0)
+	| [identity] VarDecl(0) Semicolon
+	| [identity] IfThenElse(0)
+	| [identity] Expr(0) Semicolon
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -76,25 +109,7 @@ FormalArgs<leaf::FormalArgs*>
 FormalArg<leaf::FormalArg*>
 	: [makeFormalArg0] Identifier(0)
 	| [makeFormalArg1] Identifier(0) Colon TypeExpr(1)
-	;
-
-////////////////////////////////////////////////////////////////
-// Block
-Block<leaf::Block*>
-	: [makeBlock] LBra Statements(0) RBra
-	;
-
-////////////////////////////////////////////////////////////////
-// Statements Statement
-Statements<leaf::Statements*>
-	: [makeStatements0]
-	| [makeStatements1] Statements(0) Statement(1)
-	;
-
-Statement<leaf::Statement*>
-	: [identity] VarDecl(0) Semicolon
-	| [identity] IfThenElse(0)
-	| [identity] Expr(0) Semicolon
+	| [badFormalArg0] TypeExpr Identifier
 	;
 
 ////////////////////////////////////////////////////////////////

@@ -87,6 +87,7 @@ public:
 		
 		// ‹L†—Ş
 		switch( c ) {
+		case '@': return leaf::token_At;
 		case '+': return leaf::token_Add;
 		case '-': return leaf::token_Sub;
 		case '*': return leaf::token_Mul;
@@ -192,9 +193,9 @@ public:
 		}
 
 		// ¯•Êq
-		if( isalpha( c ) ) {
+		if( isalpha( c ) || c == '_' ) {
 			std::stringstream ss;
-			while( c != EOF && ( isalpha( c ) || c == '_' ) ) {
+			while( c != EOF && ( isalpha( c ) || isdigit( c ) || c == '_' ) ) {
 				ss << (char)c;
 				c = getc();
 			}

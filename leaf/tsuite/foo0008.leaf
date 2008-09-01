@@ -1,0 +1,28 @@
+require leaf;
+
+fun foo0( n: char ): int
+{
+	0;
+}
+
+fun foo1( n: long ): int
+{
+	1;
+}
+
+fun bar0( n: int ): char
+{
+	(2)@char;
+}
+
+fun bar1( n: int ): long
+{
+	(3)@long;
+}
+
+fun main(): int
+{
+	puti(foo0(bar0(7)));
+	puti(foo1(bar1(8)));
+	0;
+}

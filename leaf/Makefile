@@ -36,10 +36,10 @@ all:
 leaf.d : leaf_grammar.hpp leaf_ast.hpp
 
 leaf_grammar.hpp : leaf_grammar.cpg
-		caper -c++ leaf_grammar.cpg leaf_grammar.hpp
+		../caper/caper -c++ leaf_grammar.cpg leaf_grammar.hpp
 
 leaf_ast.hpp : leaf_ast.cap
-		capella leaf_ast.cap leaf_ast.hpp
+		../capella/capella leaf_ast.cap leaf_ast.hpp
 
 rtl: rtl/leaf_rt.bc
 
@@ -80,6 +80,6 @@ test : leaf rtl/leaf_rt.bc
 
 try : leaf rtl/leaf_rt.bc
 		chmod 755 succtest
-		./succtest foo0007
+		./succtest foo0008
 
 -include $(addprefix $(DEPENDDIR)/,$(OBJS:.o=.d))

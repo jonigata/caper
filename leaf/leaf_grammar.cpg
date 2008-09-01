@@ -5,7 +5,7 @@
 %token Identifier<leaf::Identifier*>;
 %token Var Fun If Else;
 %token Add Sub Mul Div Assign LPar RPar LBra RBra Comma Semicolon Colon;
-%token Lt Gt Le Ge Eq Ne Not And Or;
+%token Lt Gt Le Ge Eq Ne Not And Or At;
 %token BitAnd BitOr;
 %token TypeVoid<leaf::TypeRef*>;
 %token TypeLong<leaf::TypeRef*>;
@@ -231,6 +231,7 @@ PrimExpr<leaf::PrimExpr*>
 	| [makeVarRef] Identifier(0)
 	| [identity] FunCall(0)
 	| [makeParenthized] LPar Expr(0) RPar
+	| [makeCast] Expr(0) At TypeExpr(1)
 	;
 
 ////////////////////////////////////////////////////////////////

@@ -212,9 +212,16 @@ Additive<leaf::Additive*>
 ////////////////////////////////////////////////////////////////
 // Multiplicative
 Multiplicative<leaf::Multiplicative*>
+	: [identity] CastExpr(0)
+	| [makeMul] Multiplicative(0) Mul CastExpr(1)
+	| [makeDiv] Multiplicative(0) Div CastExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// CastExpr
+CastExpr<leaf::CastExpr*>
 	: [identity] PrimExpr(0)
-	| [makeMul] Multiplicative(0) Mul PrimExpr(1)
-	| [makeDiv] Multiplicative(0) Div PrimExpr(1)
+	| [makeCast] PrimExpr(0) At TypeExpr(1)
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -231,7 +238,6 @@ PrimExpr<leaf::PrimExpr*>
 	| [makeVarRef] Identifier(0)
 	| [identity] FunCall(0)
 	| [makeParenthized] LPar Expr(0) RPar
-	| [makeCast] Expr(0) At TypeExpr(1)
 	;
 
 ////////////////////////////////////////////////////////////////

@@ -1249,6 +1249,18 @@ void Parenthized::entype( EntypeContext& tc, bool, type_t t )
 }
 
 ////////////////////////////////////////////////////////////////
+// CastExpr
+llvm::Value* CastExpr::encode( EncodeContext& cc, bool )
+{
+	assert(0);
+	return NULL;
+}
+void CastExpr::entype( EntypeContext& tc, bool, type_t t )
+{
+	assert(0);
+}
+
+////////////////////////////////////////////////////////////////
 // Cast
 llvm::Value* Cast::encode( EncodeContext& cc, bool )
 {

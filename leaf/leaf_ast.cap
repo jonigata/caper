@@ -63,23 +63,24 @@ type RelationalLe = Relational(lhs), Additive(rhs);
 type RelationalGe = Relational(lhs), Additive(rhs);
 
 type Additive = Multiplicative | AddExpr | SubExpr;
-
 type AddExpr = Additive(lhs), Multiplicative(rhs);
 type SubExpr = Additive(lhs), Multiplicative(rhs);
 
-type Multiplicative = PrimExpr | MulExpr | DivExpr;
-type MulExpr = Multiplicative(lhs), PrimExpr(rhs);
-type DivExpr = Multiplicative(lhs), PrimExpr(rhs);
+type Multiplicative = CastExpr | MulExpr | DivExpr;
+type MulExpr = Multiplicative(lhs), CastExpr(rhs);
+type DivExpr = Multiplicative(lhs), CastExpr(rhs);
+
+type CastExpr = Cast | PrimExpr;
+type Cast = PrimExpr(expr), TypeRef(t);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
-              | VarRef | Parenthized | FunCall | Cast;
+              | VarRef | Parenthized | FunCall;
 type LiteralBoolean = bool(value);
 type LiteralInteger = int(value);
 type LiteralChar = char(value);
 type VarRef = Identifier(name);
 type Parenthized = Expr(expr);
 type FunCall = Identifier(func), ActualArgs(aargs);
-type Cast = Expr(expr), TypeRef(t);
 
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);

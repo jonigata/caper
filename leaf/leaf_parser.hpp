@@ -336,13 +336,18 @@ struct SemanticAction {
 		return h( x->h + y->h, cage.allocate<leaf::SubExpr>( x, y ) );
 	}
 
-	leaf::Multiplicative* makeMul( leaf::Multiplicative* x, leaf::PrimExpr* y )
+	leaf::Multiplicative* makeMul( leaf::Multiplicative* x, leaf::CastExpr* y )
 	{
 		return h( x->h + y->h, cage.allocate<leaf::MulExpr>( x, y ) );
 	}
-	leaf::Multiplicative* makeDiv( leaf::Multiplicative* x, leaf::PrimExpr* y )
+	leaf::Multiplicative* makeDiv( leaf::Multiplicative* x, leaf::CastExpr* y )
 	{
 		return h( x->h + y->h, cage.allocate<leaf::DivExpr>( x, y ) );
+	}
+
+	leaf::Cast* makeCast( leaf::PrimExpr* e, leaf::TypeRef* t )
+	{
+		return h( e->h + t->h, cage.allocate<leaf::Cast>( e, t ) );
 	}
 
 	leaf::PrimExpr* makeVarRef( leaf::Identifier* i )
@@ -352,10 +357,6 @@ struct SemanticAction {
 	leaf::PrimExpr* makeParenthized( leaf::Expr* e )
 	{
 		return h( e->h, cage.allocate<leaf::Parenthized>( e ) );
-	}
-	leaf::PrimExpr* makeCast( leaf::Expr* e, leaf::TypeRef* t )
-	{
-		return h( e->h + t->h, cage.allocate<leaf::Cast>( e, t ) );
 	}
 
 	leaf::FunCall* makeFunCall0( leaf::Identifier* func )

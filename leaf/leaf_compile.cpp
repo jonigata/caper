@@ -130,7 +130,7 @@ void compile(
 
 	// AST‚©‚ç•ÏŠ·
 	try {
-		n->entype();
+		n->entype( s.cage(), s.symdic() );
 		n->encode( module.get() );
 	}
 	catch( leaf::error& e ) {

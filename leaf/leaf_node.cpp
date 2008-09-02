@@ -22,6 +22,37 @@
 
 namespace leaf {
 
+leaf::Symbol* intern( heap_cage& cage, SymDic& sd, const std::string& s )
+{
+	leaf::Symbol* sym;
+
+	SymDic::const_iterator i = sd.find( s );
+	if( i != sd.end() ) {
+		sym = (*i).second;
+	} else {
+		sym = cage.allocate<leaf::Symbol>( s );
+		sd[s] = sym;
+	}
+	return sym;
+}
+
+class GenSym {
+public:
+	GenSym() { id_ = 1; }
+	~GenSym() {}
+
+	std::string operator()()
+	{
+		char buffer[256];
+		sprintf( buffer, "$gensym%d", id_++ );
+		return buffer;
+	}
+
+private:
+	int id_;
+};
+
+
 template < class T >
 class Environment {
 public:
@@ -185,6 +216,9 @@ struct EncodeContext {
 
 struct EntypeContext {
 	Environment< Type* >	env;
+	heap_cage*				cage;
+	SymDic*					symdic;
+	GenSym					gensym;
 };
 
 inline
@@ -287,6 +321,162 @@ void formalargs_to_typevec( FormalArgs* formalargs, typevec_t& v, int addr )
 	}
 }
 
+inline llvm::Function*
+encode_function(
+	EncodeContext&	cc,
+	bool,
+	const Header&	h,
+	Symbol*			funcname,
+	FormalArgs*		formal_args,
+	Types*			result_type,
+	Block*			body,
+	const symmap_t&	freevars )
+{
+	// signature
+
+	// ...arguments
+	std::vector< const llvm::Type* > atypes;
+	for( symmap_t::const_iterator i = freevars.begin() ;
+		 i != freevars.end() ;
+		 ++i ) {
+		atypes.push_back( getLLVMType( (*i).second ) );
+	}
+	for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
+		atypes.push_back( getLLVMType( formal_args->v[i]->t->t ) );
+	}
+
+	// ...result
+	typevec_t rtypes;
+	types_to_typevec( result_type, rtypes );
+	const llvm::Type* rtype = getLLVMType( Type::getTupleType( rtypes ) );
+
+	// function type
+	llvm::FunctionType* ft =
+		llvm::FunctionType::get(
+			rtype, atypes, /* not vararg */ false );
+
+	// function
+	llvm::Function* f =
+		llvm::Function::Create(
+			ft, llvm::Function::ExternalLinkage,
+			funcname->s,
+			cc.m );
+
+	//std::cerr << "fundef bind: " << h.t << std::endl;
+	cc.env.bind( funcname, Value( NULL, h.t, freevars ) );
+
+	// get actual arguments
+	cc.env.push();
+	{
+		symmap_t::const_iterator env_iterator = freevars.begin();
+		std::vector< FormalArg* >::const_iterator arg_iterator =
+			formal_args->v.begin();
+		for( llvm::Function::arg_iterator i = f->arg_begin();
+			 i != f->arg_end() ;
+			 ++i ) {
+			if( env_iterator != freevars.end() ) {
+				i->setName( "env_" + (*env_iterator).first->s );
+				cc.env.bind( (*env_iterator).first,
+							 Value( i, (*env_iterator).second, symmap_t() ) );
+				env_iterator++;
+			} else {
+				i->setName( "arg_" + (*arg_iterator)->name->s->s );
+				cc.env.bind( (*arg_iterator)->name->s,
+							 Value( i, (*arg_iterator)->h.t, symmap_t() ) );
+				arg_iterator++;
+			}
+		}
+	}
+
+	// basic block
+	llvm::BasicBlock* bb = llvm::BasicBlock::Create("ENTRY", f);
+
+	std::swap( cc.bb, bb );
+
+	cc.f = f;
+	llvm::Value* v = body->encode( cc, false );
+
+	cc.env.pop();
+
+	if( h.t->getReturnType() != Type::getVoidType() && !v ) {
+		throw noreturn( h.beg, Type::getDisplay( h.t->getReturnType() ) );
+	}
+	cc.bb->getInstList().push_back(llvm::ReturnInst::Create(v));
+
+	std::swap( cc.bb, bb );
+
+	return f;
+}
+
+inline void
+entype_function(
+	EntypeContext&	tc,
+	bool,
+	type_t			t,
+	Header&			h,
+	Symbol*			funcname,
+	FormalArgs*		formal_args,
+	Types*			result_type,
+	Block*			body,
+	symmap_t&		freevars )
+{
+	// 関数定義ではコンテキスト型を無視
+
+	// 戻り値の型
+	if( !result_type ) {
+		throw inexplicit_return_type( h.beg );
+	}
+	for( size_t i = 0 ; i < result_type->v.size() ; i++ ) {
+		if( !result_type->v[i] ) {
+			throw imcomplete_return_type( h.beg );
+		}
+	}
+
+	typevec_t rtypes;
+	types_to_typevec( result_type, rtypes );
+	type_t rttype = Type::getTupleType( rtypes );
+
+	// 引数の型
+	typevec_t atypes;
+	formalargs_to_typevec( formal_args, atypes, h.beg );
+	type_t attype = Type::getTupleType( atypes );
+
+	// 再帰関数のために本体より先にbind
+	update_type( tc, h, Type::getFunctionType( rttype, attype ) );
+	tc.env.bind( funcname, h.t );
+
+	tc.env.push();
+	for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
+		tc.env.bind( formal_args->v[i]->name->s, formal_args->v[i]->t->t );
+	}
+	tc.env.fix();
+
+  retry:
+	// 関数の戻り値になるコンテキストでは正規化
+	body->entype( tc, false, Type::normalize( rttype ) );
+
+	// 環境が変更されていたらリトライ
+	if( tc.env.modified() ) {
+		tc.env.fix();
+		goto retry;
+	}
+
+	// 自由変数
+	//std::cerr << "freevars: ";
+	for( symmap_t::iterator i = tc.env.freevars().begin();
+		 i != tc.env.freevars().end() ;
+		 ++i ) {
+		Symbol* s = (*i).first;
+		if( !tc.env.find_in_toplevel( s ) ) {
+			freevars[s] = (*i).second;
+			//std::cerr << (*i)->s << ", ";
+		}
+	}
+	//std::cerr << std::endl;
+
+	tc.env.pop();
+}
+
 ////////////////////////////////////////////////////////////////
 // Node
 void Node::encode( llvm::Module* m )
@@ -299,9 +489,11 @@ void Node::encode( llvm::Module* m )
 	encode( cc, false );
 	cc.env.pop();
 }
-void Node::entype()
+void Node::entype( heap_cage& cage, SymDic& sd )
 {
 	EntypeContext tc;
+	tc.cage = &cage;
+	tc.symdic = &sd;
 	tc.env.push();
 	entype( tc, false, NULL );
 	tc.env.pop();
@@ -491,140 +683,31 @@ void FunDecl::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // FunDef
-llvm::Value* FunDef::encode( EncodeContext& cc, bool )
+llvm::Value* FunDef::encode( EncodeContext& cc, bool drop_value )
 {
-	// signature
-
-	// ...arguments
-	std::vector< const llvm::Type* > atypes;
-	for( symmap_t::const_iterator i = freevars.begin() ;
-		 i != freevars.end() ;
-		 ++i ) {
-		atypes.push_back( getLLVMType( (*i).second ) );
-	}
-	for( size_t i = 0 ; i < sig->fargs->v.size() ; i++ ) {
-		atypes.push_back( getLLVMType( sig->fargs->v[i]->t->t ) );
-	}
-
-	// ...result
-	typevec_t rtypes;
-	types_to_typevec( sig->result_type, rtypes );
-	const llvm::Type* rtype = getLLVMType( Type::getTupleType( rtypes ) );
-
-	// function type
-	llvm::FunctionType* ft =
-		llvm::FunctionType::get(
-			rtype, atypes, /* not vararg */ false );
-
-	// function
-	llvm::Function* f =
-		llvm::Function::Create(
-			ft, llvm::Function::ExternalLinkage,
-			sig->name->s->s,
-			cc.m );
-
-	//std::cerr << "fundef bind: " << h.t << std::endl;
-	cc.env.bind( sig->name->s, Value( NULL, h.t, freevars ) );
-
-	// get actual arguments
-	cc.env.push();
-	{
-		symmap_t::const_iterator env_iterator = freevars.begin();
-		std::vector< FormalArg* >::const_iterator arg_iterator =
-			sig->fargs->v.begin();
-		for( llvm::Function::arg_iterator i = f->arg_begin();
-			 i != f->arg_end() ;
-			 ++i ) {
-			if( env_iterator != freevars.end() ) {
-				i->setName( "env_" + (*env_iterator).first->s );
-				cc.env.bind( (*env_iterator).first,
-							 Value( i, (*env_iterator).second, symmap_t() ) );
-				env_iterator++;
-			} else {
-				i->setName( "arg_" + (*arg_iterator)->name->s->s );
-				cc.env.bind( (*arg_iterator)->name->s,
-							 Value( i, (*arg_iterator)->h.t, symmap_t() ) );
-				arg_iterator++;
-			}
-		}
-	}
-
-	// basic block
-	llvm::BasicBlock* bb = llvm::BasicBlock::Create("ENTRY", f);
-
-	std::swap( cc.bb, bb );
-
-	cc.f = f;
-	llvm::Value* v = body->encode( cc, false );
-
-	cc.env.pop();
-
-	if( h.t->getReturnType() != Type::getVoidType() && !v ) {
-		throw noreturn( h.beg, Type::getDisplay( h.t->getReturnType() ) );
-	}
-	cc.bb->getInstList().push_back(llvm::ReturnInst::Create(v));
-
-	std::swap( cc.bb, bb );
-
+	encode_function(
+		cc,
+		drop_value,
+		h,
+		sig->name->s,
+		sig->fargs,
+		sig->result_type,
+		body,
+		freevars );
 	return NULL;
 }
-void FunDef::entype( EntypeContext& tc, bool, type_t t )
+void FunDef::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
-	// 関数定義ではコンテキスト型を無視
-
-	// 戻り値の型
-	if( !sig->result_type ) {
-		throw inexplicit_return_type( h.beg );
-	}
-	for( size_t i = 0 ; i < sig->result_type->v.size() ; i++ ) {
-		if( !sig->result_type->v[i] ) {
-			throw imcomplete_return_type( h.beg );
-		}
-	}
-
-	typevec_t rtypes;
-	types_to_typevec( sig->result_type, rtypes );
-	type_t rttype = Type::getTupleType( rtypes );
-
-	// 引数の型
-	typevec_t atypes;
-	formalargs_to_typevec( sig->fargs, atypes, h.beg );
-	type_t attype = Type::getTupleType( atypes );
-
-	// 再帰関数のために本体より先にbind
-	update_type( tc, h, Type::getFunctionType( rttype, attype ) );
-	tc.env.bind( sig->name->s, h.t );
-
-	tc.env.push();
-	for( size_t i = 0 ; i < sig->fargs->v.size() ; i++ ) {
-		tc.env.bind( sig->fargs->v[i]->name->s, sig->fargs->v[i]->t->t );
-	}
-	tc.env.fix();
-
-  retry:
-	// 関数の戻り値になるコンテキストでは正規化
-	body->entype( tc, false, Type::normalize( rttype ) );
-
-	// 環境が変更されていたらリトライ
-	if( tc.env.modified() ) {
-		tc.env.fix();
-		goto retry;
-	}
-
-	// 自由変数
-	//std::cerr << "freevars: ";
-	for( symmap_t::iterator i = tc.env.freevars().begin();
-		 i != tc.env.freevars().end() ;
-		 ++i ) {
-		Symbol* s = (*i).first;
-		if( !tc.env.find_in_toplevel( s ) ) {
-			this->freevars[s] = (*i).second;
-			//std::cerr << (*i)->s << ", ";
-		}
-	}
-	//std::cerr << std::endl;
-
-	tc.env.pop();
+	entype_function(
+		tc,
+		drop_value,
+		t,
+		h,
+		sig->name->s,
+		sig->fargs,
+		sig->result_type,
+		body,
+		freevars );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -684,7 +767,7 @@ void VarDecl::entype( EntypeContext& tc, bool drop_value, type_t )
 	} else {
 		value->entype( tc, false, NULL );
 	}
-	tc.env.bind( name->s, value->h.t );
+	tc.env.bind( name->s, Type::normalize( value->h.t ) );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1291,13 +1374,22 @@ void Cast::entype( EntypeContext& tc, bool, type_t t )
 llvm::Value* FunCall::encode( EncodeContext& cc, bool )
 {
 	Value v = cc.env.find( func->s );
-	//std::cerr << "funcall: " << v.v << ", " << v.t << std::endl;
+	//std::cerr << "funcall: " << func->s->s << std::endl;
 	if( !v.t ) {
 		throw no_such_function( h.beg, func->s->s );
 	}
 
-	llvm::Function* f = cc.m->getFunction( func->s->s );
-	assert( f );
+	llvm::Function* f = NULL;
+	if( Type::isFunction( v.t ) ) {
+		f = cc.m->getFunction( func->s->s );
+	} else if( Type::isClosure( v.t ) ) {
+		f = NULL;
+		std::cerr << "closured is not supported" << std::endl;
+		assert(0);
+	} else {
+		std::cerr << Type::getDisplay( v.t ) << std::endl;
+		assert(0);
+	}
 
 	std::vector< llvm::Value* > args;
 	for( symmap_t::const_iterator i = v.c.begin() ;
@@ -1320,7 +1412,7 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
 void FunCall::entype( EntypeContext& tc, bool, type_t t )
 {
 	type_t ft = tc.env.find( func->s );
-	if( !Type::isFunction( ft ) ) {
+	if( !Type::isCallable( ft ) ) {
 		throw uncallable(
 			h.beg, func->s->s + "(" + Type::getDisplay( ft ) + ")" );
 	}
@@ -1353,6 +1445,61 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
 	update_type( tc, h, ft->getReturnType() );
 
 	tc.env.refer( func->s, h.t );
+}
+
+////////////////////////////////////////////////////////////////
+// Lambda
+llvm::Value* Lambda::encode( EncodeContext& cc, bool drop_value )
+{
+	llvm::Function* raw_function = encode_function(
+		cc,
+		drop_value,
+		h,
+		name,
+		fargs,
+		result_type,
+		body,
+		freevars );
+
+	std::vector< const llvm::Type* > v;
+	v.push_back( raw_function->getType() );
+	for( symmap_t::const_iterator i = freevars.begin() ;
+		 i != freevars.end() ;
+		 ++i ) {
+		v.push_back( getLLVMType( (*i).second ) );
+	}
+	llvm::Type* closure_type = llvm::StructType::get( v );
+
+	char closure_name[256];
+	sprintf( closure_name, "closure_%d", h.id );
+
+	llvm::Value* closure =
+		new llvm::MallocInst( 
+			closure_type,
+			closure_name,
+			cc.bb );
+
+	return closure;
+}
+void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
+{
+	if( !name ) {
+		name = intern( *tc.cage, *tc.symdic, tc.gensym() );
+	}
+
+	entype_function(
+		tc,
+		drop_value,
+		t,
+		h,
+		name,
+		fargs,
+		result_type,
+		body,
+		freevars );
+
+	assert( Type::isFunction( h.t ) );
+	update_type( tc, h, Type::getClosureType( h.t ) );
 }
 
 ////////////////////////////////////////////////////////////////

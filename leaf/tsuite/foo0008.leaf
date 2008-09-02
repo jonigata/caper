@@ -2,22 +2,22 @@ require leaf;
 
 fun foo0( n: char ): int
 {
-	0;
+	n@int;
 }
 
 fun foo1( n: long ): int
 {
-	1;
+	n@int;
 }
 
 fun bar0( n: int ): char
 {
-	(2)@char;
+	n@char;
 }
 
 fun bar1( n: int ): long
 {
-	(3)@long;
+	n@long;
 }
 
 fun main(): int

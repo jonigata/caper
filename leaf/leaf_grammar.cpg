@@ -70,6 +70,8 @@ Statement<leaf::Statement*>
 	| [identity] VarDecl(0) Semicolon
 	| [identity] IfThenElse(0)
 	| [identity] Expr(0) Semicolon
+	| [expectSemicolon] VarDecl RBra
+	| [expectSemicolon] Expr RBra
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -146,7 +148,7 @@ SimpleType<leaf::TypeRef*>
 ////////////////////////////////////////////////////////////////
 // FunctionType
 FunctionType<leaf::TypeRef*>
-	: [makeFunctionType] Fun TypeList(0) Colon TypeList(1)
+	: [makeFunctionType] Fun TypeList(0) Colon Types(1)
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -238,6 +240,7 @@ PrimExpr<leaf::PrimExpr*>
 	| [makeVarRef] Identifier(0)
 	| [identity] FunCall(0)
 	| [makeParenthized] LPar Expr(0) RPar
+	| [identity] Lambda(0)
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -249,6 +252,12 @@ FunCall<leaf::FunCall*>
 	| [badActualArgs3] Identifier LPar ActualArgs RBra
 	| [makeFunCall0] Identifier(0) LPar RPar
 	| [makeFunCall1] Identifier(0) LPar ActualArgs(1) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+//
+Lambda<leaf::Lambda*>
+	: [makeLambda] Fun FormalArgList(0) Colon Types(1) Block(2)
 	;
 
 ////////////////////////////////////////////////////////////////

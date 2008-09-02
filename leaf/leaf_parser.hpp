@@ -20,11 +20,11 @@
 #include <fstream>
 
 struct SemanticAction {
-	SemanticAction( leaf::SymDic& sdic, heap_cage& c, int& idseed )
-		: symdic( sdic ), cage( c ), id( idseed ) {}
+	SemanticAction( heap_cage& c, leaf::SymDic& sdic, int& idseed )
+		: cage( c ), symdic( sdic ), id( idseed ) {}
 
-	leaf::SymDic&	symdic;
 	heap_cage&		cage;
+	leaf::SymDic&	symdic;
 	int				id;
 
 	leaf::Type* anytype() { return (leaf::Type*)NULL; }
@@ -114,7 +114,7 @@ struct SemanticAction {
 		typedef std::istreambuf_iterator<char> is_iterator;
 		is_iterator b( ifs );	 // ‘¦’l‚É‚·‚é‚ÆVC++‚ª“Ú’¿Š¿‚È‚±‚Æ‚ðŒ¾‚¤
 		is_iterator e;
-		scanner_type s( b, e, symdic, cage, id );
+		scanner_type s( cage, symdic, id, b, e );
 
 		leaf::Node* v = read_from_file( filename, *this, s ); 
 
@@ -257,9 +257,23 @@ struct SemanticAction {
 	}
 
 	leaf::TypeRef* makeFunctionType(
-		leaf::Types* atypes, leaf::Types* rtype )
+		leaf::Types* atype, leaf::Types* rtype )
 	{
-		return NULL;
+		leaf::typevec_t rtypes;
+		for( size_t i = 0 ; i < rtype->v.size() ; i++ ) {
+			rtypes.push_back( rtype->v[i]->t );
+		}
+
+		leaf::typevec_t atypes;
+		for( size_t i = 0 ; i < atype->v.size() ; i++ ) {
+			atypes.push_back( atype->v[i]->t );
+		}
+
+		return h( atype->h + rtype->h,
+				  cage.allocate<leaf::TypeRef>(
+					  leaf::Type::getFunctionType(
+						  leaf::Type::getTupleType( rtypes ),
+						  leaf::Type::getTupleType( atypes ) ) ) );
 	}
 
 	leaf::Types* makeTypes0()
@@ -373,6 +387,18 @@ struct SemanticAction {
 				  cage.allocate<leaf::FunCall>( func, aargs ) );
 	}
 
+	leaf::Lambda* tt(){ return NULL; }
+
+
+	leaf::Lambda* makeLambda( leaf::FormalArgs* a,
+							  leaf::Types* r,
+							  leaf::Block* b )
+	{
+		return h( a->h + r->h + b->h,
+				  cage.allocate<leaf::Lambda>(
+					  (leaf::Symbol*)NULL, a, r, b, leaf::symmap_t() ) );
+	}
+
 	leaf::ActualArgs* makeActualArgs0( leaf::ActualArg* fa )
 	{
 		return makeSeq1<leaf::ActualArgs>( fa );
@@ -455,6 +481,11 @@ struct SemanticAction {
 	leaf::FunCall* badActualArgs3()
 	{
 		throw leaf::primexpr_expected( -1, '}' );
+	}
+
+	leaf::Statement* expectSemicolon()
+	{
+		throw leaf::semicolon_expected( -1, '}' );
 	}
 
 };

@@ -6,6 +6,7 @@
 namespace leaf {
 
 std::map< Type::FunSig, Type* >			Type::function_types_;
+std::map< Type*, Type* >				Type::closure_types_;
 std::map< std::vector< Type* >, Type* > Type::tuple_types_;
 
 Type* Type::getVoidType()
@@ -66,6 +67,17 @@ Type* Type::getFunctionType( Type* rtypes, Type* atypes )
 	return function_types_[s] = new Type( s );
 }
 
+Type* Type::getClosureType( Type* f )
+{
+	assert( isFunction( f ) );
+
+	std::map< Type*, Type* >::const_iterator i = closure_types_.find( f );
+	if( i != closure_types_.end() ) {
+		return (*i).second;
+	}
+	return closure_types_[f] = new Type( f );
+}
+
 Type* Type::getTupleType( const std::vector< Type* >& elems )
 {
 	std::map< std::vector< Type* >, Type* >::const_iterator i =
@@ -80,8 +92,14 @@ Type* Type::getTupleType( const std::vector< Type* >& elems )
 
 Type* Type::getReturnType()
 {
-	assert( tag() == TAG_FUNCTION );
-	return funsig_.rtypes;
+	switch( tag() ) {
+	case TAG_FUNCTION:
+		return funsig_.rtypes;
+	case TAG_CLOSURE:
+		return rawfunc_->funsig_.rtypes;
+	default:
+		assert(0);
+	}
 }
 
 Type* Type::getArgumentType()
@@ -130,6 +148,16 @@ std::string Type::getDisplay( Type* t )
 bool Type::isFunction( Type* t )
 {
 	return t && t->tag() == Type::TAG_FUNCTION;
+}
+
+bool Type::isClosure( Type* t )
+{
+	return t && t->tag() == Type::TAG_CLOSURE;
+}
+
+bool Type::isCallable( Type* t )
+{
+	return isFunction( t ) || isClosure( t );
 }
 
 bool Type::isComplete( Type* )

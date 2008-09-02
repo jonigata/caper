@@ -74,13 +74,16 @@ type CastExpr = Cast | PrimExpr;
 type Cast = PrimExpr(expr), TypeRef(t);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
-              | VarRef | Parenthized | FunCall;
+              | VarRef | Parenthized | FunCall | Lambda;
 type LiteralBoolean = bool(value);
 type LiteralInteger = int(value);
 type LiteralChar = char(value);
 type VarRef = Identifier(name);
 type Parenthized = Expr(expr);
 type FunCall = Identifier(func), ActualArgs(aargs);
+type Lambda = symbol_t(name),
+			  FormalArgs(fargs), Types(result_type), Block(body),
+			  symmap_t(freevars);
 
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);

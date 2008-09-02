@@ -22,17 +22,15 @@
 
 namespace leaf {
 
-typedef std::map< std::string, leaf::Symbol* > SymDic;
-
 template < class It >
 class Scanner {
 public:
 	typedef int char_type;
 
 public:
-	Scanner( It b, It e, SymDic& symdic, heap_cage& cage, int& id )
-		: b_(b), e_(e), c_(b), unget_(EOF),
-		  symdic_( symdic ), cage_(cage), id_(id)
+	Scanner( heap_cage& cage, SymDic& symdic, int& id, It b, It e )
+		: cage_(cage), symdic_( symdic ), id_(id),
+		  b_(b), e_(e), c_(b), unget_(EOF)
 	{
 		addr_ = 0;
 		reserved_["require"] = leaf::token_Req;
@@ -49,8 +47,8 @@ public:
 		lines_.push_back( 0 );
 	}
 
-	SymDic&		symdic()	{ return symdic_; }
 	heap_cage&	cage()		{ return cage_; }
+	SymDic&		symdic()	{ return symdic_; }
 	int&		idseed()	{ return id_; }
 
 	int addr() { return addr_; }
@@ -215,15 +213,8 @@ public:
 				v = NULL;
 				return (*i).second;
 			} else {
-				SymDic::const_iterator i = symdic_.find( s );
-				if( i != symdic_.end() ) {
-					v = h( b, e,
-						   cage_.allocate<leaf::Identifier>( (*i).second ) );
-				} else {
-					Symbol* sym = cage_.allocate<leaf::Symbol>( s );
-					symdic_[s] = sym;
-					v = h( b, e, cage_.allocate<leaf::Identifier>( sym ) );
-				}
+				v = h( b, e, cage_.allocate<leaf::Identifier>(
+						   intern( cage_, symdic_, s ) ) );
 				return leaf::token_Identifier;
 			}
 		}
@@ -285,14 +276,14 @@ private:
 	}
 
 private:
+	heap_cage&		cage_;
+	SymDic&			symdic_;
+	int&			id_;
 	It				b_;
 	It				e_;
 	It				c_;
 	char_type		unget_;
 	int				addr_;
-	SymDic&			symdic_;
-	heap_cage&		cage_;
-	int&			id_;
 
 	typedef std::map< std::string, leaf::Token > reserved_type;
 	reserved_type reserved_;

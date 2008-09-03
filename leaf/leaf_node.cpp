@@ -330,8 +330,7 @@ const llvm::Type* getLLVMType( Type* t, bool add_env = false )
             std::vector< const llvm::Type* > v;
             v.push_back( llvm::PointerType::getUnqual(
                              getLLVMType( t->getRawFunc(), true ) ) );
-            v.push_back( llvm::PointerType::getUnqual(
-                             llvm::Type::Int8Ty ) );
+            v.push_back( llvm::Type::Int8Ty );
             return llvm::PointerType::getUnqual( llvm::StructType::get( v ) );
         }
     default:
@@ -1500,14 +1499,11 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
         llvm::Value* eaddr = llvm::GetElementPtrInst::Create(
             v.v, indices, indices+2, reg, cc.bb );
 
-        sprintf( reg, "stub_env_ptr%d", h.id );
-        llvm::Value* eptr = new llvm::LoadInst( eaddr, reg, cc.bb );
-
-        std::cerr << "stub env ptr: " << *eptr->getType()
+        std::cerr << "stub env addr: " << *eaddr->getType()
                   << std::endl;
 
         std::vector< llvm::Value* > args;
-        args.push_back( eptr );
+        args.push_back( eaddr );
         for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
             llvm::Value* vv = aargs->v[i]->encode( cc, false );
             assert( vv );
@@ -1630,7 +1626,7 @@ llvm::Value* Lambda::encode( EncodeContext& cc, bool drop_value )
         llvm::Function::Create(
             stub_ft,
             llvm::Function::ExternalLinkage,
-            name->s,
+            name->s + "_stub",
             cc.m );
     
     // ...basic block
@@ -1640,51 +1636,83 @@ llvm::Value* Lambda::encode( EncodeContext& cc, bool drop_value )
     llvm::Function::arg_iterator ai = stub_f->arg_begin();
     std::vector< llvm::Value* > args;
 
-    llvm::Value* cls = ai++;
+    ai->setName( "env" );
+    llvm::Value* env = ai++;
 
     char reg[256];
-    sprintf( reg, "closure%d", h.id );
+    sprintf( reg, "env%d", h.id );
 
-    llvm::Value* index = llvm::ConstantInt::get( llvm::Type::Int32Ty, 1 );
-    llvm::Value* env = llvm::GetElementPtrInst::Create(
-        cls, index, reg, bb );
+    llvm::Value* indices[3];
+    indices[0] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
+    indices[1] = NULL;
 
     for( size_t i = 0 ; i < freevars.size() ; i++ ) {
-        char label[256];
-        sprintf( label, "freevar_a%d_%d", h.id, int(i) );
-
-        llvm::Value* index = llvm::ConstantInt::get( llvm::Type::Int32Ty, i );
+        sprintf( reg, "freevar_a%d_%d", h.id, int(i) );
+        indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, i );
         llvm::Value* fv = llvm::GetElementPtrInst::Create(
-            env, index, label, bb );
+            env, indices, indices+2, reg, bb );
 
-        sprintf( label, "freevar_v%d_%d", h.id, int(i) );
-
-        llvm::Value* v = new llvm::LoadInst( fv, label, bb );
+        sprintf( reg, "freevar_v%d_%d", h.id, int(i) );
+        llvm::Value* v = new llvm::LoadInst( fv, reg, bb );
         args.push_back( v );
     }
+
+    int fargs_index = 0;
     for( llvm::Function::arg_iterator i = ai; i != stub_f->arg_end() ; ++i ) {
+        i->setName( fargs->v[fargs_index++]->name->s->s );
         args.push_back( i );
     }
-#if 0
+
+    sprintf( reg, "call_%d", h.id );
     llvm::Value* stub_v = llvm::CallInst::Create(
         raw_function, args.begin(), args.end(), reg, bb );
 
     bb->getInstList().push_back( llvm::ReturnInst::Create(stub_v) );
-#else
-    bb->getInstList().push_back( llvm::ReturnInst::Create( index ) );
-#endif
 
 
-    char closure_name[256];
-    sprintf( closure_name, "closure_%d", h.id );
-
+    sprintf( reg, "closure_%d", h.id );
     llvm::Value* closure =
         new llvm::MallocInst( 
             closure_type,
-            closure_name,
+            reg,
             cc.bb );
 
-    return closure;
+    indices[0] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
+    indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
+    indices[2] = NULL;
+
+    sprintf( reg, "stub_func_addr_%d", h.id );
+    llvm::Value* stub_func_addr = llvm::GetElementPtrInst::Create(
+        closure, indices, indices+2, reg, cc.bb );
+
+    new llvm::StoreInst( 
+        stub_f,
+        stub_func_addr,
+        cc.bb );
+
+    int no = 0;
+    indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 1 );
+    for( symmap_t::const_iterator i = freevars.begin() ;
+         i != freevars.end() ;
+         ++i ) {
+        indices[2] = llvm::ConstantInt::get( llvm::Type::Int32Ty, no++ );
+
+        sprintf( reg, "freevar_addr_%d", h.id );
+        llvm::Value* freevar_addr = llvm::GetElementPtrInst::Create(
+            closure, indices, indices+3, reg, cc.bb );
+
+        new llvm::StoreInst(
+            cc.env.find( (*i).first ).v,
+            freevar_addr,
+            cc.bb );
+    }
+
+    sprintf( reg, "casted_closure_%d", h.id );
+    llvm::Value* casted_closure =
+        new llvm::BitCastInst(
+            closure, getLLVMType( h.t ), reg, cc.bb );
+            
+    return casted_closure;
 }
 void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
 {

@@ -312,7 +312,8 @@ const llvm::Type* getLLVMType( Type* t, bool add_env = false )
             int n = Type::getTupleSize( a );
             std::vector< const llvm::Type* > v;
             if( add_env ) {
-                v.push_back( llvm::OpaqueType::get() );
+                v.push_back( llvm::PointerType::getUnqual(
+                                 llvm::Type::Int8Ty ) );
             }
             if( 0 < n ) {
                 for( int i = 0 ; i < n ; i++ ) {
@@ -329,7 +330,8 @@ const llvm::Type* getLLVMType( Type* t, bool add_env = false )
             std::vector< const llvm::Type* > v;
             v.push_back( llvm::PointerType::getUnqual(
                              getLLVMType( t->getRawFunc(), true ) ) );
-            v.push_back( llvm::OpaqueType::get() );
+            v.push_back( llvm::PointerType::getUnqual(
+                             llvm::Type::Int8Ty ) );
             return llvm::PointerType::getUnqual( llvm::StructType::get( v ) );
         }
     default:
@@ -404,7 +406,7 @@ encode_function(
         llvm::FunctionType::get(
             rtype, atypes, /* not vararg */ false );
 
-    std::cerr << "fundef encode: " << *ft << std::endl;
+    //std::cerr << "fundef encode: " << *ft << std::endl;
 
     // function
     llvm::Function* f =
@@ -822,8 +824,8 @@ void VarDecl::entype( EntypeContext& tc, bool drop_value, type_t )
         value->entype( tc, false, NULL );
     }
 
-    std::cerr << "VarDecl: " << name->s->s << " => "
-              << Type::getDisplay( value->h.t ) << std::endl;
+    //std::cerr << "VarDecl: " << name->s->s << " => "
+    //<< Type::getDisplay( value->h.t ) << std::endl;
     tc.env.bind( name->s, value->h.t );
 }
 
@@ -1436,12 +1438,12 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
         throw no_such_function( h.beg, func->s->s );
     }
 
-    std::cerr << func->s->s << ": " << Type::getDisplay( v.t ) << std::endl;
+    //std::cerr << func->s->s << ": " << Type::getDisplay( v.t ) << std::endl;
     if( Type::isFunction( v.t ) ) {
         llvm::Function* f = cc.m->getFunction( func->s->s );
 
-        std::cerr << "funcall type(" << func->s->s << "): "
-                  << *f->getType() << std::endl;
+        //std::cerr << "funcall type(" << func->s->s << "): "
+        //<< *f->getType() << std::endl;
 
         std::vector< llvm::Value* > args;
         for( symmap_t::const_iterator i = v.c.begin() ;
@@ -1468,37 +1470,66 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
             f, args.begin(), args.end(), reg, cc.bb );
     } else if( Type::isClosure( v.t ) ) {
         char reg[256];
-        sprintf( reg, "stub_f%d", h.id );
 
         std::cerr << "closure call: " << *v.v->getType() << std::endl;
         
         llvm::Value* indices[2];
         indices[0] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
         indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
-        llvm::Value* f = llvm::GetElementPtrInst::Create(
+
+        // stub func type
+        sprintf( reg, "stub_func_addr%d", h.id );
+        llvm::Value* faddr = llvm::GetElementPtrInst::Create(
             v.v, indices, indices+2, reg, cc.bb );
-        std::cerr << "closure fun: " << *f->getType() << std::endl;
 
-        sprintf( reg, "stub_env%d", h.id );
+        sprintf( reg, "stub_func_ptr%d", h.id );
+        llvm::Value* fptr = new llvm::LoadInst( faddr, reg, cc.bb );
 
+        const llvm::PointerType* fptr_type =
+            llvm::cast<llvm::PointerType>(fptr->getType());
+
+        const llvm::FunctionType* func_type =
+            llvm::cast<llvm::FunctionType>(fptr_type->getElementType());
+
+        std::cerr << "func ptr: " << *fptr_type << std::endl;
+
+        // stub env type
         indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 1 );
-        llvm::Value* env = llvm::GetElementPtrInst::Create(
+
+        sprintf( reg, "stub_env_addr%d", h.id );
+        llvm::Value* eaddr = llvm::GetElementPtrInst::Create(
             v.v, indices, indices+2, reg, cc.bb );
-        std::cerr << "closure env: " << *env->getType() << std::endl;
-        
+
+        sprintf( reg, "stub_env_ptr%d", h.id );
+        llvm::Value* eptr = new llvm::LoadInst( eaddr, reg, cc.bb );
+
+        std::cerr << "stub env ptr: " << *eptr->getType()
+                  << std::endl;
+
         std::vector< llvm::Value* > args;
-        args.push_back( env );
+        args.push_back( eptr );
         for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
             llvm::Value* vv = aargs->v[i]->encode( cc, false );
             assert( vv );
-            //std::cerr << "arg: " << vv << std::endl;
+            std::cerr << "arg: " << *vv->getType() << std::endl;
             args.push_back( vv );
+        }
+
+        std::cerr << "final fptr: "
+                  << *fptr->getType() << ", "
+                  << *fptr_type << ", "
+                  << *func_type
+                  << std::endl;
+        for( size_t i = 0 ; i < args.size() ; i++ ) {
+            std::cerr << "arg" << i << "f: " << *func_type->getParamType(i)
+                      << std::endl;
+            std::cerr << "arg" << i << "a: " << *args[i]->getType()
+                      << std::endl;
         }
         
         sprintf( reg, "ret%d", h.id );
-
         return llvm::CallInst::Create(
-            f, args.begin(), args.end(), reg, cc.bb );
+            fptr, args.begin(), args.end(), reg, cc.bb );
     } else {
         //std::cerr << Type::getDisplay( v.t ) << std::endl;
         assert(0);
@@ -1508,8 +1539,8 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
 void FunCall::entype( EntypeContext& tc, bool, type_t t )
 {
     type_t ft = tc.env.find( func->s );
-    std::cerr << "Funcall::entype " << func->s->s << " => "
-              << Type::getDisplay( ft->getReturnType() ) << std::endl;
+    //std::cerr << "Funcall::entype " << func->s->s << " => "
+    //<< Type::getDisplay( ft->getReturnType() ) << std::endl;
     if( !Type::isCallable( ft ) ) {
         throw uncallable(
             h.beg, func->s->s + "(" + Type::getDisplay( ft ) + ")" );

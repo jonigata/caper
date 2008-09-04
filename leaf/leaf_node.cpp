@@ -1470,7 +1470,7 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
     } else if( Type::isClosure( v.t ) ) {
         char reg[256];
 
-        std::cerr << "closure call: " << *v.v->getType() << std::endl;
+        //std::cerr << "closure call: " << *v.v->getType() << std::endl;
         
         llvm::Value* indices[2];
         indices[0] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
@@ -1490,7 +1490,7 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
         const llvm::FunctionType* func_type =
             llvm::cast<llvm::FunctionType>(fptr_type->getElementType());
 
-        std::cerr << "func ptr: " << *fptr_type << std::endl;
+        //std::cerr << "func ptr: " << *fptr_type << std::endl;
 
         // stub env type
         indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 1 );
@@ -1499,18 +1499,19 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
         llvm::Value* eaddr = llvm::GetElementPtrInst::Create(
             v.v, indices, indices+2, reg, cc.bb );
 
-        std::cerr << "stub env addr: " << *eaddr->getType()
-                  << std::endl;
+        //std::cerr << "stub env addr: " << *eaddr->getType()
+        //<< std::endl;
 
         std::vector< llvm::Value* > args;
         args.push_back( eaddr );
         for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
             llvm::Value* vv = aargs->v[i]->encode( cc, false );
             assert( vv );
-            std::cerr << "arg: " << *vv->getType() << std::endl;
+            //std::cerr << "arg: " << *vv->getType() << std::endl;
             args.push_back( vv );
         }
 
+/*
         std::cerr << "final fptr: "
                   << *fptr->getType() << ", "
                   << *fptr_type << ", "
@@ -1522,7 +1523,7 @@ llvm::Value* FunCall::encode( EncodeContext& cc, bool )
             std::cerr << "arg" << i << "a: " << *args[i]->getType()
                       << std::endl;
         }
-        
+*/        
         sprintf( reg, "ret%d", h.id );
         return llvm::CallInst::Create(
             fptr, args.begin(), args.end(), reg, cc.bb );
@@ -1594,7 +1595,7 @@ llvm::Value* Lambda::encode( EncodeContext& cc, bool drop_value )
         v.push_back( getLLVMType( (*i).second ) );
     }
     llvm::Type* closure_env_type = llvm::StructType::get( v );
-    std::cerr << "closure_env_type: " << *closure_env_type << std::endl;
+    //std::cerr << "closure_env_type: " << *closure_env_type << std::endl;
 
     // stub functionŒ^‚Ìì¬
     
@@ -1612,14 +1613,14 @@ llvm::Value* Lambda::encode( EncodeContext& cc, bool drop_value )
     llvm::FunctionType* stub_ft =
         llvm::FunctionType::get(
             rtype, atypes, /* not vararg */ false );
-    std::cerr << "stub_ft: " << *stub_ft << std::endl;
+    //std::cerr << "stub_ft: " << *stub_ft << std::endl;
 
     // closureŒ^‚Ìì¬
     v.clear();
     v.push_back( llvm::PointerType::getUnqual( stub_ft ) );
     v.push_back( closure_env_type );
     llvm::Type* closure_type = llvm::StructType::get( v );
-    std::cerr << "closure_type: " << *closure_type << std::endl;
+    //std::cerr << "closure_type: " << *closure_type << std::endl;
 
     // ...function
     llvm::Function* stub_f =

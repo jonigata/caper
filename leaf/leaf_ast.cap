@@ -11,8 +11,8 @@ module-footer = @{
 }@
 
 class-footer = @{
-    llvm::Value*    encode( EncodeContext&, bool );
-    void			entype( EntypeContext&, bool, type_t );
+    void	encode( EncodeContext&, bool, values_t& );
+    void	entype( EntypeContext&, bool, type_t );
 }@
 
 atom = bool, char, int, symbol_t, type_t, symmap_t;
@@ -33,7 +33,7 @@ type FormalArg = Identifier(name), TypeRef(t);
 type Block = Statements(statements);
 
 type Statements = Statement*(v);
-type Statement = FunDecl | FunDef | VarDecl | IfThenElse | Expr;
+type Statement = FunDecl | FunDef | VarDecl | IfThenElse | MultiExpr;
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
@@ -41,6 +41,8 @@ type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
 type VarDecl = Identifier(name), TypeRef(t), Expr(value);
 
 type IfThenElse = Expr(cond), Block(iftrue), Block(iffalse);
+
+type MultiExpr = Expr*(v);
 
 type Expr = LogicalOr;
 

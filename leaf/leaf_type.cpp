@@ -94,6 +94,15 @@ Type* Type::getTupleType( const std::vector< Type* >& elems )
     }   
 }
 
+Type* Type::getElementType( Type* t, int i )
+{
+    if( t->tag() == TAG_TUPLE ) {
+        return t->getElement(i);
+    } else {
+        return t;
+    }
+}
+
 Type* Type::getReturnType()
 {
     switch( tag() ) {

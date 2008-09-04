@@ -69,9 +69,9 @@ Statement<leaf::Statement*>
 	| [identity] FunDef(0)
 	| [identity] VarDecl(0) Semicolon
 	| [identity] IfThenElse(0)
-	| [identity] Expr(0) Semicolon
+	| [identity] MultiExpr(0) Semicolon
 	| [expectSemicolon] VarDecl RBra
-	| [expectSemicolon] Expr RBra
+	| [expectSemicolon] MultiExpr RBra
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -163,6 +163,13 @@ TypeList<leaf::Types*>
 Types<leaf::Types*>
 	: [makeTypes1] TypeExpr(0)
 	| [makeTypes2] Types(0) Comma TypeExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// MultiExpr
+MultiExpr<leaf::MultiExpr*>
+	: [makeMultiExpr0] Expr(0)
+	| [makeMultiExpr1] MultiExpr(0) Comma Expr(1)
 	;
 
 ////////////////////////////////////////////////////////////////

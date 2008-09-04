@@ -41,6 +41,7 @@ public:
     static Type* getFunctionType( Type* rtypes, Type* atypes );
     static Type* getClosureType( Type* function );
     static Type* getTupleType( const std::vector< Type* >& elems );
+    static Type* getElementType( Type* t, int index );
 
     static std::string getDisplay( Type* );
     static bool isFunction( Type* );

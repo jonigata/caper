@@ -1,6 +1,7 @@
 // 2008/08/16 Naoyuki Hirayama
 
 #include "leaf_type.hpp"
+#include "leaf_error.hpp"
 #include <cassert>
 
 namespace leaf {
@@ -96,7 +97,9 @@ Type* Type::getTupleType( const std::vector< Type* >& elems )
 
 Type* Type::getElementType( Type* t, int i )
 {
-    if( t->tag() == TAG_TUPLE ) {
+    if( !t ) {
+        return NULL;
+    } else if( t->tag() == TAG_TUPLE ) {
         return t->getElement(i);
     } else {
         return t;
@@ -204,6 +207,40 @@ int Type::getTupleSize( Type* t )
     } else {
         return 1;
     }
+}
+
+Type* Type::unify( Type* x, Type* y )
+{
+    if( x && !y ) { return x; }
+    if( !x && y ) { return y; }
+    if( !x && !y ) { return NULL; }
+
+    int xn = getTupleSize( x );
+    int yn = getTupleSize( y );
+    if( xn != yn ) {
+        throw type_mismatch(
+            -1,
+            Type::getDisplay( x ),
+            Type::getDisplay( y ) );
+    }
+
+    if( xn == 1 ) {
+        if( x != y ) {
+            throw type_mismatch(
+                -1,
+                Type::getDisplay( x ),
+                Type::getDisplay( y ) );
+        }
+        return x;
+    }
+
+    std::vector< Type* > v;
+    for( int i = 0 ; i < xn ; i++ ) {
+        Type* xe = getElementType( x, i );
+        Type* ye = getElementType( y, i );
+        v.push_back( unify( xe, ye ) );
+    }
+    return getTupleType( v );
 }
 
 Type* Type::normalize( Type* t )

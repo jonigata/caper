@@ -197,18 +197,33 @@ struct SemanticAction {
         return h( s->h, cage.allocate<leaf::Block>( s ) );
     }
 
-    leaf::VarDecl* makeVarDecl0( leaf::Identifier* i, leaf::Expr* e )
+    leaf::VarDecl* makeVarDecl( leaf::VarDeclElems* v, leaf::MultiExpr* e )
     {
-        return h( i->h + e->h, cage.allocate<leaf::VarDecl>(
-                      i, (leaf::TypeRef*)NULL, e ) );
+        return h( v->h + e->h, cage.allocate<leaf::VarDecl>( v, e ) );
     }
 
-    leaf::VarDecl* makeVarDecl1( leaf::Identifier* i,
-                                 leaf::TypeRef* t,
-                                 leaf::Expr* e )
+    leaf::VarDeclElems* makeVarDeclElems0( leaf::VarDeclElem* y )
     {
-        return h( i->h + t->h + e->h,
-                  cage.allocate<leaf::VarDecl>( i, t, e ) );
+        return makeSeq1<leaf::VarDeclElems>( y );
+    }
+
+    leaf::VarDeclElems* makeVarDeclElems1(
+        leaf::VarDeclElems* x, leaf::VarDeclElem* y )
+    {
+        return append( x, y );
+    }
+
+    leaf::VarDeclElem* makeVarDeclIdentifier0( leaf::Identifier* i )
+    {
+        return h( i->h, cage.allocate<leaf::VarDeclIdentifier>(
+                      i, (leaf::TypeRef*)NULL ) );
+    }
+
+    leaf::VarDeclElem* makeVarDeclIdentifier1( leaf::Identifier* i,
+                                               leaf::TypeRef* t )
+    {
+        return h( i->h + t->h, cage.allocate<leaf::VarDeclIdentifier>(
+                      i, t ) );
     }
 
     leaf::IfThenElse* makeIfThenElse0( leaf::Expr* c,
@@ -378,7 +393,7 @@ struct SemanticAction {
     {
         return h( i->h, cage.allocate<leaf::VarRef>( i ) );
     }
-    leaf::PrimExpr* makeParenthized( leaf::Expr* e )
+    leaf::PrimExpr* makeParenthized( leaf::MultiExpr* e )
     {
         return h( e->h, cage.allocate<leaf::Parenthized>( e ) );
     }

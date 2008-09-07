@@ -117,8 +117,22 @@ FormalArg<leaf::FormalArg*>
 ////////////////////////////////////////////////////////////////
 // VarDecl
 VarDecl<leaf::VarDecl*>
-	: [makeVarDecl0] Var Identifier(0) Assign Expr(1)
-	| [makeVarDecl1] Var Identifier(0) Colon TypeExpr(1) Assign Expr(2)
+	: [makeVarDecl] Var VarDeclElems(0) Assign MultiExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// VarDeclElems
+VarDeclElems<leaf::VarDeclElems*>
+	: [makeVarDeclElems0] VarDeclElem(0)
+	| [makeVarDeclElems1] VarDeclElems(0) Comma VarDeclElem(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// VarDeclElem
+VarDeclElem<leaf::VarDeclElem*>
+	: [makeVarDeclIdentifier0] Identifier(0)
+	| [makeVarDeclIdentifier1] Identifier(0) Colon TypeExpr(1)
+	| [identity] LPar VarDeclElems(0) RPar
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -246,7 +260,7 @@ PrimExpr<leaf::PrimExpr*>
 	| [identity] LiteralChar(0)
 	| [makeVarRef] Identifier(0)
 	| [identity] FunCall(0)
-	| [makeParenthized] LPar Expr(0) RPar
+	| [makeParenthized] LPar MultiExpr(0) RPar
 	| [identity] Lambda(0)
 	;
 

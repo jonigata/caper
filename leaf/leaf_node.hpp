@@ -36,7 +36,8 @@ typedef Type* type_t;
 typedef Symbol* symbol_t;
 typedef std::vector< type_t > typevec_t;
 typedef std::map< symbol_t, type_t > symmap_t;
-typedef std::vector< llvm::Value* > values_t;
+
+class Value;
 
 struct Header {
     int     id;
@@ -69,7 +70,7 @@ struct Node {
     Header h;
     
     virtual ~Node(){}
-    virtual void    encode( EncodeContext&, bool drop_value, values_t& ) {}
+    virtual void    encode( EncodeContext&, bool drop_value, Value& ) {}
     virtual void    entype( EntypeContext&, bool drop_value, type_t ) {}
 
     void encode( llvm::Module* );

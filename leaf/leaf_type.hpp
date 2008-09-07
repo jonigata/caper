@@ -49,6 +49,7 @@ public:
     static bool isCallable( Type* );
     static bool isComplete( Type* );
     static int getTupleSize( Type* );
+    static Type* unify( Type*, Type* );
 
 protected:
     struct FunSig {

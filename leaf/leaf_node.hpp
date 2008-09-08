@@ -10,6 +10,8 @@
 #ifndef LEAF_NODE_HPP_
 #define LEAF_NODE_HPP_
 
+#include <boost/noncopyable.hpp>
+#include "scoped_allocator.hpp"
 #include "leaf_type.hpp"
 
 namespace llvm {
@@ -20,22 +22,24 @@ class Type;
 
 namespace leaf {
 
-struct EncodeContext;
-struct EntypeContext;
-
-struct Symbol {
+////////////////////////////////////////////////////////////////
+// Symbol
+struct Symbol : public boost::noncopyable {
     std::string s;
-
     Symbol( const std::string& x ) : s(x) {}
 };
 
-typedef std::map< std::string, leaf::Symbol* > SymDic;
-leaf::Symbol* intern( heap_cage& cage, SymDic& sd, const std::string& s );
+////////////////////////////////////////////////////////////////
+// CompileEnv
+struct CompileEnv : public boost::noncopyable {
+	typedef std::map< std::string, leaf::Symbol* > symdic_type;
 
-struct CompileEnv {
 	heap_cage	cage;
-	SymDic		symdic;
+	symdic_type	symdic;
 	int			idseed;
+
+	Symbol* intern( const std::string& s );
+    Symbol* gensym();
 };
 
 typedef Type* type_t;
@@ -72,6 +76,9 @@ struct Header {
     }
 };
 
+struct EncodeContext;
+struct EntypeContext;
+
 struct Node {
     Header h;
     
@@ -80,7 +87,7 @@ struct Node {
     virtual void    entype( EntypeContext&, bool drop_value, type_t ) {}
 
     void encode( llvm::Module* );
-    void entype( heap_cage&, SymDic& );
+    void entype( CompileEnv& );
 };
 
 }

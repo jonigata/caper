@@ -72,7 +72,7 @@ test : leaf rtl/leaf_rt.bc
 		./succtest foo0006
 		./succtest foo0007
 		./succtest foo0008
-		./succtest foo0010
+		./succtest foo0009
 		./failtest bar0000
 		./failtest bar0001
 		./failtest bar0002

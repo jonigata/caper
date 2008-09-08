@@ -14,6 +14,7 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <boost/noncopyable.hpp>
 #include "scoped_allocator.hpp"
 #include "leaf_node.hpp"
 #include "leaf_ast.hpp"
@@ -23,7 +24,7 @@
 namespace leaf {
 
 template < class It >
-class Scanner {
+class Scanner : public boost::noncopyable {
 public:
 	typedef int char_type;
 
@@ -32,16 +33,16 @@ public:
 		: env_(env), b_(b), e_(e), c_(b), unget_(EOF)
 	{
 		addr_ = 0;
-		reserved_["require"] = leaf::token_Req;
-		reserved_["var"] = leaf::token_Var;
-		reserved_["fun"] = leaf::token_Fun;
-		reserved_["if"] = leaf::token_If;
-		reserved_["else"] = leaf::token_Else;
-		reserved_["void"] = leaf::token_TypeVoid;
-		reserved_["long"] = leaf::token_TypeLong;
-		reserved_["int"] = leaf::token_TypeInt;
-		reserved_["short"] = leaf::token_TypeShort;
-		reserved_["char"] = leaf::token_TypeChar;
+		reserved_["require"] = token_Req;
+		reserved_["var"] = token_Var;
+		reserved_["fun"] = token_Fun;
+		reserved_["if"] = token_If;
+		reserved_["else"] = token_Else;
+		reserved_["void"] = token_TypeVoid;
+		reserved_["long"] = token_TypeLong;
+		reserved_["int"] = token_TypeInt;
+		reserved_["short"] = token_TypeShort;
+		reserved_["char"] = token_TypeChar;
 		
 		lines_.push_back( 0 );
 	}
@@ -64,7 +65,7 @@ public:
 		return addr - *i;
 	}
 
-	leaf::Token get( leaf::Node*& v )
+	Token get( Node*& v )
 	{
 		int c;
 		v = NULL;
@@ -80,78 +81,78 @@ public:
 		
 		// ãLçÜóﬁ
 		switch( c ) {
-		case '@': return leaf::token_At;
-		case '+': return leaf::token_Add;
-		case '-': return leaf::token_Sub;
-		case '*': return leaf::token_Mul;
-		case '/': return leaf::token_Div;
+		case '@': return token_At;
+		case '+': return token_Add;
+		case '-': return token_Sub;
+		case '*': return token_Mul;
+		case '/': return token_Div;
 		case '=':
 			{
 				c = getc();
 				if( c == '=' ) {
-					return leaf::token_Eq;
+					return token_Eq;
 				} else {
 					ungetc( c );
-					return leaf::token_Assign;
+					return token_Assign;
 				}
 			}
 		case '<':
 			{
 				c = getc();
 				if( c == '=' ) {
-					return leaf::token_Le;
+					return token_Le;
 				} else {
 					ungetc( c );
-					return leaf::token_Lt;
+					return token_Lt;
 				}
 			}
 		case '>':
 			{
 				c = getc();
 				if( c == '=' ) {
-					return leaf::token_Ge;
+					return token_Ge;
 				} else {
 					ungetc( c );
-					return leaf::token_Gt;
+					return token_Gt;
 				}
 			}
 		case '!':
 			{
 				c = getc();
 				if( c == '=' ) {
-					return leaf::token_Ne;
+					return token_Ne;
 				} else {
 					ungetc( c );
-					return leaf::token_Not;
+					return token_Not;
 				}
 			}
 		case '&':
 			{
 				c = getc();
 				if( c == '&' ) {
-					return leaf::token_And;
+					return token_And;
 				} else {
 					ungetc( c );
-					return leaf::token_BitAnd;
+					return token_BitAnd;
 				}
 			}
 		case '|':
 			{
 				c = getc();
 				if( c == '|' ) {
-					return leaf::token_Or;
+					return token_Or;
 				} else {
 					ungetc( c );
-					return leaf::token_BitOr;
+					return token_BitOr;
 				}
 			}
-		case '(': return leaf::token_LPar;
-		case ')': return leaf::token_RPar;
-		case '{': return leaf::token_LBra;
-		case '}': return leaf::token_RBra;
-		case ',': return leaf::token_Comma;
-		case ';': return leaf::token_Semicolon;
-		case ':': return leaf::token_Colon;
+		case '(': return token_LPar;
+		case ')': return token_RPar;
+		case '{': return token_LBra;
+		case '}': return token_RBra;
+		case ',': return token_Comma;
+		case ';': return token_Semicolon;
+		case ':': return token_Colon;
 		case '\'':
 			{
 				c = getc();
@@ -170,19 +171,19 @@ public:
 					if( k != '\'' ) {
 						throw unexpected_char( b, k );
 					}
-					v = h( b, e, env_.cage.allocate<leaf::LiteralChar>( c ) );
-					return leaf::token_LiteralChar;
+					v = h( b, e, env_.cage.allocate<LiteralChar>( c ) );
+					return token_LiteralChar;
 				} else {
 					// 'a'
 					int k = getc();
 					if( k != '\'' ) {
 						throw unexpected_char( b, k );
 					}
-					v = h( b, e, env_.cage.allocate<leaf::LiteralChar>( c ) );
-					return leaf::token_LiteralChar;
+					v = h( b, e, env_.cage.allocate<LiteralChar>( c ) );
+					return token_LiteralChar;
 				}
 			}
-		case EOF: return leaf::token_eof;
+		case EOF: return token_eof;
 		}
 
 		// éØï éq
@@ -197,11 +198,11 @@ public:
 			std::string s = ss.str();
 			if( s == "true" ) {
 				v = h( b, e,
-					   env_.cage.allocate<leaf::LiteralBoolean>( true ) );
+					   env_.cage.allocate<LiteralBoolean>( true ) );
 				return token_LiteralBoolean;
 			} else if( s == "false" ) {
 				v = h( b, e,
-					   env_.cage.allocate<leaf::LiteralBoolean>( false ) );
+					   env_.cage.allocate<LiteralBoolean>( false ) );
 				return token_LiteralBoolean;
 			}
 
@@ -210,9 +211,9 @@ public:
 				v = NULL;
 				return (*i).second;
 			} else {
-				v = h( b, e, env_.cage.allocate<leaf::Identifier>(
-						   intern( env_.cage, env_.symdic, s ) ) );
-				return leaf::token_Identifier;
+				v = h( b, e,
+					   env_.cage.allocate<Identifier>( env_.intern( s ) ) );
+				return token_Identifier;
 			}
 		}
 
@@ -226,9 +227,9 @@ public:
 			}
 			ungetc( c );
 
-			v = h( b, e, env_.cage.allocate<leaf::LiteralInteger>( n ) );
+			v = h( b, e, env_.cage.allocate<LiteralInteger>( n ) );
 
-			return leaf::token_LiteralInteger;
+			return token_LiteralInteger;
 		}
 
 
@@ -280,7 +281,7 @@ private:
 	char_type		unget_;
 	int				addr_;
 
-	typedef std::map< std::string, leaf::Token > reserved_type;
+	typedef std::map< std::string, Token > reserved_type;
 	reserved_type reserved_;
 
 

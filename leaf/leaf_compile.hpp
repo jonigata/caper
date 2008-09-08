@@ -13,12 +13,13 @@
 #include <fstream>
 #include <limits>
 #include <boost/scoped_ptr.hpp>
+#include <boost/noncopyable.hpp>
 #include "leaf_scanner.hpp"
 #include "leaf_error.hpp"
 
 namespace leaf {
 
-class Compiler {
+class Compiler : public boost::noncopyable {
 public:
 	Compiler(){ env_.idseed = 1; }
 	~Compiler(){}

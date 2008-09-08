@@ -10,10 +10,9 @@
 #ifndef LEAF_TYPE_HPP_
 #define LEAF_TYPE_HPP_
 
-#include <vector>
 #include <string>
+#include <vector>
 #include <map>
-#include "scoped_allocator.hpp"
 
 namespace leaf {
 

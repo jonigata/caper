@@ -17,39 +17,34 @@
 
 namespace leaf {
 
-leaf::Symbol* intern( heap_cage& cage, SymDic& sd, const std::string& s )
+////////////////////////////////////////////////////////////////
+// CompileEnv
+Symbol*
+CompileEnv::intern( const std::string& s )
 {
-    leaf::Symbol* sym;
+    Symbol* sym;
 
-    SymDic::const_iterator i = sd.find( s );
-    if( i != sd.end() ) {
+    symdic_type::const_iterator i = symdic.find( s );
+    if( i != symdic.end() ) {
         sym = (*i).second;
     } else {
-        sym = cage.allocate<leaf::Symbol>( s );
-        sd[s] = sym;
+        sym = cage.allocate<Symbol>( s );
+        symdic[s] = sym;
     }
     return sym;
 }
 
-class GenSym {
-public:
-    GenSym() { id_ = 1; }
-    ~GenSym() {}
+Symbol* CompileEnv::gensym()
+{
+	char buffer[256];
+	sprintf( buffer, "$gensym%d", idseed++ );
+	return intern( buffer );
+}
 
-    std::string operator()()
-    {
-        char buffer[256];
-        sprintf( buffer, "$gensym%d", id_++ );
-        return buffer;
-    }
-
-private:
-    int id_;
-};
-
-
+////////////////////////////////////////////////////////////////
+// Environment
 template < class T >
-class Environment {
+class Environment : public boost::noncopyable {
 public:
     typedef std::map< Symbol*, T > dic_type;
 
@@ -174,6 +169,8 @@ private:
 
 };
 
+////////////////////////////////////////////////////////////////
+// Reference
 struct Reference {
     llvm::Value* v;             // ’l
     type_t       t;             // Œ^
@@ -201,6 +198,8 @@ std::ostream& operator<<( std::ostream& os, const Reference& v )
     return os;
 }
 
+////////////////////////////////////////////////////////////////
+// Value
 class Value {
 public:
     Value() { m_ = false; x_ = NULL; t_ = NULL; }
@@ -274,19 +273,22 @@ std::ostream& operator<<( std::ostream& os, const Value& v )
     return os;
 }
 
-struct EncodeContext {
-    llvm::Module*       m;
-    llvm::Function*     f;
-    llvm::BasicBlock*   bb;
-
-    Environment< Reference > env;
+////////////////////////////////////////////////////////////////
+// EncodeContext
+struct EncodeContext : public boost::noncopyable {
+    llvm::Module*				m;
+    llvm::Function*				f;
+    llvm::BasicBlock*			bb;
+    Environment< Reference >	env;
 };
 
-struct EntypeContext {
-    Environment< type_t >   env;
-    heap_cage*              cage;
-    SymDic*                 symdic;
-    GenSym                  gensym;
+////////////////////////////////////////////////////////////////
+// EntypeContext
+struct EntypeContext : public boost::noncopyable {
+	EntypeContext( CompileEnv& ace ) : ce(ace) {}
+	
+	CompileEnv&					ce;
+    Environment< type_t >		env;
 };
 
 inline
@@ -690,7 +692,7 @@ type_t make_tuple_tree_from_vardeclelems( VarDeclElems* f )
 // Node
 void Node::encode( llvm::Module* m )
 {
-    leaf::EncodeContext cc;
+    EncodeContext cc;
     cc.m = m;
     cc.f = NULL;
     cc.bb = NULL;
@@ -699,11 +701,9 @@ void Node::encode( llvm::Module* m )
     encode( cc, false, value );
     cc.env.pop();
 }
-void Node::entype( heap_cage& cage, SymDic& sd )
+void Node::entype( CompileEnv& ce )
 {
-    EntypeContext tc;
-    tc.cage = &cage;
-    tc.symdic = &sd;
+    EntypeContext tc( ce );
     tc.env.push();
     entype( tc, false, NULL );
     tc.env.pop();
@@ -2047,7 +2047,7 @@ void Lambda::encode( EncodeContext& cc, bool drop_value, Value& value )
 void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
     if( !name ) {
-        name = intern( *tc.cage, *tc.symdic, tc.gensym() );
+        name = tc.ce.gensym();
     }
 
     entype_function(

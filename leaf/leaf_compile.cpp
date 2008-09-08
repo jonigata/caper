@@ -82,7 +82,7 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
 	boost::scoped_ptr< llvm::Module > module( new llvm::Module( "test" ) );
 
 	// AST‚©‚ç•ÏŠ·
-	n->entype( env_.cage, env_.symdic );
+	n->entype( env_ );
 	n->encode( module.get() );
 
 	os << *module;

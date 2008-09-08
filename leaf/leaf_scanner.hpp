@@ -28,9 +28,8 @@ public:
 	typedef int char_type;
 
 public:
-	Scanner( heap_cage& cage, SymDic& symdic, int& id, It b, It e )
-		: cage_(cage), symdic_( symdic ), id_(id),
-		  b_(b), e_(e), c_(b), unget_(EOF)
+	Scanner( CompileEnv& env, It b, It e )
+		: env_(env), b_(b), e_(e), c_(b), unget_(EOF)
 	{
 		addr_ = 0;
 		reserved_["require"] = leaf::token_Req;
@@ -46,10 +45,6 @@ public:
 		
 		lines_.push_back( 0 );
 	}
-
-	heap_cage&	cage()		{ return cage_; }
-	SymDic&		symdic()	{ return symdic_; }
-	int&		idseed()	{ return id_; }
 
 	int addr() { return addr_; }
 
@@ -175,7 +170,7 @@ public:
 					if( k != '\'' ) {
 						throw unexpected_char( b, k );
 					}
-					v = h( b, e, cage_.allocate<leaf::LiteralChar>( c ) );
+					v = h( b, e, env_.cage.allocate<leaf::LiteralChar>( c ) );
 					return leaf::token_LiteralChar;
 				} else {
 					// 'a'
@@ -183,7 +178,7 @@ public:
 					if( k != '\'' ) {
 						throw unexpected_char( b, k );
 					}
-					v = h( b, e, cage_.allocate<leaf::LiteralChar>( c ) );
+					v = h( b, e, env_.cage.allocate<leaf::LiteralChar>( c ) );
 					return leaf::token_LiteralChar;
 				}
 			}
@@ -201,10 +196,12 @@ public:
 
 			std::string s = ss.str();
 			if( s == "true" ) {
-				v = h( b, e, cage_.allocate<leaf::LiteralBoolean>( true ) );
+				v = h( b, e,
+					   env_.cage.allocate<leaf::LiteralBoolean>( true ) );
 				return token_LiteralBoolean;
 			} else if( s == "false" ) {
-				v = h( b, e, cage_.allocate<leaf::LiteralBoolean>( false ) );
+				v = h( b, e,
+					   env_.cage.allocate<leaf::LiteralBoolean>( false ) );
 				return token_LiteralBoolean;
 			}
 
@@ -213,8 +210,8 @@ public:
 				v = NULL;
 				return (*i).second;
 			} else {
-				v = h( b, e, cage_.allocate<leaf::Identifier>(
-						   intern( cage_, symdic_, s ) ) );
+				v = h( b, e, env_.cage.allocate<leaf::Identifier>(
+						   intern( env_.cage, env_.symdic, s ) ) );
 				return leaf::token_Identifier;
 			}
 		}
@@ -229,7 +226,7 @@ public:
 			}
 			ungetc( c );
 
-			v = h( b, e, cage_.allocate<leaf::LiteralInteger>( n ) );
+			v = h( b, e, env_.cage.allocate<leaf::LiteralInteger>( n ) );
 
 			return leaf::token_LiteralInteger;
 		}
@@ -269,16 +266,14 @@ private:
 	template < class T >
 	T* h( int b, int e, T* p )
 	{
-		p->h.id = id_++;
+		p->h.id = env_.idseed++;
 		p->h.beg = b;
 		p->h.end = e;
 		return p;
 	}
 
 private:
-	heap_cage&		cage_;
-	SymDic&			symdic_;
-	int&			id_;
+	CompileEnv&		env_;
 	It				b_;
 	It				e_;
 	It				c_;

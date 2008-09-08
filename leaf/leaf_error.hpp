@@ -19,18 +19,6 @@ public:
     int         lineno;
     int         column;
 
-    bool caught()
-    {
-        return lineno != -1 && column != -1;
-    }
-
-    void set_info( const std::string& a_filename, int a_lineno, int a_column )
-    {
-        filename = a_filename;
-        lineno = a_lineno;
-        column = a_column;
-    }
-
     void set_message( const std::string& m )
     {
         message = m;

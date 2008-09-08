@@ -32,6 +32,12 @@ struct Symbol {
 typedef std::map< std::string, leaf::Symbol* > SymDic;
 leaf::Symbol* intern( heap_cage& cage, SymDic& sd, const std::string& s );
 
+struct CompileEnv {
+	heap_cage	cage;
+	SymDic		symdic;
+	int			idseed;
+};
+
 typedef Type* type_t;
 typedef Symbol* symbol_t;
 typedef std::vector< type_t > typevec_t;

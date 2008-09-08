@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
-#include "leaf_parser.hpp"
 #include "leaf_compile.hpp"
 #include "leaf_error.hpp"
 #include "scoped_allocator.hpp"
@@ -67,27 +66,15 @@ int main( int argc, char** argv )
 
 	// compile
 	try {
-		// アロケータ
-		heap_cage cage;
-
-		// シンボル辞書
-		leaf::SymDic symdic;
-
-		// idシード
-		int idseed = 1;
-
-		// セマンティックアクション
-		SemanticAction sa( cage, symdic, idseed );
+		leaf::Compiler compiler;
 
 		// スキャナ
 		typedef std::istreambuf_iterator<char> is_iterator;
 		is_iterator b( ifs );	 // 即値にするとVC++が頓珍漢なことを言う
 		is_iterator e;
-		scanner_type s( cage, symdic, idseed, b, e );
 
-		leaf::Node* v = read_from_file( cmdopt.infile, sa, s );
-
-		compile( cmdopt.infile, s, v, ofs );
+		leaf::Node* n = compiler.read( b, e );
+		compiler.compile( n, ofs );
 	}
 	catch( leaf::error& e ) {
 		if( e.addr < 0 ) {

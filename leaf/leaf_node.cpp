@@ -309,7 +309,7 @@ llvm::Value* check_value_1( const Value& v )
 
 template < class T > inline void
 encode_int_compare(
-    T& x, const char* reg, llvm::CmpInst::Predicate p,
+    T& x, const char* reg, llvm::ICmpInst::Predicate p,
     EncodeContext& cc, Value& value )
 {
     x.lhs->encode( cc, false, value );

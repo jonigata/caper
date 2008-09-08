@@ -81,9 +81,16 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
 	// module
 	boost::scoped_ptr< llvm::Module > module( new llvm::Module( "test" ) );
 
-	// AST‚©‚ç•ÏŠ·
-	n->entype( env_ );
-	n->encode( module.get() );
+	try {
+		// AST‚©‚ç•ÏŠ·
+		n->entype( env_ );
+		n->encode( module.get() );
+	}
+	catch( error& e ){
+		e.lineno = env_.sm.lineno( e.addr );
+		e.column = env_.sm.column( e.addr );
+		throw;
+	}
 
 	os << *module;
 }

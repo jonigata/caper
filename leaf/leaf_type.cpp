@@ -219,7 +219,7 @@ Type* Type::unify( Type* x, Type* y )
     int yn = getTupleSize( y );
     if( xn != yn ) {
         throw type_mismatch(
-            -1,
+            Addr(),
             Type::getDisplay( x ),
             Type::getDisplay( y ) );
     }
@@ -227,7 +227,7 @@ Type* Type::unify( Type* x, Type* y )
     if( xn == 1 ) {
         if( x != y ) {
             throw type_mismatch(
-                -1,
+                Addr(),
                 Type::getDisplay( x ),
                 Type::getDisplay( y ) );
         }

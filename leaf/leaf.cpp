@@ -73,16 +73,16 @@ int main( int argc, char** argv )
 		is_iterator b( ifs );	 // ‘¦’l‚É‚·‚é‚ÆVC++‚ª“Ú’¿Š¿‚È‚±‚Æ‚ðŒ¾‚¤
 		is_iterator e;
 
-		leaf::Node* n = compiler.read( b, e );
+		leaf::Node* n = compiler.read( cmdopt.infile, b, e );
 		compiler.compile( n, ofs );
 	}
 	catch( leaf::error& e ) {
-		if( e.addr < 0 ) {
+		if( e.addr.empty() ) {
 			std::cerr << "leaf: " << e.what() << std::endl;
 		} else {
 			std::cerr << "leaf: " 
 					  << e.what()
-					  << "; file: " << e.filename
+					  << "; file: " << e.addr.file->s
 					  << ", line: " << e.lineno
 					  << ", column: " << e.column
 					  << std::endl;

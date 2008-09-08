@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <sstream>
+#include "leaf_node.hpp"
 
 namespace leaf {
 
@@ -10,12 +11,11 @@ namespace leaf {
 // errors
 class error : public std::exception {
 public:
-    error( int a ) : addr( a ), lineno( -1 ), column( -1 ) {}
+    error( const Addr& a ) : addr( a ), lineno( -1 ), column( -1 ) {}
     virtual ~error() throw() {}
-    int         addr;
+    Addr		addr;
 
     std::string message;
-    std::string filename;
     int         lineno;
     int         column;
 
@@ -29,7 +29,7 @@ public:
 
 class syntax_error : public error {
 public:
-    syntax_error( int a, const std::string& at_token ) : error(a)
+    syntax_error( const Addr& a, const std::string& at_token ) : error(a)
     {
         std::stringstream ss;
         ss << "syntax error around '" << at_token << "'";
@@ -40,7 +40,7 @@ public:
 
 class noreturn : public error {
 public:
-    noreturn( int a, const std::string& type ) : error(a)
+    noreturn( const Addr& a, const std::string& type ) : error(a)
     {
         set_message( "function returns no value: " + type + " required" );
     }
@@ -49,7 +49,7 @@ public:
 
 class unexpected_char : public error {
 public:
-    unexpected_char( int a, int ch ) : error(a)
+    unexpected_char( const Addr& a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "unexpected char: '" << char(ch) << ",";
@@ -60,7 +60,7 @@ public:
 
 class mismatch_paren : public error {
 public:
-    mismatch_paren( int a, int ch ) : error(a)
+    mismatch_paren( const Addr& a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "expected ')' before '" << char(ch) << "' token";
@@ -71,7 +71,7 @@ public:
 
 class primexpr_expected : public error {
 public:
-    primexpr_expected( int a, int ch ) : error(a)
+    primexpr_expected( const Addr& a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "expected ')' before '" << char(ch) << "' token";
@@ -82,7 +82,7 @@ public:
 
 class semicolon_expected : public error {
 public:
-    semicolon_expected( int a, int ch ) : error(a)
+    semicolon_expected( const Addr& a, int ch ) : error(a)
     {
         std::stringstream ss;
         ss << "expected ';' before '" << char(ch) << "' token";
@@ -93,7 +93,7 @@ public:
 
 class bad_formalarg : public error {
 public:
-    bad_formalarg( int a ) : error(a)
+    bad_formalarg( const Addr& a ) : error(a)
     {
         std::stringstream ss;
         ss << "function argument must be '<type>: <varname>'";
@@ -104,7 +104,7 @@ public:
 
 class no_such_variable : public error {
 public:
-    no_such_variable( int a, const std::string& var ) : error(a)
+    no_such_variable( const Addr& a, const std::string& var ) : error(a)
     {
         std::stringstream ss;
         ss << "no such variable: \"" << var << "\"";
@@ -115,7 +115,7 @@ public:
 
 class no_such_function : public error {
 public:
-    no_such_function( int a, const std::string& func ) : error(a)
+    no_such_function( const Addr& a, const std::string& func ) : error(a)
     {
         std::stringstream ss;
         ss << "no such function: \"" << func << "\"";
@@ -126,7 +126,7 @@ public:
 
 class require_fail : public error {
 public:
-    require_fail( int a, const std::string& module ) : error(a)
+    require_fail( const Addr& a, const std::string& module ) : error(a)
     {
         std::stringstream ss;
         ss << "require failed ( cannot open ): \"" << module << "\"";
@@ -137,7 +137,7 @@ public:
 
 class wrong_arity : public error {
 public:
-    wrong_arity( int a, int fa, int aa, const std::string& func )
+    wrong_arity( const Addr& a, int fa, int aa, const std::string& func )
         : error(a)
     {
         std::stringstream ss;
@@ -153,7 +153,7 @@ public:
 
 class inexplicit_return_type : public error {
 public:
-    inexplicit_return_type( int a ) : error(a)
+    inexplicit_return_type( const Addr& a ) : error(a)
     {
         set_message( "function must have return type" );
     }
@@ -162,7 +162,7 @@ public:
 
 class imcomplete_return_type : public error {
 public:
-    imcomplete_return_type( int a ) : error(a)
+    imcomplete_return_type( const Addr& a ) : error(a)
     {
         set_message( "return type must not be incomplete" );
     }
@@ -171,7 +171,7 @@ public:
 
 class inexplicit_argument_type : public error {
 public:
-    inexplicit_argument_type( int a ) : error(a)
+    inexplicit_argument_type( const Addr& a ) : error(a)
     {
         set_message( "formal argument type must not be omitted" );
     }
@@ -180,7 +180,7 @@ public:
 
 class type_mismatch : public error {
 public:
-    type_mismatch( int a, const std::string& atype, const std::string& ftype )
+    type_mismatch( const Addr& a, const std::string& atype, const std::string& ftype )
         : error(a)
     {
         std::stringstream ss;
@@ -193,7 +193,7 @@ public:
 class context_mismatch : public error {
 public:
     context_mismatch(
-        int a, const std::string& atype, const std::string& ftype )
+        const Addr& a, const std::string& atype, const std::string& ftype )
         : error(a)
     {
         std::stringstream ss;
@@ -206,7 +206,7 @@ public:
 
 class uncallable : public error {
 public:
-    uncallable( int a, const std::string& func ) : error(a)
+    uncallable( const Addr& a, const std::string& func ) : error(a)
     {
         std::stringstream ss;
         ss << "'" << func << "' cannot be used as a function";
@@ -217,7 +217,7 @@ public:
 
 class formalarg_must_be_typed : public error {
 public:
-    formalarg_must_be_typed( int a, const std::string& formalarg ) : error(a)
+    formalarg_must_be_typed( const Addr& a, const std::string& formalarg ) : error(a)
     {
         std::stringstream ss;
         ss << "argument \"" << formalarg << "\" must be typed";
@@ -228,7 +228,7 @@ public:
 
 class unused_variable : public error {
 public:
-    unused_variable( int a, const std::string& var ) : error(a)
+    unused_variable( const Addr& a, const std::string& var ) : error(a)
     {
         std::stringstream ss;
         ss << "unused variable '" << var << "'";
@@ -239,7 +239,7 @@ public:
 
 class wrong_multiple_value : public error {
 public:
-    wrong_multiple_value( int a, int vn, int cn ) : error(a)
+    wrong_multiple_value( const Addr& a, int vn, int cn ) : error(a)
     {
         std::stringstream ss;
         ss << "multiple value mismatch: "

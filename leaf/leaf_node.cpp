@@ -302,7 +302,8 @@ llvm::Value* check_value_1( const Value& v )
 {
     if( v.isMultiple() ) {
         if( v.size() != 1 ) {
-            throw wrong_multiple_value( -1, v.size(), 1 );
+			// TODO: ÉGÉâÅ[Ç¢Ç¢â¡å∏
+            throw wrong_multiple_value( Addr(), v.size(), 1 ); 
         }
         return check_value_1( v[0] );
     }
@@ -471,7 +472,8 @@ void types_to_typevec( Types* types, typevec_t& v )
 }
 
 inline
-void formalargs_to_typevec( FormalArgs* formalargs, typevec_t& v, int addr )
+void formalargs_to_typevec(
+	FormalArgs* formalargs, typevec_t& v, const Addr& addr )
 {
     for( size_t i = 0 ; i < formalargs->v.size() ; i++ ) {
         if( !formalargs->v[i]->t ) {
@@ -1226,7 +1228,7 @@ void MultiExpr::entype( EntypeContext& tc, bool drop_value, type_t t )
     if( t ) {
         int n = Type::getTupleSize( t );
         if( n != int(v.size()) ) {
-            int addr = -1;
+            Addr addr;
             if( !v.empty() ) { addr = v[0]->h.beg; }
             throw wrong_multiple_value( addr, v.size(), n );
         }

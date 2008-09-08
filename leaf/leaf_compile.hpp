@@ -24,8 +24,12 @@ public:
 	Compiler(){ env_.idseed = 1; }
 	~Compiler(){}
 
+	// filenameはソースのidのようなもの、オープンはしない
 	template < class IIt >
-	Node* read( IIt b, IIt e ) { return read_internal( b, e ); }
+	Node* read( const std::string& filename, IIt b, IIt e )
+	{
+		return read_internal( filename, b, e );
+	}
 
 	void compile( Node* n, std::ostream& os )
 	{
@@ -38,8 +42,6 @@ public:
     template < class T >
     T* h( T* p )
     {
-        p->h.beg = (std::numeric_limits<int>::max)();
-        p->h.end = (std::numeric_limits<int>::min)();
         p->h.id = env_.idseed++;
         return p;
     }
@@ -123,13 +125,13 @@ public:
         is_iterator b( ifs );    // 即値にするとVC++が頓珍漢なことを言う
         is_iterator e;
 
-        Node* v = read( b, e ); 
+        Node* v = read( filename, b, e ); 
         Module* m = dynamic_cast<Module*>(v);
         assert( m );
 
         return h( i->h, c().allocate<Require>( i, m ) );
     }
-
+	
     TopLevelFunDecl* makeTopLevelFunDecl( FunDecl* f )
     {
         return c().allocate<TopLevelFunDecl>( f );
@@ -446,85 +448,88 @@ public:
 
     PrimExpr* mismatchParen0()
     {
-        throw mismatch_paren( -1, ';' );
+        throw mismatch_paren( Addr(), ';' );
     }
 
     PrimExpr* mismatchParen1()
     {
-        throw mismatch_paren( -1, '}' );
+        throw mismatch_paren( Addr(), '}' );
     }
 
     PrimExpr* mismatchParen2()
     {
-        throw primexpr_expected( -1, ')' );
+        throw primexpr_expected( Addr(), ')' );
     }
 
     PrimExpr* mismatchParen3()
     {
-        throw primexpr_expected( -1, ';' );
+        throw primexpr_expected( Addr(), ';' );
     }
 
     PrimExpr* mismatchParen4()
     {
-        throw primexpr_expected( -1, '}' );
+        throw primexpr_expected( Addr(), '}' );
     }
 
     FormalArgs* badFormalArgs0()
     {
-        throw mismatch_paren( -1, ';' );
+        throw mismatch_paren( Addr(), ';' );
     }
 
     FormalArgs* badFormalArgs1()
     {
-        throw primexpr_expected( -1, '}' );
+        throw primexpr_expected( Addr(), '}' );
     }
 
     FormalArgs* badFormalArgs2()
     {
-        throw primexpr_expected( -1, ';' );
+        throw primexpr_expected( Addr(), ';' );
     }
 
     FormalArgs* badFormalArgs3()
     {
-        throw primexpr_expected( -1, '}' );
+        throw primexpr_expected( Addr(), '}' );
     }
 
     FormalArg* badFormalArg0()
     {
-        throw bad_formalarg( -1 );
+        throw bad_formalarg( Addr() );
     }
 
     FunCall* badActualArgs0()
     {
-        throw mismatch_paren( -1, ';' );
+        throw mismatch_paren( Addr(), ';' );
     }
 
     FunCall* badActualArgs1()
     {
-        throw primexpr_expected( -1, '}' );
+        throw primexpr_expected( Addr(), '}' );
     }
 
     FunCall* badActualArgs2()
     {
-        throw primexpr_expected( -1, ';' );
+        throw primexpr_expected( Addr(), ';' );
     }
 
     FunCall* badActualArgs3()
     {
-        throw primexpr_expected( -1, '}' );
+        throw primexpr_expected( Addr(), '}' );
     }
 
     Statement* expectSemicolon()
     {
-        throw semicolon_expected( -1, '}' );
+        throw semicolon_expected( Addr(), '}' );
     }
 
 private:
 	template < class IIt >
-	Node* read_internal( IIt b, IIt e )
+	Node* read_internal( const std::string& filename, IIt b, IIt e )
 	{
+		// ファイル名のintern
+		Symbol* file = env_.intern( filename );
+
 		// スキャナ
-		Scanner< IIt > scanner( env_, b, e );
+		Scanner< IIt > scanner( env_, file, b, e );
 
 		// パーサ
 		Parser< Node*, Compiler > parser( *this );
@@ -550,9 +555,9 @@ private:
 			}
 		}
 		catch( error& e ) {
-			if( e.addr < 0 ) { e.addr = scanner.addr(); }
-			if( e.lineno < 0 ) { e.lineno = scanner.lineno( e.addr ); }
-			if( e.column < 0 ) { e.column = scanner.column( e.addr ); }
+			if( e.addr.empty() ) { e.addr = scanner.addr(); }
+			if( e.lineno < 0 ) { e.lineno = env_.sm.lineno( e.addr ); }
+			if( e.column < 0 ) { e.column = env_.sm.column( e.addr ); }
 			throw;
 		}
 

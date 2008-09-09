@@ -1817,7 +1817,8 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             llvm::Value* ret = llvm::CallInst::Create(
                 f, args.begin(), args.end(), reg, cc.bb );
             for( int i = 0 ; i < n ; i++ ) {
-                llvm::Instruction* lv = new llvm::GetResultInst( ret, i );
+                sprintf( reg, "ret%d_%d", h.id, i );
+                llvm::Instruction* lv = new llvm::GetResultInst( ret, i, reg );
                 cc.bb->getInstList().push_back( lv );
 
                 Value av;

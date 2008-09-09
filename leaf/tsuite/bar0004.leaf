@@ -1,0 +1,11 @@
+require leaf;
+
+fun foo( n: int ): int
+{
+	0;
+}
+
+fun main(): int
+{
+	foo( 3, 4 );
+}

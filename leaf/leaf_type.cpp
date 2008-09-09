@@ -13,9 +13,7 @@ std::map< std::vector< Type* >, Type* > Type::tuple_types_;
 Type* Type::getVoidType()
 {
     static Type* t = NULL;
-    if( !t ) {
-        t = getTupleType( std::vector< Type* >() );
-    }
+    if( !t ) { t = getTupleType( std::vector< Type* >() ); }
     return t;
 }
 
@@ -72,8 +70,7 @@ Type* Type::getClosureType( Type* func )
 {
     assert( isFunction( func ) );
 
-    std::map< Type*, Type* >::const_iterator i =
-        closure_types_.find( func );
+    std::map< Type*, Type* >::const_iterator i = closure_types_.find( func );
     if( i != closure_types_.end() ) {
         return (*i).second;
     }

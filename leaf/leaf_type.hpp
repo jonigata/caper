@@ -13,6 +13,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 namespace leaf {
 
@@ -28,7 +30,6 @@ public:
         TAG_FUNCTION,
         TAG_CLOSURE,
     };
-
     
 public:
     static Type* getVoidType();
@@ -57,17 +58,10 @@ protected:
 
         bool operator<( const FunSig& x ) const
         {
-            if( rtypes < x.rtypes ) {
-                return true;
-            } else if( x.rtypes > rtypes ) {
-                return false;
-            } else if( atypes < x.atypes ) {
-                return true;
-            } else if( x.atypes < atypes ) {
-                return false;
-            }
-            return true;
-        }
+			return
+				boost::make_tuple( rtypes, atypes ) <
+				boost::make_tuple( x.rtypes, x.atypes );
+		}
     };
 
 public:
@@ -85,15 +79,15 @@ protected:
     Type( Type* f ) : tag_(TAG_CLOSURE), rawfunc_(f) {}
 
 private:
-    Tag     tag_;
-    FunSig  funsig_;
-    std::vector< Type* > elems_;
-    Type*   rawfunc_;
+    Tag                     tag_;
+    FunSig                  funsig_;
+    std::vector< Type* >    elems_;
+    Type*                   rawfunc_;
 
 private:
-    static std::map< FunSig, Type* > function_types_;
-    static std::map< Type*, Type* > closure_types_;
-    static std::map< std::vector< Type* >, Type* > tuple_types_;
+    static std::map< FunSig, Type* >                function_types_;
+    static std::map< Type*, Type* >                 closure_types_;
+    static std::map< std::vector< Type* >, Type* >  tuple_types_;
 
     static Type* normalize( Type* );
 

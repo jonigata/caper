@@ -986,15 +986,18 @@ void foo( EncodeContext& cc, VarDeclElem* f, const Value& a )
 {
     VarDeclElems* fv = dynamic_cast<VarDeclElems*>(f);
     if( fv ) {
-        for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
-            foo( cc, fv->v[i], a[i] );
-        }
+		if( a.size() == 1 ) {
+			foo( cc, fv->v[0], a );
+		} else {
+			for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
+				foo( cc, fv->v[i], a[i] );
+			}
+		}
         return;
     }
 
     VarDeclIdentifier* fi = dynamic_cast<VarDeclIdentifier*>(f);
     if( fi ) {
-		std::cerr << "bind: " << fi->name->s << " <= " << a << std::endl;
         cc.env.bind(
             fi->name->s, Reference( a.getx(), a.gett(), symmap_t() ) );
         return;

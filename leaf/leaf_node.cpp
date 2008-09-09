@@ -36,9 +36,9 @@ CompileEnv::intern( const std::string& s )
 
 Symbol* CompileEnv::gensym()
 {
-	char buffer[256];
-	sprintf( buffer, "$gensym%d", idseed++ );
-	return intern( buffer );
+    char buffer[256];
+    sprintf( buffer, "$gensym%d", idseed++ );
+    return intern( buffer );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -276,19 +276,19 @@ std::ostream& operator<<( std::ostream& os, const Value& v )
 ////////////////////////////////////////////////////////////////
 // EncodeContext
 struct EncodeContext : public boost::noncopyable {
-    llvm::Module*				m;
-    llvm::Function*				f;
-    llvm::BasicBlock*			bb;
-    Environment< Reference >	env;
+    llvm::Module*               m;
+    llvm::Function*             f;
+    llvm::BasicBlock*           bb;
+    Environment< Reference >    env;
 };
 
 ////////////////////////////////////////////////////////////////
 // EntypeContext
 struct EntypeContext : public boost::noncopyable {
-	EntypeContext( CompileEnv& ace ) : ce(ace) {}
-	
-	CompileEnv&					ce;
-    Environment< type_t >		env;
+    EntypeContext( CompileEnv& ace ) : ce(ace) {}
+    
+    CompileEnv&                 ce;
+    Environment< type_t >       env;
 };
 
 inline
@@ -301,7 +301,7 @@ inline
 llvm::Value* check_value_1( const Value& v )
 {
     if( v.isMultiple() ) {
-		assert( v.size() != 1 );
+        assert( v.size() != 1 );
         return check_value_1( v[0] );
     }
     return v.getx();
@@ -470,7 +470,7 @@ void types_to_typevec( Types* types, typevec_t& v )
 
 inline
 void formalargs_to_typevec(
-	FormalArgs* formalargs, typevec_t& v, const Addr& addr )
+    FormalArgs* formalargs, typevec_t& v, const Addr& addr )
 {
     for( size_t i = 0 ; i < formalargs->v.size() ; i++ ) {
         if( !formalargs->v[i]->t ) {
@@ -576,21 +576,21 @@ encode_function(
 
     cc.env.pop();
 
-	if( h.t->getReturnType() == Type::getVoidType() ) {
-		llvm::ReturnInst::Create( cc.bb );
-	}  else {
-		assert( value.size() == Type::getTupleSize( h.t->getReturnType() ) );
+    if( h.t->getReturnType() == Type::getVoidType() ) {
+        llvm::ReturnInst::Create( cc.bb );
+    }  else {
+        assert( value.size() == Type::getTupleSize( h.t->getReturnType() ) );
 
-		if( value.size() == 1 ) {
-			llvm::ReturnInst::Create( value.getx(), cc.bb );
-		} else {
-			std::vector< llvm::Value* > llvmv;
-			for( int i = 0 ; i < value.size() ; i++ ) {
-				llvmv.push_back( value[i].getx() );
-			}
+        if( value.size() == 1 ) {
+            llvm::ReturnInst::Create( value.getx(), cc.bb );
+        } else {
+            std::vector< llvm::Value* > llvmv;
+            for( int i = 0 ; i < value.size() ; i++ ) {
+                llvmv.push_back( value[i].getx() );
+            }
         
-			llvm::ReturnInst::Create( &llvmv[0], value.size(), cc.bb );
-		}
+            llvm::ReturnInst::Create( &llvmv[0], value.size(), cc.bb );
+        }
     }
 
     std::swap( cc.bb, bb );
@@ -986,13 +986,13 @@ void foo( EncodeContext& cc, VarDeclElem* f, const Value& a )
 {
     VarDeclElems* fv = dynamic_cast<VarDeclElems*>(f);
     if( fv ) {
-		if( a.size() == 1 ) {
-			foo( cc, fv->v[0], a );
-		} else {
-			for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
-				foo( cc, fv->v[i], a[i] );
-			}
-		}
+        if( a.size() == 1 ) {
+            foo( cc, fv->v[0], a );
+        } else {
+            for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
+                foo( cc, fv->v[i], a[i] );
+            }
+        }
         return;
     }
 
@@ -1114,16 +1114,6 @@ void IfThenElse::encode( EncodeContext& cc, bool drop_value, Value& value )
     char if_r[256]; sprintf( if_r, "if_r%d", h.id );
     char if_v[256]; sprintf( if_v, "if_v%d", h.id );
 
-    llvm::Instruction* ifresult = NULL;
-
-    if( !drop_value ) {
-        ifresult =
-            new llvm::AllocaInst( 
-                llvm::Type::Int32Ty, // TODO: Œˆ‚ß‚¤‚¿
-                if_r,
-                cc.bb );
-    }
-
     char if_t_label[256]; sprintf( if_t_label, "IF_T%d", h.id );
     char if_f_label[256]; sprintf( if_f_label, "IF_F%d", h.id );
     char if_j_label[256]; sprintf( if_j_label, "IF_J%d", h.id );
@@ -1139,41 +1129,51 @@ void IfThenElse::encode( EncodeContext& cc, bool drop_value, Value& value )
 
     cc.bb = tbb;
 
-    iftrue->encode( cc, false, value );
-    llvm::Value* tvalue = check_value_1( value ); // Žb’è
-    value.clear();
+    Value tvalue;
+    iftrue->encode( cc, false, tvalue );
 
-    if( ifresult ) {
-        new llvm::StoreInst( 
-            tvalue,
-            ifresult,
-            cc.bb );
-    }
     llvm::BranchInst::Create( jbb, cc.bb );
     
     cc.bb = fbb;
 
-    iffalse->encode( cc, false, value );
-    llvm::Value* fvalue = check_value_1( value ); // Žb’è
-    value.clear();
+    Value fvalue;
+    iffalse->encode( cc, false, fvalue );
     
-    if( ifresult ) {
-        new llvm::StoreInst(
-            fvalue,
-            ifresult,
-            cc.bb );
-    }
     llvm::BranchInst::Create( jbb, cc.bb );
 
     cc.bb = jbb;
 
-    llvm::Instruction* loaded_result = NULL;
-    
-    if( ifresult ) {
-        loaded_result = new llvm::LoadInst( ifresult, if_v, cc.bb );
-    }
+    llvm::PHINode* phi = NULL;
+    const llvm::Type* iftype = getLLVMType( iftrue->h.t );
 
-    value.assign( loaded_result, Type::getIntType() ); // TODO: Œˆ‚ß‚¤‚¿
+    if( !drop_value && iftrue->h.t != Type::getVoidType() ) {
+        int n = tvalue.size();
+        if( n == 1 ) {
+            char reg[256];
+            sprintf( reg, "phi_%d", h.id );
+
+            phi = llvm::PHINode::Create( iftype, reg, cc.bb );
+            phi->addIncoming( tvalue.getx(), tbb );
+            phi->addIncoming( fvalue.getx(), fbb );
+    
+            value.assign( phi, iftrue->h.t ); // TODO: Œˆ‚ß‚¤‚¿
+        } else {
+            for( int i = 0 ; i < n ; i++ ) {
+                char reg[256];
+                sprintf( reg, "phi_%d_%d", h.id, i );
+                
+                phi = llvm::PHINode::Create( iftype, reg, cc.bb );
+                phi->addIncoming( tvalue.getx(), tbb );
+                phi->addIncoming( fvalue.getx(), fbb );
+
+                Value av; av.assign(
+                    phi, Type::getElementType( iftrue->h.t, i ) );
+                value.add( av );
+            }
+        }
+    } else {
+        value.assign( NULL, iftrue->h.t );
+    }
 }
 void IfThenElse::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
@@ -1230,39 +1230,39 @@ void MultiExpr::encode( EncodeContext& cc, bool drop_value, Value& value )
 {
     check_empty( value );
 
-	if( v.size() == 1 ) {
-		v[0]->encode( cc, drop_value, value );
-	} else {
-		for( size_t i = 0 ; i < v.size() ; i++ ) {
-			Value v;
-			this->v[i]->encode( cc, drop_value, v );
-			value.add( v );
-		}
-	}
+    if( v.size() == 1 ) {
+        v[0]->encode( cc, drop_value, value );
+    } else {
+        for( size_t i = 0 ; i < v.size() ; i++ ) {
+            Value v;
+            this->v[i]->encode( cc, drop_value, v );
+            value.add( v );
+        }
+    }
 }
 void MultiExpr::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
-	if( v.size() == 1 ) {
-		v[0]->entype( tc, drop_value, t );
-		update_type( tc, h, v[0]->h.t );
-	} else {
-		if( t ) {
-			int n = Type::getTupleSize( t );
-			if( v.size() != 1 && n != int(v.size()) ) {
-				Addr addr;
-				if( !v.empty() ) { addr = v[0]->h.beg; }
-				throw wrong_multiple_value( addr, v.size(), n );
-			}
-		}
+    if( v.size() == 1 ) {
+        v[0]->entype( tc, drop_value, t );
+        update_type( tc, h, v[0]->h.t );
+    } else {
+        if( t ) {
+            int n = Type::getTupleSize( t );
+            if( v.size() != 1 && n != int(v.size()) ) {
+                Addr addr;
+                if( !v.empty() ) { addr = v[0]->h.beg; }
+                throw wrong_multiple_value( addr, v.size(), n );
+            }
+        }
 
-		typevec_t tv;
-		for( size_t i = 0 ; i < v.size() ; i++ ) {
-			v[i]->entype( tc, drop_value, Type::getElementType( t, int(i) ) );
-			tv.push_back( v[i]->h.t );
-		}
+        typevec_t tv;
+        for( size_t i = 0 ; i < v.size() ; i++ ) {
+            v[i]->entype( tc, drop_value, Type::getElementType( t, int(i) ) );
+            tv.push_back( v[i]->h.t );
+        }
 
-		update_type( tc, h, Type::getTupleType( tv ) );
-	}
+        update_type( tc, h, Type::getTupleType( tv ) );
+    }
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1793,7 +1793,7 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             args.push_back( r.v );
         }
         for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
-            aargs->v[i]->encode( cc, false, value ); // Žb’è
+            aargs->v[i]->encode( cc, false, value ); // TODO: Žb’è
             llvm::Value* vv = check_value_1( value );
             value.clear();
             
@@ -1807,24 +1807,24 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
 
         //std::cerr << "args: " << args.size() << std::endl;
 
-		int n = Type::getTupleSize( r.t->getReturnType() );
-		if( n == 1 ) {
-			value.assign(
-				llvm::CallInst::Create(
-					f, args.begin(), args.end(), reg, cc.bb ),
-				r.t->getReturnType() );
-		} else {
-			llvm::Value* ret = llvm::CallInst::Create(
-				f, args.begin(), args.end(), reg, cc.bb );
-			for( int i = 0 ; i < n ; i++ ) {
-				llvm::Instruction* lv = new llvm::GetResultInst( ret, i );
-				cc.bb->getInstList().push_back( lv );
+        int n = Type::getTupleSize( r.t->getReturnType() );
+        if( n == 1 ) {
+            value.assign(
+                llvm::CallInst::Create(
+                    f, args.begin(), args.end(), reg, cc.bb ),
+                r.t->getReturnType() );
+        } else {
+            llvm::Value* ret = llvm::CallInst::Create(
+                f, args.begin(), args.end(), reg, cc.bb );
+            for( int i = 0 ; i < n ; i++ ) {
+                llvm::Instruction* lv = new llvm::GetResultInst( ret, i );
+                cc.bb->getInstList().push_back( lv );
 
-				Value av;
-				av.assign( lv, Type::getElementType( r.t, i ) );
-				value.add( av );
-			}
-		}
+                Value av;
+                av.assign( lv, Type::getElementType( r.t, i ) );
+                value.add( av );
+            }
+        }
     } else if( Type::isClosure( r.t ) ) {
         char reg[256];
 
@@ -1865,7 +1865,7 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
         args.push_back( eaddr );
         for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
             aargs->v[i]->encode( cc, false, value );
-            llvm::Value* vv = check_value_1( value ); // Žb’è
+            llvm::Value* vv = check_value_1( value ); // TODO: Žb’è
             value.clear();
 
             assert( vv );
@@ -1888,24 +1888,24 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
 */        
         sprintf( reg, "ret%d", h.id );
 
-		int n = Type::getTupleSize( r.t->getReturnType() );
-		if( n == 1 ) {
-			value.assign(
-				llvm::CallInst::Create(
-					fptr, args.begin(), args.end(), reg, cc.bb ),
-				r.t->getReturnType() );
-		} else {
-			llvm::Value* ret = llvm::CallInst::Create(
-				fptr, args.begin(), args.end(), reg, cc.bb );
-			for( int i = 0 ; i < n ; i++ ) {
-				llvm::Instruction* lv = new llvm::GetResultInst( ret, i );
-				cc.bb->getInstList().push_back( lv );
+        int n = Type::getTupleSize( r.t->getReturnType() );
+        if( n == 1 ) {
+            value.assign(
+                llvm::CallInst::Create(
+                    fptr, args.begin(), args.end(), reg, cc.bb ),
+                r.t->getReturnType() );
+        } else {
+            llvm::Value* ret = llvm::CallInst::Create(
+                fptr, args.begin(), args.end(), reg, cc.bb );
+            for( int i = 0 ; i < n ; i++ ) {
+                llvm::Instruction* lv = new llvm::GetResultInst( ret, i );
+                cc.bb->getInstList().push_back( lv );
 
-				Value av;
-				av.assign( lv, Type::getElementType( r.t, i ) );
-				value.add( av );
-			}
-		}
+                Value av;
+                av.assign( lv, Type::getElementType( r.t, i ) );
+                value.add( av );
+            }
+        }
     } else {
         //std::cerr << Type::getDisplay( v.t ) << std::endl;
         assert(0);

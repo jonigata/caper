@@ -66,6 +66,7 @@ public:
 	
 	int lineno( const Addr& a ) const 
 	{
+		assert( a.file );
 		std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
 		assert( l != d_.end() );
 
@@ -78,6 +79,7 @@ public:
 	}
 	int column( const Addr& a ) const
 	{
+		assert( a.file );
 		std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
 		assert( l != d_.end() );
 
@@ -89,7 +91,6 @@ public:
 		--i;
 		return a.pos - *i;
 	}
-
 
 private:
 	std::map< Symbol*, Lines > d_;
@@ -110,13 +111,15 @@ struct CompileEnv : public boost::noncopyable {
     Symbol* gensym();
 };
 
-typedef Type* type_t;
-typedef Symbol* symbol_t;
-typedef std::vector< type_t > typevec_t;
-typedef std::map< symbol_t, type_t > symmap_t;
+////////////////////////////////////////////////////////////////
+// AST primitive types
+typedef Type*                           type_t;
+typedef Symbol*                         symbol_t;
+typedef std::vector< type_t >           typevec_t;
+typedef std::map< symbol_t, type_t >    symmap_t;
 
-class Value;
-
+////////////////////////////////////////////////////////////////
+// Header
 struct Header {
     int     id;
     Addr	beg;
@@ -170,6 +173,7 @@ struct Header {
 
 struct EncodeContext;
 struct EntypeContext;
+class Value;
 
 struct Node {
     Header h;

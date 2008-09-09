@@ -87,8 +87,10 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
 		n->encode( module.get() );
 	}
 	catch( error& e ){
-		e.lineno = env_.sm.lineno( e.addr );
-		e.column = env_.sm.column( e.addr );
+		if( e.addr.file ) {
+			e.lineno = env_.sm.lineno( e.addr );
+			e.column = env_.sm.column( e.addr );
+		}
 		throw;
 	}
 

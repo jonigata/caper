@@ -11,8 +11,9 @@ module-footer = @{
 }@
 
 class-footer = @{
-    void	encode( EncodeContext&, bool, Value& );
-    void	entype( EntypeContext&, bool, type_t );
+    void encode( EncodeContext&, bool, Value& );
+    void entype( EntypeContext&, bool, type_t );
+
 }@
 
 atom = bool, char, int, symbol_t, type_t, symmap_t;

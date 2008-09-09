@@ -34,12 +34,21 @@ void get_commandline_options(
 		}
 	}
 
-	if( state < 2 ) {
-		std::cerr << "leaf: usage: leaf input_filename output_filename"
+	if( state < 1 ) {
+		std::cerr << "leaf: usage: leaf input_filename [output_filename]"
 				  << std::endl;;
 		exit(1);
 	}
-		
+	if( state == 1 ) {
+		std::string::const_iterator b = cmdopt.infile.begin();
+		std::string::const_iterator e = cmdopt.infile.end();
+		std::string::const_iterator i = std::find( b, e, '.' );
+		if( i != cmdopt.infile.end() ) {
+			cmdopt.outfile.assign( b, i );
+			cmdopt.outfile +=  ".ll";
+		}
+		std::cerr << cmdopt.outfile << std::endl;
+	}
 }
 
 int main( int argc, char** argv )

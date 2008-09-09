@@ -50,6 +50,7 @@ public:
     static bool isComplete( Type* );
     static int getTupleSize( Type* );
     static Type* unify( Type*, Type* );
+	static bool match( Type* x, Type* y );
 
 protected:
     struct FunSig {

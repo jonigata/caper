@@ -167,8 +167,29 @@ std::string Type::getDisplay( Type* t )
                     s += ",";
                 }
             }
+			return s + "]>";
         }
-    case TAG_FUNCTION: return "<function>";
+    case TAG_FUNCTION:
+		{
+			std::string s = "<fun (";
+			Type* p = t->getArgumentType();
+			for( int i = 0 ; i < getTupleSize( p ) ; i++ ) {
+				s += getDisplay( getElementType( p, i ) );
+				if( i < getTupleSize(p) -1 ) {
+					s += ",";
+				}
+			}
+			s += "): ";
+			p = t->getReturnType();
+			for( int i = 0 ; i < getTupleSize( p ) ; i++ ) {
+				s += getDisplay( getElementType( p, i ) );
+				if( i < getTupleSize(p) -1 ) {
+					s += ",";
+				}
+			}
+			return s + ">";
+		}
+		return "<function>";
     case TAG_CLOSURE: return "<closure>";
     default:
         return "<UNKNOWN TYPE>";
@@ -248,6 +269,37 @@ Type* Type::normalize( Type* t )
         return normalize( t->elems_[0] );
     }
     return t;
+}
+
+bool Type::match( Type* x, Type* y )
+{
+	if( !x || !y ) { // どちらかがany
+		return true;
+	}
+
+	if( x->tag() != y->tag() ) {
+		return false;
+	}
+
+	if( x->tag() == TAG_TUPLE ) {
+		int n = getTupleSize( x );
+		if( n != getTupleSize( y ) ) {
+			return false;
+		}
+		for( int i = 0 ; i < n ; i++ ) {
+			if( !match( getElementType( x, i ), getElementType( y, i ) ) ) {
+				return false;
+			}
+		}
+		return true;
+	} else if( x->tag() == TAG_FUNCTION || x->tag() == TAG_CLOSURE ) {
+		return
+			match( x->getArgumentType(), y->getArgumentType() ) &&
+			match( x->getReturnType(), y->getReturnType() );
+	} else {
+		// 単純型だったら完全一致が必要
+		return x == y;
+	}
 }
 
 } // namespace leaf

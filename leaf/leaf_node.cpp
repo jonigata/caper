@@ -1317,11 +1317,6 @@ void LogicalOrElems::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    if( v.size() == 1 ) {
-        v[0]->encode( cc, false, value );
-        return;
-    }
-
     // 結果レジスタ
     char label[256];
     sprintf( label, "or_s%d_result", h.id );
@@ -1370,14 +1365,9 @@ void LogicalOrElems::encode( EncodeContext& cc, bool, Value& value )
 }
 void LogicalOrElems::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( v.size() == 1 ) {
-        v[0]->entype( tc, false, t );
-        h.t = v[0]->h.t;
-    } else {
-        check_bool_expr_type( h, t );
-        for( size_t i = 0 ; i < v.size(); i++ ) {
-            v[i]->entype( tc, false, Type::getBoolType() );
-        }
+    check_bool_expr_type( h, t );
+    for( size_t i = 0 ; i < v.size(); i++ ) {
+        v[i]->entype( tc, false, Type::getBoolType() );
     }
 }
 
@@ -1397,11 +1387,6 @@ void LogicalAnd::entype( EntypeContext& tc, bool, type_t t )
 void LogicalAndElems::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
-
-    if( v.size() == 1 ) {
-        v[0]->encode( cc, false, value );
-        return;
-    }
 
     // 結果レジスタ
     char label[256];
@@ -1450,14 +1435,9 @@ void LogicalAndElems::encode( EncodeContext& cc, bool, Value& value )
 }
 void LogicalAndElems::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( v.size() == 1 ) {
-        v[0]->entype( tc, false, t );
-        h.t = v[0]->h.t;
-    } else {
-        check_bool_expr_type( h, t );
-        for( size_t i = 0 ; i < v.size(); i++ ) {
-            v[i]->entype( tc, false, Type::getBoolType() );
-        }
+    check_bool_expr_type( h, t );
+    for( size_t i = 0 ; i < v.size(); i++ ) {
+        v[i]->entype( tc, false, Type::getBoolType() );
     }
 }
 

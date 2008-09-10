@@ -1304,6 +1304,17 @@ void Expr::entype( EntypeContext& tc, bool, type_t t )
 // LogicalOr
 void LogicalOr::encode( EncodeContext& cc, bool, Value& value )
 {
+    assert(0);
+}
+void LogicalOr::entype( EntypeContext& tc, bool, type_t t )
+{
+    assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// LogicalOr
+void LogicalOrElems::encode( EncodeContext& cc, bool, Value& value )
+{
     check_empty( value );
 
     if( v.size() == 1 ) {
@@ -1357,7 +1368,7 @@ void LogicalOr::encode( EncodeContext& cc, bool, Value& value )
         new llvm::LoadInst( orresult, label, final ),
         Type::getBoolType() );
 }
-void LogicalOr::entype( EntypeContext& tc, bool, type_t t )
+void LogicalOrElems::entype( EntypeContext& tc, bool, type_t t )
 {
     if( v.size() == 1 ) {
         v[0]->entype( tc, false, t );
@@ -1373,6 +1384,17 @@ void LogicalOr::entype( EntypeContext& tc, bool, type_t t )
 ////////////////////////////////////////////////////////////////
 // LogicalAnd
 void LogicalAnd::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void LogicalAnd::entype( EntypeContext& tc, bool, type_t t )
+{
+    assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// LogicalAndElems
+void LogicalAndElems::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
@@ -1426,7 +1448,7 @@ void LogicalAnd::encode( EncodeContext& cc, bool, Value& value )
         new llvm::LoadInst( andresult, label, final ),
         Type::getBoolType() );
 }
-void LogicalAnd::entype( EntypeContext& tc, bool, type_t t )
+void LogicalAndElems::entype( EntypeContext& tc, bool, type_t t )
 {
     if( v.size() == 1 ) {
         v[0]->entype( tc, false, t );

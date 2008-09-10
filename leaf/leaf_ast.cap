@@ -50,9 +50,11 @@ type MultiExpr = Expr*(v);
 
 type Expr = LogicalOr;
 
-type LogicalOr = LogicalAnd*(v);
+type LogicalOr = LogicalOrElems | LogicalAnd;
+type LogicalOrElems = LogicalAnd*(v);
 
-type LogicalAnd = Equality*(v);
+type LogicalAnd = LogicalAndElems | Equality;
+type LogicalAndElems = Equality*(v);
 
 type Equality = Relational | EqualityEq | EqualityNe;
 

@@ -64,6 +64,14 @@ public:
         return h( x->h, c().allocate<T>( v ) );
     }
 
+    template < class T, class U >
+    T* makeSeq2( U* x, U* y )
+    {
+        std::vector< U* > v;
+        v.push_back( x );
+        v.push_back( y );
+        return h( x->h, c().allocate<T>( v ) );
+    }
 
     template < class T, class U >
     T* append( T* x, U* y )
@@ -324,22 +332,22 @@ public:
         return append( x, y );
     }
 
-    LogicalOr* makeLogicalOr0( LogicalAnd* y )
+    LogicalOrElems* makeLogicalOrElems0( LogicalAnd* x, LogicalAnd* y )
     {
-        return makeSeq1<LogicalOr>( y );
+        return makeSeq2<LogicalOrElems>( x, y );
     }
 
-    LogicalOr* makeLogicalOr1( LogicalOr* x, LogicalAnd* y )
+    LogicalOrElems* makeLogicalOrElems1( LogicalOrElems* x, LogicalAnd* y )
     {
         return append( x, y );
     }
 
-    LogicalAnd* makeLogicalAnd0( Equality* y )
+    LogicalAndElems* makeLogicalAndElems0( Equality* x, Equality* y )
     {
-        return makeSeq1<LogicalAnd>( y );
+        return makeSeq2<LogicalAndElems>( x, y );
     }
 
-    LogicalAnd* makeLogicalAnd1( LogicalAnd* x, Equality* y )
+    LogicalAndElems* makeLogicalAndElems1( LogicalAndElems* x, Equality* y )
     {
         return append( x, y );
     }

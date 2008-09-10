@@ -195,15 +195,29 @@ Expr<leaf::Expr*>
 ////////////////////////////////////////////////////////////////
 // LogicalOr
 LogicalOr<leaf::LogicalOr*>
-	: [makeLogicalOr0] LogicalAnd(0)
-	| [makeLogicalOr1] LogicalOr(0) Or LogicalAnd(1)
+	: [identity] LogicalAnd(0)
+	| [identity] LogicalOrElems(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// LogicalOrElems
+LogicalOrElems<leaf::LogicalOrElems*>
+	: [makeLogicalOrElems0] LogicalAnd(0) Or LogicalAnd(1)
+	| [makeLogicalOrElems1] LogicalOrElems(0) Or LogicalAnd(1)
 	;
 
 ////////////////////////////////////////////////////////////////
 // LogicalAnd
 LogicalAnd<leaf::LogicalAnd*>
-	: [makeLogicalAnd0] Equality(0)
-	| [makeLogicalAnd1] LogicalAnd(0) And Equality(1)
+	: [identity] Equality(0)
+	| [identity] LogicalAndElems(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// LogicalAndElems
+LogicalAndElems<leaf::LogicalAndElems*>
+	: [makeLogicalAndElems0] Equality(0) And Equality(1)
+	| [makeLogicalAndElems1] LogicalAndElems(0) And Equality(1)
 	;
 
 ////////////////////////////////////////////////////////////////

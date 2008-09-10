@@ -21,24 +21,24 @@ namespace leaf {
 
 class Compiler : public boost::noncopyable {
 public:
-	Compiler(){ env_.idseed = 1; }
-	~Compiler(){}
+    Compiler(){ env_.idseed = 1; }
+    ~Compiler(){}
 
-	// filenameはソースのidのようなもの、オープンはしない
-	template < class IIt >
-	Node* read( const std::string& filename, IIt b, IIt e )
-	{
-		return read_internal( filename, b, e );
-	}
+    // filenameはソースのidのようなもの、オープンはしない
+    template < class IIt >
+    Node* read( const std::string& filename, IIt b, IIt e )
+    {
+        return read_internal( filename, b, e );
+    }
 
-	void compile( Node* n, std::ostream& os )
-	{
-		compile_internal( n, os );
-	}
+    void compile( Node* n, std::ostream& os )
+    {
+        compile_internal( n, os );
+    }
 
 public:
-	////////////////////////////////////////////////////////////////
-	// as semantic action
+    ////////////////////////////////////////////////////////////////
+    // as semantic action
     template < class T >
     T* h( T* p )
     {
@@ -54,7 +54,7 @@ public:
         return p;
     }
 
-	heap_cage& c() { return env_.cage; }
+    heap_cage& c() { return env_.cage; }
 
     template < class T, class U >
     T* makeSeq1( U* x )
@@ -106,7 +106,7 @@ public:
     }
 
     Statements* makeStatements1( Statements* ss,
-								 Statement* s )
+                                 Statement* s )
     {
         return append( ss, s );
     }
@@ -131,15 +131,15 @@ public:
 
         return h( i->h, c().allocate<Require>( i, m ) );
     }
-	
+    
     TopLevelFunDecl* makeTopLevelFunDecl( FunDecl* f )
     {
-        return c().allocate<TopLevelFunDecl>( f );
+        return h( f->h, c().allocate<TopLevelFunDecl>( f ) );
     }
 
     TopLevelFunDef* makeTopLevelFunDef( FunDef* f )
     {
-        return c().allocate<TopLevelFunDef>( f );
+        return h( f->h, c().allocate<TopLevelFunDef>( f ) );
     }
 
     FunDecl* makeFunDecl( FunSig* s )
@@ -243,8 +243,8 @@ public:
     }
 
     IfThenElse* makeIfThenElse1( Expr* cond,
-								 Block* t,
-								 Statement* ite )
+                                 Block* t,
+                                 Statement* ite )
     {
         Block* else_clause =
             h( ite->h, c().allocate<Block>(
@@ -522,54 +522,55 @@ public:
     }
 
 private:
-	template < class IIt >
-	Node* read_internal( const std::string& filename, IIt b, IIt e )
-	{
-		// ファイル名のintern
-		Symbol* file = env_.intern( filename );
+    template < class IIt >
+    Node* read_internal( const std::string& filename, IIt b, IIt e )
+    {
+        // ファイル名のintern
+        Symbol* file = env_.intern( filename );
 
-		// スキャナ
-		Scanner< IIt > scanner( env_, file, b, e );
+        // スキャナ
+        Scanner< IIt > scanner( env_, file, b, e );
 
-		// パーサ
-		Parser< Node*, Compiler > parser( *this );
+        // パーサ
+        Parser< Node*, Compiler > parser( *this );
 
-		// リードループ
-		try {
-			Token token = token_eof;
-			Node* v = NULL;
-			for(;;) {
-				token = scanner.get( v );
-				if( parser.post( token, v ) ) { break; }
+        // リードループ
+        try {
+            Token token = token_eof;
+            Node* v = NULL;
+            for(;;) {
+                token = scanner.get( v );
+                if( parser.post( token, v ) ) { break; }
 
-				// TODO
-				if( parser.error() ) {
-					throw leaf::syntax_error(
-						scanner.addr(),
-						token_representation( token, v ) );
-				}
-			}
+                // TODO
+                if( parser.error() ) {
+                    throw leaf::syntax_error(
+                        scanner.addr(),
+                        token_representation( token, v ) );
+                }
+            }
 
-			if( parser.accept( v ) ) {
-				return v;
-			}
-		}
-		catch( error& e ) {
-			if( e.addr.empty() ) { e.addr = scanner.addr(); }
-			if( e.lineno < 0 ) { e.lineno = env_.sm.lineno( e.addr ); }
-			if( e.column < 0 ) { e.column = env_.sm.column( e.addr ); }
-			throw;
-		}
+            if( parser.accept( v ) ) {
+                return v;
+            }
+        }
+        catch( error& e ) {
+            if( e.addr.empty() ) { e.addr = scanner.addr(); }
+            if( e.filename == "" ) { e.filename = file->s; }
+            if( e.lineno < 0 ) { e.lineno = env_.sm.lineno( e.addr ); }
+            if( e.column < 0 ) { e.column = env_.sm.column( e.addr ); }
+            throw;
+        }
 
-		assert(0);
-		return NULL;
-	}
+        assert(0);
+        return NULL;
+    }
 
-	void compile_internal( Node* n, std::ostream& os );
-	std::string token_representation( Token token, Node* v );
+    void compile_internal( Node* n, std::ostream& os );
+    std::string token_representation( Token token, Node* v );
 
 private:
-	CompileEnv	env_;
+    CompileEnv  env_;
 
 };
 

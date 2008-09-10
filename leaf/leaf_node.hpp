@@ -34,81 +34,87 @@ struct Symbol : public boost::noncopyable {
 ////////////////////////////////////////////////////////////////
 // Addr
 struct Addr {
-	Addr() { file = NULL; pos = -1; }
-	Addr( Symbol* f, int p ) { file = f; pos = p; }
-	~Addr() {}
-	Addr( const Addr& a ) : file( a.file ), pos( a.pos ) {}
-	
-	bool empty() const { return file == NULL && pos < 0; }
+    Addr() { file = NULL; pos = -1; }
+    Addr( Symbol* f, int p ) { file = f; pos = p; }
+    ~Addr() {}
+    Addr( const Addr& a ) : file( a.file ), pos( a.pos ) {}
+    
+    bool empty() const { return file == NULL && pos < 0; }
 
-	Symbol*	file;
-	int		pos;
+    Symbol* file;
+    int     pos;
 };
 
 inline
 std::ostream& operator<<( std::ostream& os, const Addr& a )
 {
-	os << "Addr( " << a.file->s << ", " << a.pos << " )";
-	return os;
+    os << "Addr( ";
+    if( a.file ) {
+        os << a.file->s;
+    } else {
+        os << "NULL";
+    }
+    os << ", " << a.pos << " )";
+    return os;
 }
 
 ////////////////////////////////////////////////////////////////
 // SrcMarker
 class SrcMarker : public boost::noncopyable {
 public:
-	struct Lines {
-		std::vector< int > v;
-	};
+    struct Lines {
+        std::vector< int > v;
+    };
 
 public:
-	SrcMarker() {}
+    SrcMarker() {}
 
-	Lines& get_lines( Symbol* file ) { return d_[file]; }
-	
-	int lineno( const Addr& a ) const 
-	{
-		assert( a.file );
-		std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
-		assert( l != d_.end() );
+    Lines& get_lines( Symbol* file ) { return d_[file]; }
+    
+    int lineno( const Addr& a ) const 
+    {
+        assert( a.file );
+        std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
+        assert( l != d_.end() );
 
-		const std::vector< int >& lines = (*l).second.v;
+        const std::vector< int >& lines = (*l).second.v;
 
-		std::vector<int>::const_iterator i =
-			std::upper_bound( lines.begin(), lines.end(), a.pos );
-		assert( i != lines.begin() );
-		return int( i - lines.begin() );
-	}
-	int column( const Addr& a ) const
-	{
-		assert( a.file );
-		std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
-		assert( l != d_.end() );
+        std::vector<int>::const_iterator i =
+            std::upper_bound( lines.begin(), lines.end(), a.pos );
+        assert( i != lines.begin() );
+        return int( i - lines.begin() );
+    }
+    int column( const Addr& a ) const
+    {
+        assert( a.file );
+        std::map< Symbol*, Lines >::const_iterator l = d_.find( a.file );
+        assert( l != d_.end() );
 
-		const std::vector< int >& lines = (*l).second.v;
+        const std::vector< int >& lines = (*l).second.v;
 
-		std::vector<int>::const_iterator i =
-			std::upper_bound( lines.begin(), lines.end(), a.pos );
-		assert( i != lines.begin() );
-		--i;
-		return a.pos - *i;
-	}
+        std::vector<int>::const_iterator i =
+            std::upper_bound( lines.begin(), lines.end(), a.pos );
+        assert( i != lines.begin() );
+        --i;
+        return a.pos - *i;
+    }
 
 private:
-	std::map< Symbol*, Lines > d_;
+    std::map< Symbol*, Lines > d_;
 
 };
 
 ////////////////////////////////////////////////////////////////
 // CompileEnv
 struct CompileEnv : public boost::noncopyable {
-	typedef std::map< std::string, leaf::Symbol* > symdic_type;
+    typedef std::map< std::string, leaf::Symbol* > symdic_type;
 
-	heap_cage		cage;
-	symdic_type		symdic;
-	int				idseed;
-	SrcMarker		sm;
+    heap_cage       cage;
+    symdic_type     symdic;
+    int             idseed;
+    SrcMarker       sm;
 
-	Symbol* intern( const std::string& s );
+    Symbol* intern( const std::string& s );
     Symbol* gensym();
 };
 
@@ -123,7 +129,7 @@ typedef std::map< symbol_t, type_t >    symmap_t;
 // Header
 struct Header {
     int     id;
-    Addr	beg;
+    Addr    beg;
     Addr    end;
     type_t  t;
 
@@ -135,40 +141,40 @@ struct Header {
 
     Header operator+( const Header& h ) const
     {
-		assert( beg.file == end.file );
-		assert( h.beg.file == h.end.file );
+        assert( beg.file == end.file );
+        assert( h.beg.file == h.end.file );
 
-		if( beg.file && !h.beg.file ) {
-			return *this;
-		} else if( !beg.file && h.beg.file ) {
-			return h;
-		} else if( !beg.file && !h.beg.file ) {
-			return *this;
-		} else {
-			assert( beg.file == h.beg.file );
-			Header r( *this );
-			r.beg.pos = (std::min)( beg.pos, h.beg.pos );
-			r.end.pos = (std::max)( end.pos, h.end.pos );
-			return r;
-		}
+        if( beg.file && !h.beg.file ) {
+            return *this;
+        } else if( !beg.file && h.beg.file ) {
+            return h;
+        } else if( !beg.file && !h.beg.file ) {
+            return *this;
+        } else {
+            assert( beg.file == h.beg.file );
+            Header r( *this );
+            r.beg.pos = (std::min)( beg.pos, h.beg.pos );
+            r.end.pos = (std::max)( end.pos, h.end.pos );
+            return r;
+        }
     }
     Header& operator+=( const Header& h )
     {
-		assert( beg.file == end.file );
-		assert( h.beg.file == h.end.file );
+        assert( beg.file == end.file );
+        assert( h.beg.file == h.end.file );
 
-		if( beg.file && !h.beg.file ) {
-			// do nothing
-		} else if( !beg.file && h.beg.file ) {
-			*this = h;
-		} else if( !beg.file && !h.beg.file ) {
-			// do nothing
-		} else {
-			assert( beg.file == h.beg.file );
-			beg.pos = (std::min)( beg.pos, h.beg.pos );
-			end.pos = (std::max)( end.pos, h.end.pos );
-		}
-		return *this;
+        if( beg.file && !h.beg.file ) {
+            // do nothing
+        } else if( !beg.file && h.beg.file ) {
+            *this = h;
+        } else if( !beg.file && !h.beg.file ) {
+            // do nothing
+        } else {
+            assert( beg.file == h.beg.file );
+            beg.pos = (std::min)( beg.pos, h.beg.pos );
+            end.pos = (std::max)( end.pos, h.end.pos );
+        }
+        return *this;
     }
 };
 

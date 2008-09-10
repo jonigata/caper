@@ -556,12 +556,6 @@ encode_function(
                     Reference( i, (*env_iterator).second, symmap_t() ) );
                 env_iterator++;
             } else {
-                std::cerr << "arg: "
-                          << ("arg_" + (*arg_iterator)->name->s->s)
-                          << " => "
-                          << Type::getDisplay((*arg_iterator)->h.t)
-                          << std::endl;
-
                 i->setName( "arg_" + (*arg_iterator)->name->s->s );
                 cc.env.bind(
                     (*arg_iterator)->name->s,
@@ -668,6 +662,10 @@ entype_function(
     if( tc.env.modified() ) {
         tc.env.fix();
         goto retry;
+    }
+
+    if( !body->h.t ) {
+        throw noreturn( h.end, Type::getDisplay( rttype ) );
     }
 
     // Ž©—R•Ï”
@@ -1310,7 +1308,6 @@ void LogicalOr::encode( EncodeContext& cc, bool, Value& value )
 
     if( v.size() == 1 ) {
         v[0]->encode( cc, false, value );
-        std::cerr << "logicalor: " << value << std::endl;
         return;
     }
 
@@ -1381,7 +1378,6 @@ void LogicalAnd::encode( EncodeContext& cc, bool, Value& value )
 
     if( v.size() == 1 ) {
         v[0]->encode( cc, false, value );
-        std::cerr << "logicaland: " << value << std::endl;
         return;
     }
 
@@ -1667,7 +1663,6 @@ void LiteralInteger::encode( EncodeContext& cc, bool, Value& value )
     value.assign(
         llvm::ConstantInt::get( llvm::Type::Int32Ty, this->value ),
         Type::getIntType() );
-    std::cerr << "literalinteger: " << value << std::endl;
 }
 void LiteralInteger::entype( EntypeContext& tc, bool, type_t t )
 {

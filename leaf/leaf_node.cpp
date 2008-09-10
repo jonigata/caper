@@ -556,11 +556,11 @@ encode_function(
                     Reference( i, (*env_iterator).second, symmap_t() ) );
                 env_iterator++;
             } else {
-				std::cerr << "arg: "
-						  << ("arg_" + (*arg_iterator)->name->s->s)
-						  << " => "
-						  << Type::getDisplay((*arg_iterator)->h.t)
-						  << std::endl;
+                std::cerr << "arg: "
+                          << ("arg_" + (*arg_iterator)->name->s->s)
+                          << " => "
+                          << Type::getDisplay((*arg_iterator)->h.t)
+                          << std::endl;
 
                 i->setName( "arg_" + (*arg_iterator)->name->s->s );
                 cc.env.bind(
@@ -590,19 +590,19 @@ encode_function(
         if( value.size() == 1 ) {
             llvm::ReturnInst::Create( value.getx(), cc.bb );
         } else {
-			std::cerr << value << std::endl;
-			std::vector< const llvm::Type* > tv;
+            std::cerr << value << std::endl;
+            std::vector< const llvm::Type* > tv;
             for( int i = 0 ; i < value.size() ; i++ ) {
                 tv.push_back( getLLVMType( value[i].gett() ) );
             }
-			llvm::Type* return_type = llvm::StructType::get( tv );
+            llvm::Type* return_type = llvm::StructType::get( tv );
 
-			llvm::Value *undef = llvm::UndefValue::get( return_type ); 
+            llvm::Value *undef = llvm::UndefValue::get( return_type ); 
             for( int i = 0 ; i < value.size() ; i++ ) {
-				char reg[256];
-				sprintf( reg, "insval%d_%d", h.id, i );
-				llvm::InsertValueInst::Create(
-					undef, value[i].getx(), i, reg, cc.bb ) ;
+                char reg[256];
+                sprintf( reg, "insval%d_%d", h.id, i );
+                llvm::InsertValueInst::Create(
+                    undef, value[i].getx(), i, reg, cc.bb ) ;
             }
 
             llvm::ReturnInst::Create( undef, cc.bb );
@@ -682,6 +682,15 @@ entype_function(
         }
     }
     //std::cerr << std::endl;
+
+    // 引数の型をアップデート
+    for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
+        type_t t = tc.env.find( formal_args->v[i]->name->s );
+        if( !t ) {
+            // TODO: error
+        }
+        formal_args->v[i]->h.t = t;
+    }
 
     tc.env.pop();
 }
@@ -1252,7 +1261,7 @@ void MultiExpr::encode( EncodeContext& cc, bool drop_value, Value& value )
         for( size_t i = 0 ; i < v.size() ; i++ ) {
             Value v;
             this->v[i]->encode( cc, drop_value, v );
-			std::cerr << "me: " << v << std::endl;
+            std::cerr << "me: " << v << std::endl;
             value.add( v );
         }
     }
@@ -1301,7 +1310,7 @@ void LogicalOr::encode( EncodeContext& cc, bool, Value& value )
 
     if( v.size() == 1 ) {
         v[0]->encode( cc, false, value );
-		std::cerr << "logicalor: " << value << std::endl;
+        std::cerr << "logicalor: " << value << std::endl;
         return;
     }
 
@@ -1372,7 +1381,7 @@ void LogicalAnd::encode( EncodeContext& cc, bool, Value& value )
 
     if( v.size() == 1 ) {
         v[0]->encode( cc, false, value );
-		std::cerr << "logicaland: " << value << std::endl;
+        std::cerr << "logicaland: " << value << std::endl;
         return;
     }
 
@@ -1658,7 +1667,7 @@ void LiteralInteger::encode( EncodeContext& cc, bool, Value& value )
     value.assign(
         llvm::ConstantInt::get( llvm::Type::Int32Ty, this->value ),
         Type::getIntType() );
-	std::cerr << "literalinteger: " << value << std::endl;
+    std::cerr << "literalinteger: " << value << std::endl;
 }
 void LiteralInteger::entype( EntypeContext& tc, bool, type_t t )
 {
@@ -1697,9 +1706,9 @@ void VarRef::encode( EncodeContext& cc, bool, Value& value )
         //cc.print( std::cerr );
         throw no_such_variable( h.beg, name->s->s );
     }
-	if( !r.t ) {
-		throw ambiguous_type( h.beg, name->s->s );
-	}
+    if( !r.t ) {
+        throw ambiguous_type( h.beg, name->s->s );
+    }
     value.assign( r.v, r.t );
 }
 void VarRef::entype( EntypeContext& tc, bool, type_t t )
@@ -1715,7 +1724,7 @@ void VarRef::entype( EntypeContext& tc, bool, type_t t )
                     h.beg, Type::getDisplay( vt ), Type::getDisplay( t ) );
             }
         }
-		tc.env.update( name->s, vt );
+        tc.env.update( name->s, vt );
         update_type( tc, h, vt );
     } else {
         // 変数の型がまだ決まってない
@@ -1843,11 +1852,11 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             for( int i = 0 ; i < n ; i++ ) {
                 sprintf( reg, "ret%d_%d", h.id, i );
                 llvm::Instruction* lv = llvm::ExtractValueInst::Create(
-					ret, i, reg, cc.bb );
+                    ret, i, reg, cc.bb );
 
                 Value av;
                 av.assign( lv, Type::getElementType( r.t, i ) );
-				std::cerr << "av: " << av << std::endl;
+                std::cerr << "av: " << av << std::endl;
                 value.add( av );
             }
         }
@@ -1926,7 +1935,7 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             for( int i = 0 ; i < n ; i++ ) {
                 sprintf( reg, "ret%d_%d", h.id, i );
                 llvm::Instruction* lv = llvm::ExtractValueInst::Create(
-					ret, i, reg, cc.bb );
+                    ret, i, reg, cc.bb );
 
                 Value av;
                 av.assign( lv, Type::getElementType( r.t, i ) );

@@ -16,6 +16,7 @@ public:
     Addr		addr;
 
     std::string message;
+	std::string	filename;
     int         lineno;
     int         column;
 
@@ -248,6 +249,17 @@ public:
         set_message( ss.str() );
     }
     ~wrong_multiple_value() throw () {}
+};
+
+class ambiguous_type : public error {
+public:
+    ambiguous_type( const Addr& a, const std::string& n ) : error(a)
+    {
+        std::stringstream ss;
+        ss << "ambigous type: variable " << n;
+        set_message( ss.str() );
+    }
+    ~ambiguous_type() throw () {}
 };
 
 } // namespace leaf

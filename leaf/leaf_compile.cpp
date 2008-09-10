@@ -88,6 +88,7 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
 	}
 	catch( error& e ){
 		if( e.addr.file ) {
+			e.filename = e.addr.file->s;
 			e.lineno = env_.sm.lineno( e.addr );
 			e.column = env_.sm.column( e.addr );
 		}

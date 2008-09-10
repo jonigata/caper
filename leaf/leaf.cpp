@@ -91,7 +91,7 @@ int main( int argc, char** argv )
 		} else {
 			std::cerr << "leaf: " 
 					  << e.what()
-					  << "; file: " << e.addr.file->s
+					  << "; file: " << e.filename
 					  << ", line: " << e.lineno
 					  << ", column: " << e.column
 					  << std::endl;

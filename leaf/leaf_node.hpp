@@ -37,6 +37,7 @@ struct Addr {
 	Addr() { file = NULL; pos = -1; }
 	Addr( Symbol* f, int p ) { file = f; pos = p; }
 	~Addr() {}
+	Addr( const Addr& a ) : file( a.file ), pos( a.pos ) {}
 	
 	bool empty() const { return file == NULL && pos < 0; }
 

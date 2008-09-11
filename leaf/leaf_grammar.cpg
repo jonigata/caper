@@ -3,7 +3,7 @@
 %token LiteralInteger<leaf::LiteralInteger*>;
 %token LiteralChar<leaf::LiteralChar*>;
 %token Identifier<leaf::Identifier*>;
-%token Var Fun If Else;
+%token Var Fun Struct If Else;
 %token Add Sub Mul Div Assign LPar RPar LBra RBra Comma Semicolon Colon;
 %token Lt Gt Le Ge Eq Ne Not And Or At;
 %token BitAnd BitOr;
@@ -31,6 +31,7 @@ TopElem<leaf::TopElem*>
 	: [identity] Require(0)
 	| [identity] TopLevelFunDecl(0)
 	| [identity] TopLevelFunDef(0)
+	| [identity] TopLevelStructDef(0)
 	;	
 
 ////////////////////////////////////////////////////////////////
@@ -52,6 +53,12 @@ TopLevelFunDef<leaf::TopLevelFunDef*>
 	;
 
 ////////////////////////////////////////////////////////////////
+// TopLevelStructDef
+TopLevelStructDef<leaf::TopLevelStructDef*>
+	: [makeTopLevelStructDef] StructDef(0)
+	;
+
+////////////////////////////////////////////////////////////////
 // Block
 Block<leaf::Block*>
 	: [makeBlock] LBra Statements(0) RBra
@@ -67,6 +74,7 @@ Statements<leaf::Statements*>
 Statement<leaf::Statement*>
 	: [identity] FunDecl(0)
 	| [identity] FunDef(0)
+	| [identity] StructDef(0)
 	| [identity] VarDecl(0) Semicolon
 	| [identity] IfThenElse(0)
 	| [identity] MultiExpr(0) Semicolon
@@ -115,6 +123,25 @@ FormalArg<leaf::FormalArg*>
 	;
 
 ////////////////////////////////////////////////////////////////
+// StructDef
+StructDef<leaf::StructDef*>
+	: [makeStructDef] Struct Identifier(0) LBra Slots(1) RBra Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
+// Slots
+Slots<leaf::Slots*>
+	: [makeSlots0] Slot(0)
+	| [makeSlots1] Slots(0) Slot(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// Slot
+Slot<leaf::Slot*>
+	: [makeSlot] FormalArg(0) Semicolon
+	;
+
+////////////////////////////////////////////////////////////////
 // VarDecl
 VarDecl<leaf::VarDecl*>
 	: [makeVarDecl] Var VarDeclElems(0) Assign MultiExpr(1)
@@ -145,9 +172,16 @@ IfThenElse<leaf::IfThenElse*>
 ////////////////////////////////////////////////////////////////
 // TypeExpr
 TypeExpr<leaf::TypeExpr*>
-	: [identity] SimpleType(0)
+	: [identity] NamedType(0)
+	| [identity] SimpleType(0)
 	| [identity] FunctionType(0)
 	| [identity] LPar Types(0) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+// NamedType
+NamedType<leaf::NamedType*>
+	: [makeNamedType] Identifier(0)
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -275,6 +309,7 @@ PrimExpr<leaf::PrimExpr*>
 	| [identity] LiteralChar(0)
 	| [makeVarRef] Identifier(0)
 	| [identity] FunCall(0)
+	| [identity] LiteralStruct(0)
 	| [makeParenthized] LPar MultiExpr(0) RPar
 	| [identity] Lambda(0)
 	;
@@ -288,6 +323,25 @@ FunCall<leaf::FunCall*>
 	| [badActualArgs3] Identifier LPar ActualArgs RBra
 	| [makeFunCall0] Identifier(0) LPar RPar
 	| [makeFunCall1] Identifier(0) LPar ActualArgs(1) RPar
+	;
+
+////////////////////////////////////////////////////////////////
+// LiteralStruct
+LiteralStruct<leaf::LiteralStruct*>
+	: [makeLiteralStruct] Identifier(0) LBra LiteralSlots(1) RBra
+	;
+
+////////////////////////////////////////////////////////////////
+// LiteralSlots
+LiteralSlots<leaf::LiteralSlots*>
+	: [makeLiteralSlots0]
+	| [makeLiteralSlots1] LiteralSlots(0) LiteralSlot(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// LiteralSlot
+LiteralSlot<leaf::LiteralSlot*>
+	: [makeLiteralSlot] Identifier(0) Assign MultiExpr(1) Semicolon
 	;
 
 ////////////////////////////////////////////////////////////////

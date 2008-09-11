@@ -81,21 +81,21 @@ public:
         return x;
     }
 
-	type_t getType( TypeExpr* t )
-	{
-		if( TypeRef* tt = dynamic_cast< TypeRef* >( t ) ) {
-			return tt->t;
-		}
-		if( Types* tt = dynamic_cast< Types* >( t ) ) {
-			std::vector< type_t > v;
-			for( size_t i = 0 ; i < tt->v.size() ; i++ ) {
-				v.push_back( getType( tt->v[i] ) );
-			}
-			return Type::getTupleType( v );
-		}
-		assert(0);
-		return NULL;
-	}
+    type_t getType( TypeExpr* t )
+    {
+        if( TypeRef* tt = dynamic_cast< TypeRef* >( t ) ) {
+            return tt->t;
+        }
+        if( Types* tt = dynamic_cast< Types* >( t ) ) {
+            std::vector< type_t > v;
+            for( size_t i = 0 ; i < tt->v.size() ; i++ ) {
+                v.push_back( getType( tt->v[i] ) );
+            }
+            return Type::getTupleType( v );
+        }
+        assert(0);
+        return NULL;
+    }
 
     void syntax_error() {}
     void stack_overflow(){}
@@ -166,6 +166,11 @@ public:
         return h( f->h, c().allocate<TopLevelFunDef>( f ) );
     }
 
+    TopLevelStructDef* makeTopLevelStructDef( StructDef* f )
+    {
+        return h( f->h, c().allocate<TopLevelStructDef>( f ) );
+    }
+
     FunDecl* makeFunDecl( FunSig* s )
     {
         return h( s->h, c().allocate<FunDecl>( s ) );
@@ -190,6 +195,26 @@ public:
     {
         return h( i->h + fa->h + t->h,
                   c().allocate<FunSig>( i, fa, t ) );
+    }
+
+    StructDef* makeStructDef( Identifier* s, Slots* b )
+    {
+        return h( s->h + b->h, c().allocate<StructDef>( s, b ) );
+    }
+
+    Slots* makeSlots0( Slot* y )
+    {
+        return makeSeq1<Slots>( y );
+    }
+
+    Slots* makeSlots1( Slots* x, Slot* y )
+    {
+        return append( x, y );
+    }
+
+    Slot* makeSlot( FormalArg* fa )
+    {
+        return h( fa->h, c().allocate<Slot>( fa ) );
     }
 
     FormalArgs* makeFormalArgs0()
@@ -252,7 +277,7 @@ public:
     }
 
     VarDeclElem* makeVarDeclIdentifier1( Identifier* i,
-										 TypeExpr* t )
+                                         TypeExpr* t )
     {
         return h( i->h + t->h, c().allocate<VarDeclIdentifier>(
                       i, t ) );
@@ -276,6 +301,11 @@ public:
         
         return h( cond->h + t->h + ite->h,
                   c().allocate<IfThenElse>( cond, t, else_clause ) );
+    }
+
+    NamedType* makeNamedType( Identifier* n )
+    {
+        return h( n->h, c().allocate<NamedType>( n ) );
     }
 
     TypeRef* makeTypeVoid()
@@ -309,8 +339,8 @@ public:
         return h( atype->h + rtype->h,
                   c().allocate<TypeRef>(
                       Type::getFunctionType(
-						  getType( rtype ),
-						  getType( atype ) ) ) );
+                          getType( rtype ),
+                          getType( atype ) ) ) );
     }
 
     Types* makeTypes0()
@@ -432,6 +462,27 @@ public:
     {
         return h( func->h + aargs->h,
                   c().allocate<FunCall>( func, aargs ) );
+    }
+
+    LiteralStruct* makeLiteralStruct( Identifier* name, LiteralSlots* slots )
+    {
+        return h( slots->h, c().allocate<LiteralStruct>( name, slots ) );
+    }
+
+    LiteralSlots* makeLiteralSlots0()
+    {
+        return h( c().allocate<LiteralSlots>() );
+    }
+
+    LiteralSlots* makeLiteralSlots1( LiteralSlots* x, LiteralSlot* y )
+    {
+        return append( x, y );
+    }
+
+    LiteralSlot* makeLiteralSlot( Identifier* field, MultiExpr* data )
+    {
+        return h( field->h + data->h, c().allocate<LiteralSlot>(
+                      field, data ) );
     }
 
     Lambda* tt(){ return NULL; }

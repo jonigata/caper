@@ -21,11 +21,23 @@ atom = bool, char, int, symbol_t, type_t, symmap_t;
 type Module = TopElems(topelems);
 
 type TopElems = TopElem*(v);
-type TopElem = Require | TopLevelFunDecl | TopLevelFunDef;
+type TopElem = Require | TopLevelFunDecl | TopLevelFunDef | TopLevelStructDef;
 
 type Require = Identifier(name), Module(module);
 type TopLevelFunDecl = FunDecl(fundecl);
 type TopLevelFunDef = FunDef(fundef);
+type TopLevelStructDef = StructDef(structdef);
+
+type Statements = Statement*(v);
+type Statement = FunDecl | FunDef | StructDef |
+				 VarDecl | IfThenElse | MultiExpr;
+
+type FunDecl = FunSig(sig);
+type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
+type StructDef = Identifier(name), Slots(slots);
+
+type Slots = Slot*(v);
+type Slot = FormalArg(formalarg);
 
 type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
@@ -33,13 +45,7 @@ type FormalArg = Identifier(name), TypeExpr(t);
 
 type Block = Statements(statements);
 
-type Statements = Statement*(v);
-type Statement = FunDecl | FunDef | VarDecl | IfThenElse | MultiExpr;
-
-type FunDecl = FunSig(sig);
-type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
-
-type VarDecl = VarDeclElems(varelems), MultiExpr(value);
+type VarDecl = VarDeclElems(varelems), MultiExpr(data);
 type VarDeclElem = VarDeclElems | VarDeclIdentifier;
 type VarDeclElems = VarDeclElem*(v);
 type VarDeclIdentifier = Identifier(name), TypeExpr(t);
@@ -82,13 +88,14 @@ type CastExpr = Cast | PrimExpr;
 type Cast = PrimExpr(expr), TypeExpr(t);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
-              | VarRef | Parenthized | FunCall | Lambda;
-type LiteralBoolean = bool(value);
-type LiteralInteger = int(value);
-type LiteralChar = char(value);
+              | VarRef | Parenthized | FunCall | LiteralStruct | Lambda;
+type LiteralBoolean = bool(data);
+type LiteralInteger = int(data);
+type LiteralChar = char(data);
 type VarRef = Identifier(name);
 type Parenthized = MultiExpr(exprs);
 type FunCall = Identifier(func), ActualArgs(aargs);
+type LiteralStruct = Identifier(name), LiteralSlots(slots);
 type Lambda = symbol_t(name),
 			  FormalArgs(fargs), TypeExpr(result_type), Block(body),
 			  symmap_t(freevars);
@@ -96,8 +103,12 @@ type Lambda = symbol_t(name),
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);
 
-type TypeExpr = Types | TypeRef;
+type LiteralSlots = LiteralSlot*(v);
+type LiteralSlot = Identifier(slot), MultiExpr(data);
+
+type TypeExpr = Types | TypeRef | NamedType;
 type Types = TypeExpr*(v);
 type TypeRef = type_t(t);
+type NamedType = Identifier(name);
 
 type Identifier = symbol_t(s);

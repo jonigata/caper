@@ -237,6 +237,7 @@ public:
     llvm::Value* getx() const { return x_; }
     type_t gett() const { return t_; }
     const std::vector< Value >& getv() const { return v_; }
+	void sett( type_t t ) { t_ = t; }
 
     void assign( llvm::Value* x, type_t t ) { x_ = x; t_ = t; }
     void assign( const std::vector< Value >& v ) { v_ = v; }
@@ -402,7 +403,6 @@ void entype_int_binary_arithmetic( EntypeContext& te, T& x )
     update_type( te, x.h, Type::getIntType() );
 }
 
-inline
 const llvm::Type* getLLVMType( type_t t, bool add_env = false )
 {
     assert( t );
@@ -490,7 +490,6 @@ formalargs_to_type( FormalArgs* formalargs )
 	return Type::getTupleType( v );
 }
 
-inline
 void freevars_to_typevec( const symmap_t& freevars, typevec_t& v )
 {
     for( symmap_t::const_iterator i = freevars.begin() ;
@@ -500,7 +499,7 @@ void freevars_to_typevec( const symmap_t& freevars, typevec_t& v )
     }
 }
 
-inline llvm::Function*
+llvm::Function*
 encode_function(
     EncodeContext&  cc,
     bool,
@@ -593,7 +592,6 @@ encode_function(
         if( value.size() == 1 ) {
             llvm::ReturnInst::Create( value.getx(), cc.bb );
         } else {
-            std::cerr << value << std::endl;
             std::vector< const llvm::Type* > tv;
             for( int i = 0 ; i < value.size() ; i++ ) {
                 tv.push_back( getLLVMType( value[i].gett() ) );
@@ -618,7 +616,7 @@ encode_function(
     return f;
 }
 
-inline void
+void
 entype_function(
     EntypeContext&  tc,
     bool,
@@ -729,6 +727,30 @@ type_t make_tuple_tree_from_vardeclelems( VarDeclElems* f )
     }
 
     return Type::getTupleType( v );
+}
+
+void encode_vardecl( EncodeContext& cc, VarDeclElem* f, const Value& a )
+{
+    if( VarDeclElems* fv = dynamic_cast<VarDeclElems*>(f) ) {
+        if( a.size() == 1 ) {
+            encode_vardecl( cc, fv->v[0], a );
+        } else {
+            for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
+                encode_vardecl( cc, fv->v[i], a[i] );
+            }
+        }
+        return;
+    }
+
+    if( VarDeclIdentifier* fi = dynamic_cast<VarDeclIdentifier*>(f) ) {
+        cc.env.bind(
+            fi->name->s, Reference( a.getx(), a.gett(), symmap_t() ) );
+		std::cerr << "bind: " << fi->name->s->s << " => "
+				  << Type::getDisplay( a.gett() ) << ": " << a << std::endl;
+        return;
+    }
+
+    assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1000,37 +1022,11 @@ void FormalArg::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // VarDecl
-void foo( EncodeContext& cc, VarDeclElem* f, const Value& a )
-{
-    VarDeclElems* fv = dynamic_cast<VarDeclElems*>(f);
-    if( fv ) {
-        if( a.size() == 1 ) {
-            foo( cc, fv->v[0], a );
-        } else {
-            for( size_t i = 0 ; i < fv->v.size() ; i++ ) {
-                foo( cc, fv->v[i], a[i] );
-            }
-        }
-        return;
-    }
-
-    VarDeclIdentifier* fi = dynamic_cast<VarDeclIdentifier*>(f);
-    if( fi ) {
-        cc.env.bind(
-            fi->name->s, Reference( a.getx(), a.gett(), symmap_t() ) );
-        return;
-    }
-
-    assert(0);
-}
-
 void VarDecl::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
-
     this->value->encode( cc, false, value );
-
-    foo( cc, this->varelems, value );
+    encode_vardecl( cc, this->varelems, value );
     value.clear();
 }
 void VarDecl::entype( EntypeContext& tc, bool drop_value, type_t )
@@ -1262,10 +1258,10 @@ void MultiExpr::encode( EncodeContext& cc, bool drop_value, Value& value )
     if( v.size() == 1 ) {
         v[0]->encode( cc, drop_value, value );
     } else {
+		value.sett( h.t );
         for( size_t i = 0 ; i < v.size() ; i++ ) {
             Value v;
             this->v[i]->encode( cc, drop_value, v );
-            std::cerr << "me: " << v << std::endl;
             value.add( v );
         }
     }
@@ -1780,6 +1776,7 @@ void Cast::encode( EncodeContext& cc, bool, Value& value )
     value.clear();
 
 	type_t tt = typeexpr_to_type( this->t );
+
     value.assign( 
         llvm::CastInst::createIntegerCast(
             expr_value,
@@ -1804,6 +1801,32 @@ void Cast::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // FunCall
+void
+encode_funcall_return_value(
+	const Header&	h,
+	EncodeContext&	cc,
+	llvm::Value*	ret,
+	type_t			t,
+	Value&			value )
+{
+	int n = Type::getTupleSize( t );
+	if( n == 1 ) {
+		value.assign( ret, t );
+	} else {
+		for( int i = 0 ; i < n ; i++ ) {
+			char reg[256];
+			sprintf( reg, "ret%d_%d", h.id, i );
+			llvm::Instruction* lv = llvm::ExtractValueInst::Create(
+				ret, i, reg, cc.bb );
+
+			Value av;
+			encode_funcall_return_value(
+				h, cc, lv, Type::getElementType( t, i ), av );
+			value.add( av );
+		}
+	}
+}
+
 void FunCall::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
@@ -1845,26 +1868,16 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
 
         //std::cerr << "args: " << args.size() << std::endl;
 
-        int n = Type::getTupleSize( r.t->getReturnType() );
-        if( n == 1 ) {
-            value.assign(
-                llvm::CallInst::Create(
-                    f, args.begin(), args.end(), reg, cc.bb ),
-                r.t->getReturnType() );
-        } else {
-            llvm::Value* ret = llvm::CallInst::Create(
-                f, args.begin(), args.end(), reg, cc.bb );
-            for( int i = 0 ; i < n ; i++ ) {
-                sprintf( reg, "ret%d_%d", h.id, i );
-                llvm::Instruction* lv = llvm::ExtractValueInst::Create(
-                    ret, i, reg, cc.bb );
+		llvm::Value* ret = llvm::CallInst::Create(
+			f, args.begin(), args.end(), reg, cc.bb );
 
-                Value av;
-                av.assign( lv, Type::getElementType( r.t, i ) );
-                std::cerr << "av: " << av << std::endl;
-                value.add( av );
-            }
-        }
+		encode_funcall_return_value(
+			h,
+			cc,
+			ret,
+			r.t->getReturnType(),
+			value );
+
     } else if( Type::isClosure( r.t ) ) {
         char reg[256];
 

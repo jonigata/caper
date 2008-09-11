@@ -499,6 +499,36 @@ void freevars_to_typevec( const symmap_t& freevars, typevec_t& v )
     }
 }
 
+llvm::Value*
+encode_function_return_value(
+	EncodeContext&	cc,
+	type_t			t,
+	const char*		reg_prefix,
+	const Value&	value )
+{
+	assert( value.size() == Type::getTupleSize( t ) );
+
+	if( value.size() == 1 ) {
+		return value.getx();
+	} else {
+		llvm::Value* undef = llvm::UndefValue::get( getLLVMType( t ) ); 
+		llvm::Value* prev = undef;
+		for( int i = 0 ; i < value.size() ; i++ ) {
+			char reg[256];
+			sprintf( reg, "%s_%d", reg_prefix, i );
+			llvm::Value* arg = encode_function_return_value(
+				cc,
+				Type::getElementType( t, i ),
+				reg,
+				value[i] );
+			prev = llvm::InsertValueInst::Create(
+				prev, arg, i, reg, cc.bb ) ;
+		}
+		return prev;
+	}
+}
+
+
 llvm::Function*
 encode_function(
     EncodeContext&  cc,
@@ -587,28 +617,16 @@ encode_function(
     if( h.t->getReturnType() == Type::getVoidType() ) {
         llvm::ReturnInst::Create( cc.bb );
     }  else {
-        assert( value.size() == Type::getTupleSize( h.t->getReturnType() ) );
+		char reg[256];
+		sprintf( reg, "insval%d", h.id );
 
-        if( value.size() == 1 ) {
-            llvm::ReturnInst::Create( value.getx(), cc.bb );
-        } else {
-            std::vector< const llvm::Type* > tv;
-            for( int i = 0 ; i < value.size() ; i++ ) {
-                tv.push_back( getLLVMType( value[i].gett() ) );
-            }
-            llvm::Type* return_type = llvm::StructType::get( tv );
-
-            llvm::Value* undef = llvm::UndefValue::get( return_type ); 
-			llvm::Value* prev = undef;
-            for( int i = 0 ; i < value.size() ; i++ ) {
-                char reg[256];
-                sprintf( reg, "insval%d_%d", h.id, i );
-                prev = llvm::InsertValueInst::Create(
-                    prev, value[i].getx(), i, reg, cc.bb ) ;
-            }
-
-            llvm::ReturnInst::Create( prev, cc.bb );
-        }
+		llvm::ReturnInst::Create( 
+			encode_function_return_value(
+				cc,
+				h.t->getReturnType(),
+				reg,
+				value ),
+			cc.bb );
     }
 
     std::swap( cc.bb, bb );

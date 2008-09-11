@@ -165,7 +165,7 @@ class imcomplete_return_type : public error {
 public:
     imcomplete_return_type( const Addr& a ) : error(a)
     {
-        set_message( "return type must not be incomplete" );
+        set_message( "return type must be complete" );
     }
     ~imcomplete_return_type() throw () {}
 };

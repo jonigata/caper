@@ -82,6 +82,6 @@ test : leaf rtl/leaf_rt.bc
 
 try : leaf rtl/leaf_rt.bc
 		chmod 755 succtest
-		./failtest bar0002
+		./succtest foo0012
 
 -include $(addprefix $(DEPENDDIR)/,$(OBJS:.o=.d))

@@ -144,9 +144,10 @@ IfThenElse<leaf::IfThenElse*>
 
 ////////////////////////////////////////////////////////////////
 // TypeExpr
-TypeExpr<leaf::TypeRef*>
+TypeExpr<leaf::TypeExpr*>
 	: [identity] SimpleType(0)
 	| [identity] FunctionType(0)
+	| [identity] LPar Types(0) RPar
 	;
 
 ////////////////////////////////////////////////////////////////

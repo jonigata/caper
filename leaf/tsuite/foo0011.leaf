@@ -1,12 +1,14 @@
 require leaf;
 
-fun foo( n: int ): int, int
+fun foo( n: int ): int, char
 {
-    n, n;
+    n, n@char;
 }
 
 fun main(): int
 {
     var a, b = foo(3);
+	puti(a);
+	puti(b@int);
     0;
 }

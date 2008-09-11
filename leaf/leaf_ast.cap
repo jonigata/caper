@@ -27,9 +27,9 @@ type Require = Identifier(name), Module(module);
 type TopLevelFunDecl = FunDecl(fundecl);
 type TopLevelFunDef = FunDef(fundef);
 
-type FunSig = Identifier(name), FormalArgs(fargs), Types(result_type);
+type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
-type FormalArg = Identifier(name), TypeRef(t);
+type FormalArg = Identifier(name), TypeExpr(t);
 
 type Block = Statements(statements);
 
@@ -42,7 +42,7 @@ type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
 type VarDecl = VarDeclElems(varelems), MultiExpr(value);
 type VarDeclElem = VarDeclElems | VarDeclIdentifier;
 type VarDeclElems = VarDeclElem*(v);
-type VarDeclIdentifier = Identifier(name), TypeRef(t);
+type VarDeclIdentifier = Identifier(name), TypeExpr(t);
 
 type IfThenElse = Expr(cond), Block(iftrue), Block(iffalse);
 
@@ -79,7 +79,7 @@ type MulExpr = Multiplicative(lhs), CastExpr(rhs);
 type DivExpr = Multiplicative(lhs), CastExpr(rhs);
 
 type CastExpr = Cast | PrimExpr;
-type Cast = PrimExpr(expr), TypeRef(t);
+type Cast = PrimExpr(expr), TypeExpr(t);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
               | VarRef | Parenthized | FunCall | Lambda;
@@ -90,13 +90,14 @@ type VarRef = Identifier(name);
 type Parenthized = MultiExpr(exprs);
 type FunCall = Identifier(func), ActualArgs(aargs);
 type Lambda = symbol_t(name),
-			  FormalArgs(fargs), Types(result_type), Block(body),
+			  FormalArgs(fargs), TypeExpr(result_type), Block(body),
 			  symmap_t(freevars);
 
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);
 
-type Types = TypeRef*(v);
+type TypeExpr = Types | TypeRef;
+type Types = TypeExpr*(v);
 type TypeRef = type_t(t);
 
 type Identifier = symbol_t(s);

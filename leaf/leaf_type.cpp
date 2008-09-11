@@ -211,10 +211,29 @@ bool Type::isCallable( Type* t )
     return isFunction( t ) || isClosure( t );
 }
 
-bool Type::isComplete( Type* )
+bool Type::isComplete( Type* t )
 {
-    assert(0);
-    return false;
+	if( !t ) { return false; }
+
+    switch( t->tag() ) {
+    case TAG_FUNCTION:
+    case TAG_CLOSURE:
+		return
+			isComplete( t->getArgumentType() ) &&
+			isComplete( t->getReturnType() );
+	case TAG_TUPLE:
+		{
+			int n = getTupleSize( t );
+			for( int i = 0 ; i < n ; i++ ) {
+				if( !isComplete( getElementType( t, i ) ) ) {
+					return false;
+				}
+			}
+			return true;
+		}
+    default:
+		return true;
+    }
 }
 
 int Type::getTupleSize( Type* t )

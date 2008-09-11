@@ -460,24 +460,34 @@ const llvm::Type* getLLVMType( type_t t, bool add_env = false )
     }
 }
 
-inline
-void types_to_typevec( Types* types, typevec_t& v )
+static type_t
+typeexpr_to_type( TypeExpr* t )
 {
-    for( size_t i = 0 ; i < types->v.size() ; i++ ) {
-        v.push_back( types->v[i]->t );
-    }
+	if( TypeRef* tt = dynamic_cast< TypeRef* >( t ) ) {
+		return tt->t;
+	}
+	if( Types* tt = dynamic_cast< Types* >( t ) ) {
+		typevec_t v;
+		for( size_t i = 0 ; i < tt->v.size() ; i++ ) {
+			v.push_back( typeexpr_to_type( tt->v[i] ) );
+		}
+		return Type::getTupleType( v );
+	}
+	assert(0);
+	return NULL;
 }
 
-inline
-void formalargs_to_typevec(
-    FormalArgs* formalargs, typevec_t& v, const Addr& addr )
+static type_t
+formalargs_to_type( FormalArgs* formalargs )
 {
+	typevec_t v;
     for( size_t i = 0 ; i < formalargs->v.size() ; i++ ) {
         if( !formalargs->v[i]->t ) {
-            throw inexplicit_argument_type( addr );
+			return NULL;
         }
-        v.push_back( formalargs->v[i]->t->t );
+        v.push_back( typeexpr_to_type( formalargs->v[i]->t ) );
     }
+	return Type::getTupleType( v );
 }
 
 inline
@@ -497,7 +507,7 @@ encode_function(
     const Header&   h,
     Symbol*         funcname,
     FormalArgs*     formal_args,
-    Types*          result_type,
+    TypeExpr*       result_type,
     Block*          body,
     const symmap_t& freevars )
 {
@@ -511,13 +521,12 @@ encode_function(
         atypes.push_back( getLLVMType( (*i).second ) );
     }
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
-        atypes.push_back( getLLVMType( formal_args->v[i]->t->t ) );
+        atypes.push_back(
+			getLLVMType( typeexpr_to_type( formal_args->v[i]->t ) ) );
     }
 
     // ...result
-    typevec_t rtypes;
-    types_to_typevec( result_type, rtypes );
-    type_t leaf_rtype = Type::getTupleType( rtypes );
+    type_t leaf_rtype = typeexpr_to_type( result_type );
     if( Type::isFunction( leaf_rtype ) ) {
         leaf_rtype = Type::getClosureType( leaf_rtype );
     }
@@ -591,15 +600,16 @@ encode_function(
             }
             llvm::Type* return_type = llvm::StructType::get( tv );
 
-            llvm::Value *undef = llvm::UndefValue::get( return_type ); 
+            llvm::Value* undef = llvm::UndefValue::get( return_type ); 
+			llvm::Value* prev = undef;
             for( int i = 0 ; i < value.size() ; i++ ) {
                 char reg[256];
                 sprintf( reg, "insval%d_%d", h.id, i );
-                llvm::InsertValueInst::Create(
-                    undef, value[i].getx(), i, reg, cc.bb ) ;
+                prev = llvm::InsertValueInst::Create(
+                    prev, value[i].getx(), i, reg, cc.bb ) ;
             }
 
-            llvm::ReturnInst::Create( undef, cc.bb );
+            llvm::ReturnInst::Create( prev, cc.bb );
         }
     }
 
@@ -616,33 +626,31 @@ entype_function(
     Header&         h,
     Symbol*         funcname,
     FormalArgs*     formal_args,
-    Types*          result_type,
+    TypeExpr*       result_type,
     Block*          body,
     symmap_t&       freevars )
 {
-    // ä÷êîíËã`Ç≈ÇÕÉRÉìÉeÉLÉXÉgå^Çñ≥éã
+	if( !result_type ) {
+		throw inexplicit_return_type( h.beg );
+	}
 
-    // ñﬂÇËílÇÃå^
-    if( !result_type ) {
-        throw inexplicit_return_type( h.beg );
-    }
-    for( size_t i = 0 ; i < result_type->v.size() ; i++ ) {
-        if( !result_type->v[i] ) {
-            throw imcomplete_return_type( h.beg );
-        }
+	// ï‘ÇËílÇÃå^
+    type_t rttype = typeexpr_to_type( result_type );
+    if( !Type::isComplete( rttype ) ) {
+		// Ç†ÇËìæÇ»Ç¢ÇÕÇ∏
+		assert(0);
+        throw imcomplete_return_type( h.beg );
     }
 
-    typevec_t rtypes;
-    types_to_typevec( result_type, rtypes );
-    type_t rttype = Type::getTupleType( rtypes );
     if( Type::isFunction( rttype ) ) {
         rttype = Type::getClosureType( rttype );
     }
 
     // à¯êîÇÃå^
-    typevec_t atypes;
-    formalargs_to_typevec( formal_args, atypes, h.beg );
-    type_t attype = Type::getTupleType( atypes );
+	type_t attype = formalargs_to_type( formal_args );
+	if( !Type::isComplete( attype ) ) {
+		throw inexplicit_argument_type( h.beg );
+	}
 
     // çƒãAä÷êîÇÃÇΩÇﬂÇ…ñ{ëÃÇÊÇËêÊÇ…bind
     update_type( tc, h, Type::getFunctionType( rttype, attype ) );
@@ -650,7 +658,9 @@ entype_function(
 
     tc.env.push();
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
-        tc.env.bind( formal_args->v[i]->name->s, formal_args->v[i]->t->t );
+        tc.env.bind(
+			formal_args->v[i]->name->s,
+			typeexpr_to_type( formal_args->v[i]->t ) );
     }
     tc.env.fix();
 
@@ -708,7 +718,7 @@ type_t make_tuple_tree_from_vardeclelems( VarDeclElems* f )
         VarDeclIdentifier* ei = dynamic_cast<VarDeclIdentifier*>(e);
         if( ei ) {
             if( ei->t ) {
-                v.push_back( ei->t->t );
+                v.push_back( typeexpr_to_type( ei->t ) );
             } else {
                 v.push_back( NULL );
             }
@@ -910,31 +920,16 @@ void FunDecl::encode( EncodeContext& cc, bool, Value& value )
 void FunDecl::entype( EntypeContext& tc, bool, type_t t )
 {
     // ñﬂÇËílÇÃå^
-    if( !sig->result_type ) {
-        throw inexplicit_return_type( h.beg );
-    }
-    for( size_t i = 0 ; i < sig->result_type->v.size() ; i++ ) {
-        if( !sig->result_type->v[i] ) {
-            throw imcomplete_return_type( h.beg );
-        }
-    }
+    type_t result_type = typeexpr_to_type( sig->result_type );
+	if( !Type::isComplete( result_type ) ) {
+		throw imcomplete_return_type( h.beg );
+	}
 
-    typevec_t rtypes;
-    for( size_t i = 0 ; i < sig->result_type->v.size() ; i++ ) {
-        rtypes.push_back( sig->result_type->v[i]->t );
-    }
-    type_t result_type = Type::getTupleType( rtypes );
-    
     // à¯êîÇÃå^
-    typevec_t atypes;
-    for( size_t i = 0 ; i < sig->fargs->v.size() ; i++ ) {
-        if( !sig->fargs->v[i]->t ) {
-            throw inexplicit_argument_type( h.beg );
-        }
-        atypes.push_back( sig->fargs->v[i]->t->t );
-    }
-
-    type_t args_type = Type::getTupleType( atypes );
+    type_t args_type = formalargs_to_type( sig->fargs );
+	if( !Type::isComplete( args_type ) ) {
+		throw inexplicit_argument_type( h.beg );
+	}
 
     update_type( tc, h, Type::getFunctionType( result_type, args_type ) );
     tc.env.bind( sig->name->s, h.t );
@@ -1223,6 +1218,17 @@ void IfThenElse::entype( EntypeContext& tc, bool drop_value, type_t t )
     }
 
     update_type( tc, h, iftrue->h.t );
+}
+
+////////////////////////////////////////////////////////////////
+// TypeExpr
+void TypeExpr::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void TypeExpr::entype( EntypeContext& tc, bool, type_t t )
+{
+    assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1773,25 +1779,27 @@ void Cast::encode( EncodeContext& cc, bool, Value& value )
     llvm::Value* expr_value = check_value_1( value );
     value.clear();
 
+	type_t tt = typeexpr_to_type( this->t );
     value.assign( 
         llvm::CastInst::createIntegerCast(
             expr_value,
-            getLLVMType( this->t->t ),
+            getLLVMType( tt ),
             true,
             reg,
             cc.bb ),
-        this->t->t );
+        tt );
 }
 void Cast::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( t != this->t->t ) {
+	type_t tt = typeexpr_to_type( this->t );
+    if( t != tt ) {
         throw context_mismatch(
             h.beg,
-            Type::getDisplay( this->t->t ),
+            Type::getDisplay( tt ),
             Type::getDisplay( t ) );
     }
     expr->entype( tc, false, NULL );
-    update_type( tc, h, this->t->t );
+    update_type( tc, h, tt );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2017,7 +2025,7 @@ void Lambda::encode( EncodeContext& cc, bool drop_value, Value& value )
     std::vector< const llvm::Type* > atypes;
     atypes.push_back( llvm::PointerType::getUnqual( closure_env_type ) );
     for( size_t i = 0 ; i < fargs->v.size() ; i++ ) {
-        atypes.push_back( getLLVMType( fargs->v[i]->t->t ) );
+        atypes.push_back( getLLVMType( typeexpr_to_type( fargs->v[i]->t ) ) );
     }
 
     // ...result

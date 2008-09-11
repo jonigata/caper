@@ -81,6 +81,22 @@ public:
         return x;
     }
 
+	type_t getType( TypeExpr* t )
+	{
+		if( TypeRef* tt = dynamic_cast< TypeRef* >( t ) ) {
+			return tt->t;
+		}
+		if( Types* tt = dynamic_cast< Types* >( t ) ) {
+			std::vector< type_t > v;
+			for( size_t i = 0 ; i < tt->v.size() ; i++ ) {
+				v.push_back( getType( tt->v[i] ) );
+			}
+			return Type::getTupleType( v );
+		}
+		assert(0);
+		return NULL;
+	}
+
     void syntax_error() {}
     void stack_overflow(){}
 
@@ -202,7 +218,7 @@ public:
 #endif
     }
 
-    FormalArg* makeFormalArg1( Identifier* i, TypeRef* t )
+    FormalArg* makeFormalArg1( Identifier* i, TypeExpr* t )
     {
         return h( i->h + t->h,
                   c().allocate<FormalArg>( i, t ) );
@@ -236,7 +252,7 @@ public:
     }
 
     VarDeclElem* makeVarDeclIdentifier1( Identifier* i,
-                                               TypeRef* t )
+										 TypeExpr* t )
     {
         return h( i->h + t->h, c().allocate<VarDeclIdentifier>(
                       i, t ) );
@@ -290,21 +306,11 @@ public:
     TypeRef* makeFunctionType(
         Types* atype, Types* rtype )
     {
-        typevec_t rtypes;
-        for( size_t i = 0 ; i < rtype->v.size() ; i++ ) {
-            rtypes.push_back( rtype->v[i]->t );
-        }
-
-        typevec_t atypes;
-        for( size_t i = 0 ; i < atype->v.size() ; i++ ) {
-            atypes.push_back( atype->v[i]->t );
-        }
-
         return h( atype->h + rtype->h,
                   c().allocate<TypeRef>(
                       Type::getFunctionType(
-                          Type::getTupleType( rtypes ),
-                          Type::getTupleType( atypes ) ) ) );
+						  getType( rtype ),
+						  getType( atype ) ) ) );
     }
 
     Types* makeTypes0()
@@ -312,12 +318,12 @@ public:
         return h( c().allocate<Types>() );
     }
     
-    Types* makeTypes1( TypeRef* t )
+    Types* makeTypes1( TypeExpr* t )
     {
         return makeSeq1<Types>( t );
     }
     
-    Types* makeTypes2( Types* x, TypeRef* y )
+    Types* makeTypes2( Types* x, TypeExpr* y )
     {
         return append( x, y );
     }
@@ -400,7 +406,7 @@ public:
         return h( x->h + y->h, c().allocate<DivExpr>( x, y ) );
     }
 
-    Cast* makeCast( PrimExpr* e, TypeRef* t )
+    Cast* makeCast( PrimExpr* e, TypeExpr* t )
     {
         return h( e->h + t->h, c().allocate<Cast>( e, t ) );
     }

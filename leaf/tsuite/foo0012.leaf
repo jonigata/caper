@@ -1,0 +1,16 @@
+require leaf;
+
+fun foo( n: int ): int, (long, short), char
+{
+    n, ( n@long, n@short), n@char;
+}
+
+fun main(): int
+{
+    var a, ( b, c ), d = foo(3);
+	puti(a);
+	puti(b@int);
+	puti(c@int);
+	puti(d@int);
+    0;
+}

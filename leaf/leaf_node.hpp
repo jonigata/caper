@@ -14,6 +14,7 @@
 #include <cassert>
 #include <boost/noncopyable.hpp>
 #include "scoped_allocator.hpp"
+#include "leaf_core.hpp"
 #include "leaf_type.hpp"
 
 namespace llvm {
@@ -23,13 +24,6 @@ class Type;
 }
 
 namespace leaf {
-
-////////////////////////////////////////////////////////////////
-// Symbol
-struct Symbol : public boost::noncopyable {
-    std::string s;
-    Symbol( const std::string& x ) : s(x) {}
-};
 
 ////////////////////////////////////////////////////////////////
 // Addr

@@ -201,12 +201,20 @@ std::ostream& operator<<( std::ostream& os, const Reference& v )
 ////////////////////////////////////////////////////////////////
 // Value
 class Value {
+private:
+	enum Category {
+		C_NULL,
+		C_SCALOR,
+		C_MULTIPLE,
+		C_STRUCT,
+	};
+
 public:
-    Value() { m_ = false; x_ = NULL; t_ = NULL; }
+    Value() { c_ = C_NULL; x_ = NULL; t_ = NULL; }
     ~Value() {}
     Value& operator=( const Value& v )
     {
-        m_ = v.m_;
+        c_ = v.c_;
         x_ = v.x_;
         t_ = v.t_;
         v_ = v.v_;
@@ -215,12 +223,12 @@ public:
 
     bool empty() const
     {
-        return !m_ && !x_ && !t_ && v_.empty();
+        return c_ == C_NULL && !x_ && !t_ && v_.empty();
     }
 
     void clear()
     {
-        m_ = false;
+        c_ = C_NULL;
         x_ = NULL;
         t_ = NULL;
         v_.clear();
@@ -229,29 +237,50 @@ public:
     void add( const Value& v )
     {
         assert( !x_ );
-        m_ = true;
+        c_ = C_MULTIPLE;
         v_.push_back( v );
     }
 
-    bool isMultiple() const { return m_; }
+    bool isMultiple() const { return c_ == C_MULTIPLE ; }
     llvm::Value* getx() const { return x_; }
     type_t gett() const { return t_; }
     const std::vector< Value >& getv() const { return v_; }
     void sett( type_t t ) { t_ = t; }
 
-    void assign( llvm::Value* x, type_t t ) { x_ = x; t_ = t; }
-    void assign( const std::vector< Value >& v ) { v_ = v; }
+    void assign_as_scalor( llvm::Value* x, type_t t )
+	{
+		c_ = C_SCALOR;
+		x_ = x;
+		t_ = t;
+	}
+    void assign_as_multiple( const std::vector< Value >& v )
+	{
+		c_ = C_MULTIPLE;
+		v_ = v;
+	}
+    void assign_as_struct( const std::vector< Value >& v )
+	{
+		c_ = C_STRUCT;
+		v_ = v;
+	}
 
-    int size() const { if( !m_ ) { return 1; } else { return v_.size(); } }
+    int size() const
+	{
+		if( c_ != C_MULTIPLE ) {
+			return 1;
+		} else {
+			return v_.size();
+		}
+	}
     const Value& operator[] ( int i ) const
     {
-        assert( m_ );
+        assert( c_ == C_MULTIPLE );
         return v_[i];
     }
 
 
 private:
-    bool                    m_;
+	Category				c_;
     llvm::Value*            x_;
     type_t                  t_;
     std::vector< Value >    v_;
@@ -321,7 +350,7 @@ encode_int_compare(
     llvm::Value* rhs_value = check_value_1( value );
     value.clear();
 
-    value.assign( 
+    value.assign_as_scalor( 
         new llvm::ICmpInst(
             p,
             lhs_value,
@@ -356,7 +385,7 @@ binary_operator(
         op, v0, v1, reg );
     cc.bb->getInstList().push_back(inst);
 
-    value.assign( inst, Type::getIntType() );
+    value.assign_as_scalor( inst, Type::getIntType() );
 }
 
 inline
@@ -413,21 +442,6 @@ const llvm::Type* getLLVMType( type_t t, bool add_env = false )
     case Type::TAG_SHORT: return llvm::Type::Int16Ty;
     case Type::TAG_INT: return llvm::Type::Int32Ty;
     case Type::TAG_LONG: return llvm::Type::Int64Ty;
-    case Type::TAG_TUPLE:
-        {
-            int n = Type::getTupleSize( t );
-            if( n == 0 ) {
-                return llvm::Type::VoidTy;
-            } else if( n == 1 ) {
-                assert(0); // ‚ ‚è‚¦‚È‚¢
-            } else {
-                std::vector< const llvm::Type* > v;
-                for( int i = 0 ; i < n ; i++ ) {
-                    v.push_back( getLLVMType( t->getElement(i) ) );
-                }
-                return llvm::StructType::get( v );
-            }
-        }
     case Type::TAG_FUNCTION:
         {
             type_t a = t->getArgumentType();
@@ -454,6 +468,31 @@ const llvm::Type* getLLVMType( type_t t, bool add_env = false )
                              getLLVMType( t->getRawFunc(), true ) ) );
             v.push_back( llvm::Type::Int8Ty );
             return llvm::PointerType::getUnqual( llvm::StructType::get( v ) );
+        }
+    case Type::TAG_TUPLE:
+        {
+            int n = Type::getTupleSize( t );
+            if( n == 0 ) {
+                return llvm::Type::VoidTy;
+            } else if( n == 1 ) {
+                assert(0); // ‚ ‚è‚¦‚È‚¢
+            } else {
+                std::vector< const llvm::Type* > v;
+                for( int i = 0 ; i < n ; i++ ) {
+                    v.push_back( getLLVMType( t->getElement(i) ) );
+                }
+                return llvm::StructType::get( v );
+            }
+        }
+    case Type::TAG_STRUCT:
+        {
+            int n = t->Type::getSlotCount();
+
+			std::vector< const llvm::Type* > v;
+			for( int i = 0 ; i < n ; i++ ) {
+				v.push_back( getLLVMType( t->getSlot(i).type ) );
+			}
+			return llvm::StructType::get( v );
         }
     default:
         return llvm::Type::Int32Ty;
@@ -1034,31 +1073,36 @@ void FunSig::entype( EntypeContext& tc, bool, type_t t )
 // StructDef
 void StructDef::encode( EncodeContext& cc, bool, Value& value )
 {
-    assert(0);
 }
 void StructDef::entype( EntypeContext& tc, bool, type_t t )
 {
-    assert(0);
+	std::vector< Slot > sv;
+	for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+		Member* m = members->v[i];
+		sv.push_back( Slot( m->a->name->s, typeexpr_to_type( m->a->t ) ) );
+	}
+	update_type( tc, h, Type::getStructType( sv ) );
+	tc.env.bind( name->s, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
 // Slots
-void Slots::encode( EncodeContext& cc, bool, Value& value )
+void Members::encode( EncodeContext& cc, bool, Value& value )
 {
     assert(0);
 }
-void Slots::entype( EntypeContext& tc, bool, type_t t )
+void Members::entype( EntypeContext& tc, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
-// Slot
-void Slot::encode( EncodeContext& cc, bool, Value& value )
+// Member
+void Member::encode( EncodeContext& cc, bool, Value& value )
 {
     assert(0);
 }
-void Slot::entype( EntypeContext& tc, bool, type_t t )
+void Member::entype( EntypeContext& tc, bool, type_t t )
 {
     assert(0);
 }
@@ -1235,7 +1279,7 @@ void IfThenElse::encode( EncodeContext& cc, bool drop_value, Value& value )
             phi->addIncoming( tvalue.getx(), tbb );
             phi->addIncoming( fvalue.getx(), fbb );
     
-            value.assign( phi, iftrue->h.t ); // TODO: Œˆ‚ß‚¤‚¿
+            value.assign_as_scalor( phi, iftrue->h.t ); // TODO: Œˆ‚ß‚¤‚¿
         } else {
             for( int i = 0 ; i < n ; i++ ) {
                 char reg[256];
@@ -1245,13 +1289,13 @@ void IfThenElse::encode( EncodeContext& cc, bool drop_value, Value& value )
                 phi->addIncoming( tvalue.getx(), tbb );
                 phi->addIncoming( fvalue.getx(), fbb );
 
-                Value av; av.assign(
+                Value av; av.assign_as_scalor(
                     phi, Type::getElementType( iftrue->h.t, i ) );
                 value.add( av );
             }
         }
     } else {
-        value.assign( NULL, iftrue->h.t );
+        value.assign_as_scalor( NULL, iftrue->h.t );
     }
 }
 void IfThenElse::entype( EntypeContext& tc, bool drop_value, type_t t )
@@ -1437,7 +1481,7 @@ void LogicalOrElems::encode( EncodeContext& cc, bool, Value& value )
     cc.bb = final;
     sprintf( label, "or_s%d_value", h.id );
 
-    value.assign(
+    value.assign_as_scalor(
         new llvm::LoadInst( orresult, label, final ),
         Type::getBoolType() );
 }
@@ -1507,7 +1551,7 @@ void LogicalAndElems::encode( EncodeContext& cc, bool, Value& value )
 
     cc.bb = final;
     sprintf( label, "and_s%d_value", h.id );
-    value.assign(
+    value.assign_as_scalor(
         new llvm::LoadInst( andresult, label, final ),
         Type::getBoolType() );
 }
@@ -1720,7 +1764,7 @@ void LiteralBoolean::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    value.assign( 
+    value.assign_as_scalor( 
         data ?
         llvm::ConstantInt::getTrue() :
         llvm::ConstantInt::getFalse(),
@@ -1740,7 +1784,7 @@ void LiteralInteger::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    value.assign(
+    value.assign_as_scalor(
         llvm::ConstantInt::get( llvm::Type::Int32Ty, data ),
         Type::getIntType() );
 }
@@ -1758,7 +1802,7 @@ void LiteralChar::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    value.assign(
+    value.assign_as_scalor(
         llvm::ConstantInt::get( llvm::Type::Int32Ty, data ),
         Type::getIntType() );
 }
@@ -1784,7 +1828,7 @@ void VarRef::encode( EncodeContext& cc, bool, Value& value )
     if( !r.t ) {
         throw ambiguous_type( h.beg, name->s->s );
     }
-    value.assign( r.v, r.t );
+    value.assign_as_scalor( r.v, r.t );
 }
 void VarRef::entype( EntypeContext& tc, bool, type_t t )
 {
@@ -1853,7 +1897,7 @@ void Cast::encode( EncodeContext& cc, bool, Value& value )
 
     type_t tt = typeexpr_to_type( this->t );
 
-    value.assign( 
+    value.assign_as_scalor( 
         llvm::CastInst::createIntegerCast(
             expr_value,
             getLLVMType( tt ),
@@ -1887,7 +1931,7 @@ encode_funcall_return_value(
 {
     int n = Type::getTupleSize( t );
     if( n == 1 ) {
-        value.assign( ret, t );
+        value.assign_as_scalor( ret, t );
     } else {
         for( int i = 0 ; i < n ; i++ ) {
             char reg[256];
@@ -2019,7 +2063,7 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
 
         int n = Type::getTupleSize( r.t->getReturnType() );
         if( n == 1 ) {
-            value.assign(
+            value.assign_as_scalor(
                 llvm::CallInst::Create(
                     fptr, args.begin(), args.end(), reg, cc.bb ),
                 r.t->getReturnType() );
@@ -2032,7 +2076,7 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
                     ret, i, reg, cc.bb );
 
                 Value av;
-                av.assign( lv, Type::getElementType( r.t, i ) );
+                av.assign_as_scalor( lv, Type::getElementType( r.t, i ) );
                 value.add( av );
             }
         }
@@ -2085,31 +2129,76 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
 // LiteralStruct
 void LiteralStruct::encode( EncodeContext& cc, bool, Value& value )
 {
-    assert(0);
+	assert( Type::isStruct( h.t ) );
+	std::vector< Value > values( h.t->getSlotCount() );
+
+	for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+		LiteralMember* m = members->v[i];
+
+		int index = h.t->getSlotIndex( m->name->s );
+		assert( 0 <= index );
+
+		m->encode( cc, false, values[index] );
+	}
+
+	const llvm::Type* st = getLLVMType( h.t );
+	llvm::Value* prev = llvm::UndefValue::get( st ); 
+	for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+		char reg[256];
+		sprintf( reg, "mem%d_%d", h.id, int(i) );
+
+		prev = llvm::InsertValueInst::Create(
+			prev, values[i].getx(), i, reg, cc.bb );
+	}	
+
+	value.assign_as_scalor( prev, h.t );
 }
 void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
 {
+	type_t st = tc.env.find( name->s );
+	if( !Type::isStruct( st ) ) {
+		throw not_struct( h.beg, name->s->s );
+	}
+
+	std::vector<bool> used( st->Type::getSlotCount(), false );
+	for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+		LiteralMember* m = members->v[i];
+		int index = st->getSlotIndex( m->name->s );
+		if( index < 0 ) {
+			throw no_such_member( m->h.beg, name->s->s, m->name->s->s );
+		}
+		assert( index <= int( used.size() ) ); 
+		used[index] = true;
+	}
+
+	for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+		if( !used[i] ) {
+			throw not_initialized_member(
+				h.beg, name->s->s, members->v[i]->name->s->s );
+		}
+	}
+
+	update_type( tc,h, st );
+}
+
+////////////////////////////////////////////////////////////////
+// LiteralMembers
+void LiteralMembers::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void LiteralMembers::entype( EntypeContext& tc, bool, type_t t )
+{
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
-// LiteralSlots
-void LiteralSlots::encode( EncodeContext& cc, bool, Value& value )
+// LiteralMember
+void LiteralMember::encode( EncodeContext& cc, bool, Value& value )
 {
-    assert(0);
+	data->encode( cc, false, value );
 }
-void LiteralSlots::entype( EntypeContext& tc, bool, type_t t )
-{
-    assert(0);
-}
-
-////////////////////////////////////////////////////////////////
-// LiteralSlot
-void LiteralSlot::encode( EncodeContext& cc, bool, Value& value )
-{
-    assert(0);
-}
-void LiteralSlot::entype( EntypeContext& tc, bool, type_t t )
+void LiteralMember::entype( EntypeContext& tc, bool, type_t t )
 {
     assert(0);
 }
@@ -2257,7 +2346,7 @@ void Lambda::encode( EncodeContext& cc, bool drop_value, Value& value )
         new llvm::BitCastInst(
             closure, getLLVMType( h.t ), reg, cc.bb );
 
-    value.assign( casted_closure, h.t );
+    value.assign_as_scalor( casted_closure, h.t );
 }
 void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
 {

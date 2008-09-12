@@ -103,6 +103,12 @@ Type* Type::getElementType( Type* t, int i )
     }
 }
 
+Type* Type::getStructType( const std::vector< Slot >& slots )
+{
+	// struct ÇÕíËã`èÍèäÇ™à·Ç¶ÇŒï ÇÃå^Ç…Ç»ÇÈ
+	return new Type( slots );
+}
+
 Type* Type::getReturnType()
 {
     switch( tag() ) {
@@ -143,6 +149,29 @@ Type* Type::getRawFunc()
     return rawfunc_;
 }
 
+int Type::getSlotCount()
+{
+    assert( tag() == TAG_STRUCT );
+	return int( slots_.size() );
+}
+
+int Type::getSlotIndex( Symbol* s )
+{
+    assert( tag() == TAG_STRUCT );
+
+	for( size_t i = 0 ; i < slots_.size() ; i++ ) {
+		if( slots_[i].name == s ) {
+			return int(i);
+		}
+	}
+	return -1;
+}
+
+const Slot& Type::getSlot( int i )
+{
+	return slots_[i];
+}
+
 std::string Type::getDisplay( Type* t )
 {
     if( !t ) {
@@ -154,21 +183,6 @@ std::string Type::getDisplay( Type* t )
     case TAG_SHORT: return "<short>";
     case TAG_INT: return "<int>";
     case TAG_LONG: return "<long>";
-    case TAG_TUPLE:
-        if( t->elems_.empty() ) {
-            return "<void>";
-        } else if( t->elems_.size() == 1 ) {
-            return getDisplay( t->elems_[0] );
-        } else {
-            std::string s = "<[";
-            for( size_t i = 0 ; i < t->elems_.size() ; i++ ) {
-                s += getDisplay( t->elems_[i] );
-                if( i != t->elems_.size() - 1 ) {
-                    s += ",";
-                }
-            }
-			return s + "]>";
-        }
     case TAG_FUNCTION:
 		{
 			std::string s = "<fun (";
@@ -191,6 +205,33 @@ std::string Type::getDisplay( Type* t )
 		}
 		return "<function>";
     case TAG_CLOSURE: return "<closure>";
+    case TAG_TUPLE:
+        if( t->elems_.empty() ) {
+            return "<void>";
+        } else if( t->elems_.size() == 1 ) {
+            return getDisplay( t->elems_[0] );
+        } else {
+            std::string s = "<[";
+            for( size_t i = 0 ; i < t->elems_.size() ; i++ ) {
+                s += getDisplay( t->elems_[i] );
+                if( i != t->elems_.size() - 1 ) {
+                    s += ",";
+                }
+            }
+			return s + "]>";
+        }
+    case TAG_STRUCT:
+        {
+            std::string s = "<{";
+            for( size_t i = 0 ; i < t->slots_.size() ; i++ ) {
+                s += t->slots_[i].name->s + ":" + 
+					getDisplay( t->slots_[i].type );
+                if( i != t->slots_.size() - 1 ) {
+                    s += ",";
+                }
+            }
+			return s + "}>";
+        }
     default:
         return "<UNKNOWN TYPE>";
     };
@@ -204,6 +245,11 @@ bool Type::isFunction( Type* t )
 bool Type::isClosure( Type* t )
 {
     return t && t->tag() == Type::TAG_CLOSURE;
+}
+
+bool Type::isStruct( Type* t )
+{
+    return t && t->tag() == Type::TAG_STRUCT;
 }
 
 bool Type::isCallable( Type* t )

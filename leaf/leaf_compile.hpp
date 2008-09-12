@@ -197,24 +197,24 @@ public:
                   c().allocate<FunSig>( i, fa, t ) );
     }
 
-    StructDef* makeStructDef( Identifier* s, Slots* b )
+    StructDef* makeStructDef( Identifier* s, Members* b )
     {
         return h( s->h + b->h, c().allocate<StructDef>( s, b ) );
     }
 
-    Slots* makeSlots0( Slot* y )
+    Members* makeMembers0( Member* y )
     {
-        return makeSeq1<Slots>( y );
+        return makeSeq1<Members>( y );
     }
 
-    Slots* makeSlots1( Slots* x, Slot* y )
+    Members* makeMembers1( Members* x, Member* y )
     {
         return append( x, y );
     }
 
-    Slot* makeSlot( FormalArg* fa )
+    Member* makeMember( FormalArg* fa )
     {
-        return h( fa->h, c().allocate<Slot>( fa ) );
+        return h( fa->h, c().allocate<Member>( fa ) );
     }
 
     FormalArgs* makeFormalArgs0()
@@ -464,24 +464,25 @@ public:
                   c().allocate<FunCall>( func, aargs ) );
     }
 
-    LiteralStruct* makeLiteralStruct( Identifier* name, LiteralSlots* slots )
+    LiteralStruct* makeLiteralStruct(
+		Identifier* name, LiteralMembers* members )
     {
-        return h( slots->h, c().allocate<LiteralStruct>( name, slots ) );
+        return h( members->h, c().allocate<LiteralStruct>( name, members ) );
     }
 
-    LiteralSlots* makeLiteralSlots0()
+    LiteralMembers* makeLiteralMembers0()
     {
-        return h( c().allocate<LiteralSlots>() );
+        return h( c().allocate<LiteralMembers>() );
     }
 
-    LiteralSlots* makeLiteralSlots1( LiteralSlots* x, LiteralSlot* y )
+    LiteralMembers* makeLiteralMembers1( LiteralMembers* x, LiteralMember* y )
     {
         return append( x, y );
     }
 
-    LiteralSlot* makeLiteralSlot( Identifier* field, MultiExpr* data )
+    LiteralMember* makeLiteralMember( Identifier* field, MultiExpr* data )
     {
-        return h( field->h + data->h, c().allocate<LiteralSlot>(
+        return h( field->h + data->h, c().allocate<LiteralMember>(
                       field, data ) );
     }
 

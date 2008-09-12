@@ -262,6 +262,41 @@ public:
     ~ambiguous_type() throw () {}
 };
 
+class not_struct : public error {
+public:
+    not_struct( const Addr& a, const std::string& n ) : error(a)
+    {
+        std::stringstream ss;
+        ss << n << " is not struct" << n;
+        set_message( ss.str() );
+    }
+    ~not_struct() throw () {}
+};
+
+class no_such_member : public error {
+public:
+    no_such_member(
+		const Addr& a, const std::string& s, const std::string& n ) : error(a)
+    {
+        std::stringstream ss;
+        ss << "struct " << s << " has not such member: " << n;
+        set_message( ss.str() );
+    }
+    ~no_such_member() throw () {}
+};
+
+class not_initialized_member : public error {
+public:
+    not_initialized_member(
+		const Addr& a, const std::string& s, const std::string& n ) : error(a)
+    {
+        std::stringstream ss;
+        ss << "struct " << s << " member " << n << " is not initialized";
+        set_message( ss.str() );
+    }
+    ~not_initialized_member() throw () {}
+};
+
 } // namespace leaf
 
 #endif // ERROR_HPP_

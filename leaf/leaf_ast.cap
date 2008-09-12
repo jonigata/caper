@@ -34,10 +34,10 @@ type Statement = FunDecl | FunDef | StructDef |
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
-type StructDef = Identifier(name), Slots(slots);
+type StructDef = Identifier(name), Members(members);
 
-type Slots = Slot*(v);
-type Slot = FormalArg(formalarg);
+type Members = Member*(v);
+type Member = FormalArg(a);
 
 type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
@@ -95,7 +95,7 @@ type LiteralChar = char(data);
 type VarRef = Identifier(name);
 type Parenthized = MultiExpr(exprs);
 type FunCall = Identifier(func), ActualArgs(aargs);
-type LiteralStruct = Identifier(name), LiteralSlots(slots);
+type LiteralStruct = Identifier(name), LiteralMembers(members);
 type Lambda = symbol_t(name),
 			  FormalArgs(fargs), TypeExpr(result_type), Block(body),
 			  symmap_t(freevars);
@@ -103,8 +103,8 @@ type Lambda = symbol_t(name),
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);
 
-type LiteralSlots = LiteralSlot*(v);
-type LiteralSlot = Identifier(slot), MultiExpr(data);
+type LiteralMembers = LiteralMember*(v);
+type LiteralMember = Identifier(name), MultiExpr(data);
 
 type TypeExpr = Types | TypeRef | NamedType;
 type Types = TypeExpr*(v);

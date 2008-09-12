@@ -125,20 +125,20 @@ FormalArg<leaf::FormalArg*>
 ////////////////////////////////////////////////////////////////
 // StructDef
 StructDef<leaf::StructDef*>
-	: [makeStructDef] Struct Identifier(0) LBra Slots(1) RBra Semicolon
+	: [makeStructDef] Struct Identifier(0) LBra Members(1) RBra Semicolon
 	;
 
 ////////////////////////////////////////////////////////////////
-// Slots
-Slots<leaf::Slots*>
-	: [makeSlots0] Slot(0)
-	| [makeSlots1] Slots(0) Slot(1)
+// Members
+Members<leaf::Members*>
+	: [makeMembers0] Member(0)
+	| [makeMembers1] Members(0) Member(1)
 	;
 
 ////////////////////////////////////////////////////////////////
-// Slot
-Slot<leaf::Slot*>
-	: [makeSlot] FormalArg(0) Semicolon
+// Member
+Member<leaf::Member*>
+	: [makeMember] FormalArg(0) Semicolon
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -328,20 +328,20 @@ FunCall<leaf::FunCall*>
 ////////////////////////////////////////////////////////////////
 // LiteralStruct
 LiteralStruct<leaf::LiteralStruct*>
-	: [makeLiteralStruct] Identifier(0) LBra LiteralSlots(1) RBra
+	: [makeLiteralStruct] Identifier(0) LBra LiteralMembers(1) RBra
 	;
 
 ////////////////////////////////////////////////////////////////
-// LiteralSlots
-LiteralSlots<leaf::LiteralSlots*>
-	: [makeLiteralSlots0]
-	| [makeLiteralSlots1] LiteralSlots(0) LiteralSlot(1)
+// LiteralMembers
+LiteralMembers<leaf::LiteralMembers*>
+	: [makeLiteralMembers0]
+	| [makeLiteralMembers1] LiteralMembers(0) LiteralMember(1)
 	;
 
 ////////////////////////////////////////////////////////////////
-// LiteralSlot
-LiteralSlot<leaf::LiteralSlot*>
-	: [makeLiteralSlot] Identifier(0) Assign MultiExpr(1) Semicolon
+// LiteralMember
+LiteralMember<leaf::LiteralMember*>
+	: [makeLiteralMember] Identifier(0) Assign MultiExpr(1) Semicolon
 	;
 
 ////////////////////////////////////////////////////////////////

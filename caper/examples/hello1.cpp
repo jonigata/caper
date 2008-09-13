@@ -7,21 +7,21 @@
 #include "hello1.hpp"
 
 struct SemanticAction {
-        void syntax_error(){}
-        void stack_overflow(){}
-        void upcast( int& x, int y ) { x = y; }
+    void syntax_error(){}
+    void stack_overflow(){}
+    void upcast( int& x, int y ) { x = y; }
 
-        int Greet() { std::cout << "hello world" << std::endl; return 0; }
+    int Greet() { std::cout << "hello world" << std::endl; return 0; }
 };
 
 int main( int, char** )
 {
-        SemanticAction sa;
-        hello_world::Parser< int, SemanticAction > parser( sa );
+    SemanticAction sa;
+    hello_world::Parser< int, SemanticAction > parser( sa );
 
-        parser.post( hello_world::token_Hello, 0 );
-        parser.post( hello_world::token_World, 0 );
-        parser.post( hello_world::token_eof, 0 );
+    parser.post( hello_world::token_Hello, 0 );
+    parser.post( hello_world::token_World, 0 );
+    parser.post( hello_world::token_eof, 0 );
 
-        return 0;
+    return 0;
 }

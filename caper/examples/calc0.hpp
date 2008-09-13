@@ -219,6 +219,55 @@ private:
 		stack_.commit_tmp();
 	}
 
+	bool call_0_MakeAdd()
+	{
+		int arg0; sa_.downcast( arg0, get_arg(3, 0) );
+		int arg1; sa_.downcast( arg1, get_arg(3, 2) );
+		int r = sa_.MakeAdd( arg0, arg1 );
+		value_type v; sa_.upcast( v, r );
+		pop_stack( 3 );
+		return (this->*(stack_top()->gotof))( 0, v );
+	}
+
+	bool call_0_MakeSub()
+	{
+		int arg0; sa_.downcast( arg0, get_arg(3, 0) );
+		int arg1; sa_.downcast( arg1, get_arg(3, 2) );
+		int r = sa_.MakeSub( arg0, arg1 );
+		value_type v; sa_.upcast( v, r );
+		pop_stack( 3 );
+		return (this->*(stack_top()->gotof))( 0, v );
+	}
+
+	bool call_0_Identity()
+	{
+		int arg0; sa_.downcast( arg0, get_arg(1, 0) );
+		int r = sa_.Identity( arg0 );
+		value_type v; sa_.upcast( v, r );
+		pop_stack( 1 );
+		return (this->*(stack_top()->gotof))( 0, v );
+	}
+
+	bool call_0_MakeDiv()
+	{
+		int arg0; sa_.downcast( arg0, get_arg(3, 0) );
+		int arg1; sa_.downcast( arg1, get_arg(3, 2) );
+		int r = sa_.MakeDiv( arg0, arg1 );
+		value_type v; sa_.upcast( v, r );
+		pop_stack( 3 );
+		return (this->*(stack_top()->gotof))( 1, v );
+	}
+
+	bool call_0_MakeMul()
+	{
+		int arg0; sa_.downcast( arg0, get_arg(3, 0) );
+		int arg1; sa_.downcast( arg1, get_arg(3, 2) );
+		int r = sa_.MakeMul( arg0, arg1 );
+		value_type v; sa_.upcast( v, r );
+		pop_stack( 3 );
+		return (this->*(stack_top()->gotof))( 1, v );
+	}
+
 	bool gotof_0( int nonterminal_index, const value_type& v )
 	{
 		switch( nonterminal_index ) {
@@ -283,22 +332,10 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_Identity();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_Identity();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -309,13 +346,7 @@ private:
 			return false;
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_Identity();
 		default:
 			sa_.syntax_error();
 			error_ = true;
@@ -356,24 +387,10 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeAdd( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeAdd();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeAdd( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeAdd();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -384,14 +401,7 @@ private:
 			return false;
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeAdd( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeAdd();
 		default:
 			sa_.syntax_error();
 			error_ = true;
@@ -432,24 +442,10 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeSub( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeSub();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeSub( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeSub();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -460,14 +456,7 @@ private:
 			return false;
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeSub( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 0, v );
-			}
+			return call_0_MakeSub();
 		default:
 			sa_.syntax_error();
 			error_ = true;
@@ -486,49 +475,19 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_Identity();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_Identity();
 		case token_Div:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_Identity();
 		case token_Mul:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_Identity();
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(1, 0) );
-				int r = sa_.Identity( arg0 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 1 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_Identity();
 		default:
 			sa_.syntax_error();
 			error_ = true;
@@ -567,54 +526,19 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeMul( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeMul();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeMul( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeMul();
 		case token_Div:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeMul( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeMul();
 		case token_Mul:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeMul( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeMul();
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeMul( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeMul();
 		default:
 			sa_.syntax_error();
 			error_ = true;
@@ -653,54 +577,19 @@ private:
 		switch( token ) {
 		case token_eof:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeDiv( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeDiv();
 		case token_Add:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeDiv( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeDiv();
 		case token_Div:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeDiv( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeDiv();
 		case token_Mul:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeDiv( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeDiv();
 		case token_Sub:
 			// reduce
-			{
-				int arg0; sa_.downcast( arg0, get_arg(3, 0) );
-				int arg1; sa_.downcast( arg1, get_arg(3, 2) );
-				int r = sa_.MakeDiv( arg0, arg1 );
-				value_type v; sa_.upcast( v, r );
-				pop_stack( 3 );
-				return (this->*(stack_top()->gotof))( 1, v );
-			}
+			return call_0_MakeDiv();
 		default:
 			sa_.syntax_error();
 			error_ = true;

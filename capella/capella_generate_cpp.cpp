@@ -288,8 +288,6 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "public:\n";
                         os << "    int tag(){ return (int)TAG_" << tagname << "; }\n\n";
 
-                        const atomset_type& atoms = context.atoms;
-
                         // ƒƒ“ƒoéŒ¾
                         std::vector< std::pair< std::string, std::string > > members;                        
 

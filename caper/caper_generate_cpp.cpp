@@ -1,4 +1,4 @@
-// Copyright (C) 2006 Naoyuki Hirayama.
+// Copyright (C) 2008 Naoyuki Hirayama.
 // All Rights Reserved.
 
 // $Id$
@@ -6,6 +6,8 @@
 #include "caper_ast.hpp"
 #include "caper_generate_cpp.hpp"
 #include <algorithm>
+
+namespace {
 
 struct indent {
     indent( int n ) : n_(n) {}
@@ -17,6 +19,27 @@ std::ostream& operator<<( std::ostream& os, const indent& x )
     for( int i = 0 ; i < x.n_; i++ ) { os << "\t"; }
     return os;
 }
+
+void make_signature(
+    const symbol_map_type&                  nonterminal_types,
+    const tgt::parsing_table::rule_type&    rule,
+    const semantic_action&                  sa,
+    std::vector< std::string >&             signature )
+{
+    // function name
+    signature.push_back( sa.name );
+
+    // return value
+    signature.push_back(
+        (*nonterminal_types.find( rule.left().name() )).second );
+
+    // arguments
+    for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+        signature.push_back( (*sa.args.find( l )).second.type );
+    }
+}
+
+} // unnamed namespace
 
 void generate_cpp(
     const std::string&                      src_filename,
@@ -396,6 +419,99 @@ void generate_cpp(
        << ind1 << "}\n\n"
         ;
 
+    // member function signature -> index
+    std::map< std::vector< std::string >, int > stub_index;
+    {
+        // member function name -> count
+        std::map< std::string, int > stub_count; 
+
+        // action handler stub
+        for( action_map_type::const_iterator k = actions.begin() ;
+             k != actions.end() ;
+             ++k ) {
+
+            const tgt::parsing_table::rule_type& rule = (*k).first;
+
+            size_t base = rule.right().size();
+
+            size_t nonterminal_index = std::distance(
+                nonterminal_types.begin(),
+                nonterminal_types.find( rule.left().name() ) );
+
+            const semantic_action& sa = (*k).second;
+
+            // make signature
+            std::vector< std::string > signature;
+
+            // ... function name
+            signature.push_back( sa.name );
+
+            // ... return value
+            signature.push_back(
+                (*nonterminal_types.find( rule.left().name() )).second );
+
+            // ... arguments
+            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+                signature.push_back( (*sa.args.find( l )).second.type );
+            }
+
+            // skip duplicated
+            if( stub_index.find( signature ) != stub_index.end() ) {
+                continue;
+            }
+
+            // make function name
+            if( stub_count.find( sa.name ) == stub_count.end()) {
+                stub_count[sa.name] = 0;
+            }
+            int index = stub_count[sa.name];
+            stub_index[signature] = index;
+            stub_count[sa.name] = index+1;
+
+            char function_name_header[256];
+            sprintf( function_name_header, "call_%d_", index );
+            std::string function_name = function_name_header + sa.name;
+
+            // generate
+            os << ind1 << "bool " << function_name << "()\n";
+
+            os << ind1 << "{\n";
+            // automatic argument conversion
+            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+                const semantic_action_argument& arg =
+                    (*sa.args.find( l )).second;
+                os << ind1 << ind1 << arg.type
+                   << " arg" << l << "; "
+                   << "sa_.downcast( arg" << l
+                   << ", get_arg(" << base
+                   << ", " << arg.src_index << ") );\n";
+            }
+
+            // semantic action
+            os << ind1 << ind1
+               << (*nonterminal_types.find(
+                       rule.left().name() )).second
+               << " r = sa_." << sa.name << "( ";
+            bool first = true;
+            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+                if( first ) { first = false; } else { os << ", "; }
+                os << "arg" << l;
+            }
+            os << " );\n";
+
+            // automatic return value conversion
+            os << ind1 << ind1
+               << "value_type v; sa_.upcast( v, r );\n";
+            os << ind1 << ind1 << "pop_stack( "
+               << base
+               << " );\n";
+            os << ind1 << ind1
+               << "return (this->*(stack_top()->gotof))( "
+               << nonterminal_index << ", v );\n";
+            os << ind1 << "}\n\n";
+        }
+    }
+
     // states handler
     for( tgt::parsing_table::states_type::const_iterator i =
              table.states().begin();
@@ -497,40 +613,21 @@ void generate_cpp(
                     if( k != actions.end() ) {
                         const semantic_action& sa = (*k).second;
 
-                        os << ind1 << ind1 << ind1 << "{\n";
-                        // automatic argument conversion
-                        for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                            const semantic_action_argument& arg =
-                                (*sa.args.find( l )).second;
-                            os << ind1 << ind1 << ind1 << ind1 << arg.type
-                               << " arg" << l << "; "
-                               << "sa_.downcast( arg" << l
-                               << ", get_arg(" << base
-                               << ", " << arg.src_index << ") );\n";
-                        }
+                        std::vector< std::string > signature;
+                        make_signature(
+                            nonterminal_types,
+                            rule,
+                            sa,
+                            signature );
+                        int index = stub_index[signature];
 
-                        // semantic action
-                        os << ind1 << ind1 << ind1 << ind1 << ""
-                           << (*nonterminal_types.find(
-                                   rule.left().name() )).second
-                           << " r = sa_." << sa.name << "( ";
-                        bool first = true;
-                        for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                            if( first ) { first = false; } else { os << ", "; }
-                            os << "arg" << l;
-                        }
-                        os << " );\n";
+                        char function_name_header[256];
+                        sprintf( function_name_header, "call_%d_", index );
+                        std::string function_name =
+                            function_name_header + sa.name;
 
-                        // automatic return value conversion
-                        os << ind1 << ind1 << ind1 << ind1
-                           << "value_type v; sa_.upcast( v, r );\n";
-                        os << ind1 << ind1 << ind1 << ind1 << "pop_stack( "
-                           << base
-                           << " );\n";
-                        os << ind1 << ind1 << ind1 << ind1
-                           << "return (this->*(stack_top()->gotof))( "
-                           << nonterminal_index << ", v );\n";
-                        os << ind1 << ind1 << ind1 << "}\n";
+                        os << ind1 << ind1 << ind1 << "return "
+                           << function_name << "();\n";
                     } else {
                         os << ind1 << ind1 << ind1 << ind1
                            << "// run_semantic_action();\n";

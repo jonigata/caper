@@ -8,25 +8,25 @@
 #include "hello2.hpp"
 
 struct SemanticAction {
-        void syntax_error(){}
-        void stack_overflow(){}
-        void upcast( std::string& x, const std::string& y ) { x = y; }
-        void downcast( std::string& x, const std::string& y ) { x = y; }
+    void syntax_error(){}
+    void stack_overflow(){}
+    void upcast( std::string& x, const std::string& y ) { x = y; }
+    void downcast( std::string& x, const std::string& y ) { x = y; }
 
-        std::string Greet( const std::string& x, const std::string& y )
-        {
-                std::cout << x << y << std::endl; return "";
-        }
+    std::string Greet( const std::string& x, const std::string& y )
+    {
+        std::cout << x << y << std::endl; return "";
+    }
 };
 
 int main( int, char** )
 {
-        SemanticAction sa;
-        hello_world::Parser< std::string, SemanticAction > parser( sa );
+    SemanticAction sa;
+    hello_world::Parser< std::string, SemanticAction > parser( sa );
 
-        parser.post( hello_world::token_Hello, "Guten Tag, " );
-        parser.post( hello_world::token_World, "Welt" );
-        parser.post( hello_world::token_eof, "" );
+    parser.post( hello_world::token_Hello, "Guten Tag, " );
+    parser.post( hello_world::token_World, "Welt" );
+    parser.post( hello_world::token_eof, "" );
 
-        return 0;
+    return 0;
 }

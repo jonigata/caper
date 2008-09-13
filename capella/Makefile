@@ -9,18 +9,18 @@ DEPENDDIR	= ./depend
 VPATH = ./depend
 
 .c.d:
-	@$(CC) $(CDBFLG) $(CXXFLAGS) $(INC) $(MACHINE) $(ENVIRON) -MM $< > $(DEPENDDIR)/$*.d.t
-	@cp $(DEPENDDIR)/$*.d.t $(DEPENDDIR)/$*.d
-	@sed -e 's/$*\.o/$*\.d/g' $(DEPENDDIR)/$*.d.t >> $(DEPENDDIR)/$*.d
-	@rm $(DEPENDDIR)/$*.d.t
-	@echo '$*.o : $*.d' >> $(DEPENDDIR)/$*.d	
+	$(CC) $(CDBFLG) $(CXXFLAGS) $(INC) $(MACHINE) $(ENVIRON) -MM $< > $(DEPENDDIR)/$*.d.t
+	cp $(DEPENDDIR)/$*.d.t $(DEPENDDIR)/$*.d
+	sed -e 's/$*\.o/$*\.d/g' $(DEPENDDIR)/$*.d.t >> $(DEPENDDIR)/$*.d
+	rm $(DEPENDDIR)/$*.d.t
+	echo '$*.o : $*.d' >> $(DEPENDDIR)/$*.d	
 
 .cpp.d:
-	@$(CC) $(CDBFLG) $(CXXFLAGS) $(INC) $(MACHINE) $(ENVIRON) -MM $< > $(DEPENDDIR)/$*.d.t
-	@cp $(DEPENDDIR)/$*.d.t $(DEPENDDIR)/$*.d
-	@sed -e 's/$*\.o/$*\.d/g' $(DEPENDDIR)/$*.d.t >> $(DEPENDDIR)/$*.d
-	@rm $(DEPENDDIR)/$*.d.t
-	@echo '$*.o : $*.d' >> $(DEPENDDIR)/$*.d	
+	$(CC) $(CDBFLG) $(CXXFLAGS) $(INC) $(MACHINE) $(ENVIRON) -MM $< > $(DEPENDDIR)/$*.d.t
+	cp $(DEPENDDIR)/$*.d.t $(DEPENDDIR)/$*.d
+	sed -e 's/$*\.o/$*\.d/g' $(DEPENDDIR)/$*.d.t >> $(DEPENDDIR)/$*.d
+	rm $(DEPENDDIR)/$*.d.t
+	echo '$*.o : $*.d' >> $(DEPENDDIR)/$*.d	
 
 .cpp.o:
 	$(CC) $(CPPFLAGS) -c -o $@ $<
@@ -31,7 +31,7 @@ VPATH = ./depend
 all:
 	mkdir -p depend
 	make depend -s
-	make $(TARGET) -s
+	make $(TARGET)
 
 depend: $(OBJS:.o=.d)
 

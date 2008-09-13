@@ -9,7 +9,7 @@
 #include <boost/scoped_ptr.hpp>
 
 struct sr_conflict_reporter {
-	typedef tgt::rule rule_type;
+    typedef tgt::rule rule_type;
 
         void operator()( const rule_type& x, const rule_type& y )
         {
@@ -18,7 +18,7 @@ struct sr_conflict_reporter {
 };
 
 struct rr_conflict_reporter {
-	typedef tgt::rule rule_type;
+    typedef tgt::rule rule_type;
 
         void operator()( const rule_type& x, const rule_type& y )
         {
@@ -164,11 +164,11 @@ void make_target_parser(
         }
 
         if( algorithm_lr1 ) {
-                zw::gr::make_lr1_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
+            zw::gr::make_lr1_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
         } else {
-                zw::gr::make_lalr_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
+            zw::gr::make_lalr_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
         }
-	//std::cerr << "\n[target parse table]\n";
+    //std::cerr << "\n[target parse table]\n";
         //std::cerr << table;
 }
 

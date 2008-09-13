@@ -41,7 +41,7 @@ make_honalee_closure(
 
     int m = 0;
     for(;;){
-        Set new_items;  // ÁŞÆş¤¹¤ë¹à
+        Set new_items;  // ‘}“ü‚·‚é€
 
         m++;
 #if 0
@@ -49,7 +49,7 @@ make_honalee_closure(
 #endif
                 
         for( typename Set::const_iterator i = I.begin() ; i != I.end() ; ++i ) {
-            // x is [item(A¢ª¦Á¡¦B¦Â,a)]
+            // x is [item(A¨ƒ¿EBƒÀ,a)]
             const item_type& x = (*i);
             if( x.over() ){ continue; }
 
@@ -61,24 +61,24 @@ make_honalee_closure(
             const symbol_type& y = x.curr();
             if( !y.is_nonterminal() ) { continue; }
 
-            // v is [symbol_vector_type(¦Âa)]
+            // v is [symbol_vector_type(ƒÀa)]
             symbol_vector_type v;
             for( int j = x.cursor() + 1 ; j < int( x.rule().right().size() ) ; j++ ) {
                 v.push_back( x.rule().right()[j] );
             }
             v.push_back( x.lookahead() );
 
-            // f is FIRST(¦Âa)
+            // f is FIRST(ƒÀa)
             symbol_set_type f;
             make_vector_first( f, first, v ); 
 
             int n = 0;
             for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j, ++n ) {
-                // z is [rule(B¢ª¦Ã)]
+                // z is [rule(B¨ƒÁ)]
                 const rule_type& z = (*j);
                 if( !(  symbol_type( z.left() ) == y ) ) { continue; }
 
-                // ³Ælookahead
+                // Šelookahead
                 for( typename symbol_set_type::const_iterator k = f.begin() ; k != f.end() ; ++k ) {
                     item_type item( n, z, 0, *k );
                     if( J.find( item ) == J.end() ) {
@@ -266,7 +266,7 @@ void merge( bool&                               added_items,
  *
  * make_lr1_table
  *
- * LR(1)É½¤ÎºîÀ® ( honalee algorithm )
+ * LR(1)•\‚Ìì¬ ( honalee algorithm )
  *
  *==========================================================================*/
 template < class Token, class Traits , class SRReporter, class RRReporter >
@@ -291,13 +291,13 @@ make_lr1_table(
 
     terminal_type eof( "$", Traits::eof() );
 
-    // µ­¹æ¤Î¼ı½¸
+    // ‹L†‚ÌûW
     symbol_set_type terminals;    
     symbol_set_type nonterminals;    
     symbol_set_type all_symbols;
     collect_symbols( terminals, nonterminals, all_symbols, g );
 
-    // FIRST, FOLLOW¤ÎºîÀ®
+    // FIRST, FOLLOW‚Ìì¬
     first_collection< Token, Traits > first;
     follow_collection< Token, Traits > follow;
     make_first_and_follow( first, follow, terminals, nonterminals, all_symbols, g );
@@ -534,10 +534,10 @@ make_lr1_table(
     print_list_indirect( std::cerr, doneList );
 #endif
 
-    // ¥Æ¡¼¥Ö¥ë¤ÎºîÀ®
+    // ƒe[ƒuƒ‹‚Ìì¬
 
-    // É½¤ÎºîÀ®
-    // ¥ë¡¼¥ë¤Î¥³¥Ô¡¼/¥¤¥ó¥Ç¥Ã¥¯¥¹¤ÎºîÀ®
+    // •\‚Ìì¬
+    // ƒ‹[ƒ‹‚ÌƒRƒs[/ƒCƒ“ƒfƒbƒNƒX‚Ìì¬
     std::map< rule_type, int > rule_indices;
     {
         for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j ) {
@@ -545,7 +545,7 @@ make_lr1_table(
         }
     }
 
-    // ÈÖ¹æÉÕ¤±ÂØ¤¨
+    // ”Ô†•t‚¯‘Ö‚¦
     int m = 0;
     for( typename std::deque< state_ptr >::iterator i = doneList.begin() ; i != doneList.end() ; ++i ) {
         (*i)->number = m; m++;             
@@ -553,7 +553,7 @@ make_lr1_table(
 
     table.first_state( 0 );
 
-    // °Ü¿¢
+    // ˆÚA
     for( typename std::deque< state_ptr >::const_iterator i = doneList.begin() ; i != doneList.end() ; ++i ) {
         const state_type&                       ss = *(*i);             // honalee state
         typename parsing_table_type::state&     ds = table.add_state(); // table state

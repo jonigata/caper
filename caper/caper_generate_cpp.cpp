@@ -7,6 +7,17 @@
 #include "caper_generate_cpp.hpp"
 #include <algorithm>
 
+struct indent {
+    indent( int n ) : n_(n) {}
+    int n_;
+};
+
+std::ostream& operator<<( std::ostream& os, const indent& x )
+{
+    for( int i = 0 ; i < x.n_; i++ ) { os << "\t"; }
+    return os;
+}
+
 void generate_cpp(
     const std::string&                      src_filename,
     std::ostream&                           os,
@@ -27,10 +38,17 @@ void generate_cpp(
 #endif
         
     std::string headername = filename;
-    for( std::string::iterator i = headername.begin() ; i != headername.end() ; ++i ) {
-        if( !isalpha( *i ) && !isdigit( *i ) ) { *i = '_'; } else { *i = toupper( *i ); }
+    for( std::string::iterator i = headername.begin() ;
+         i != headername.end() ;
+         ++i ) {
+        if( !isalpha( *i ) && !isdigit( *i ) ) {
+            *i = '_';
+        } else {
+            *i = toupper( *i );
+        }
     }
-        
+
+    indent ind1(1);
 
     // once header
     os << "#ifndef " << headername << "_\n"
@@ -51,7 +69,8 @@ void generate_cpp(
         // token enumeration
         os << "enum Token {\n";
         for( size_t i = 0 ; i < token_id_map.size() ; i++ ) {
-            os << "    " << options.token_prefix << (*token_id_map.find( i )).second << ",\n";
+            os << "    " << options.token_prefix
+               << (*token_id_map.find( i )).second << ",\n";
         }
         os << "};\n\n";
     }
@@ -63,69 +82,77 @@ void generate_cpp(
         os << "template < class T, int StackSize >\n"
            << "class Stack {\n"
            << "public:\n"
-           << "        Stack(){ gap_ = 0; }\n"
-           << "        ~Stack(){}\n"
-           << "        \n"
-           << "        void reset_tmp()\n"
-           << "        {\n"
-           << "                gap_ = stack_.size();\n"
-           << "                tmp_.clear();\n"
-           << "        }\n"
+           << ind1 << "Stack(){ gap_ = 0; }\n"
+           << ind1 << "~Stack(){}\n"
+           << ind1 << "\n"
+           << ind1 << "void reset_tmp()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "gap_ = stack_.size();\n"
+           << ind1 << ind1 << "tmp_.clear();\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        void commit_tmp()\n"
-           << "        {\n"
-           << "                stack_.reserve( gap_ + tmp_.size() );                      // may throw\n"
-           << "                stack_.erase( stack_.begin() + gap_, stack_.end() );       // expect not to throw\n"
-           << "                stack_.insert( stack_.end(), tmp_.begin(), tmp_.end() );   // expect not to throw\n"
-           << "        }\n"
-           << "        bool push( const T& f )\n"
-           << "        {\n"
-           << "                if( StackSize != 0 && StackSize <= stack_.size() + tmp_.size() ) {\n"
-           << "                    return false;\n"
-           << "                }\n"
-           << "                tmp_.push_back( f );\n"
-           << "                return true;\n"
-           << "        }\n"
+           << ind1 << "void commit_tmp()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "// may throw\n"
+           << ind1 << ind1 << "stack_.reserve( gap_ + tmp_.size() );\n"
            << "\n"
-           << "        void pop( size_t n )\n"
-           << "        {\n"
-           << "                if( tmp_.size() < n ) {\n"
-           << "                        n -= tmp_.size();\n"
-           << "                        tmp_.clear();\n"
-           << "                        gap_ -= n;\n"
-           << "                } else {\n"
-           << "                        tmp_.erase( tmp_.end() - n, tmp_.end() );\n"
-           << "                }\n"
-           << "        }\n"
+           << ind1 << ind1 << "// expect not to throw\n"
+           << "stack_.erase( stack_.begin() + gap_, stack_.end() );\n"
+           << ind1 << ind1
+           << "stack_.insert( stack_.end(), tmp_.begin(), tmp_.end() );\n"
+           << ind1 << "}\n"
+           << ind1 << "bool push( const T& f )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1
+           << "if( StackSize != 0 && StackSize <= "
+           << "stack_.size() + tmp_.size() ) {\n"
+           << ind1 << ind1 << ind1 << "return false;\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "tmp_.push_back( f );\n"
+           << ind1 << ind1 << "return true;\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        const T& top()\n"
-           << "        {\n"
-           << "                if( !tmp_.empty() ) {\n"
-           << "                        return tmp_.back();\n"
-           << "                } else {\n"
-           << "                        return stack_[ gap_ - 1 ];\n"
-           << "                }\n"
-           << "        }\n"
+           << ind1 << "void pop( size_t n )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( tmp_.size() < n ) {\n"
+           << ind1 << ind1 << ind1 << "n -= tmp_.size();\n"
+           << ind1 << ind1 << ind1 << "tmp_.clear();\n"
+           << ind1 << ind1 << ind1 << "gap_ -= n;\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1
+           << "tmp_.erase( tmp_.end() - n, tmp_.end() );\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        const T& get_arg( size_t base, size_t index )\n"
-           << "        {\n"
-           << "                size_t n = tmp_.size();\n"
-           << "                if( base - index <= n ) {\n"
-           << "                        return tmp_[ n - ( base - index ) ];\n"
-           << "                } else {\n"
-           << "                        return stack_[ gap_ - ( base - n ) + index ];\n"
-           << "                }\n"
-           << "        }\n"
+           << ind1 << "const T& top()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( !tmp_.empty() ) {\n"
+           << ind1 << ind1 << ind1 << "return tmp_.back();\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1 << "return stack_[ gap_ - 1 ];\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        void clear()\n"
-           << "        {\n"
-           << "                stack_.clear();\n"
-           << "        }\n"
+           << ind1 << "const T& get_arg( size_t base, size_t index )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "size_t n = tmp_.size();\n"
+           << ind1 << ind1 << "if( base - index <= n ) {\n"
+           << ind1 << ind1 << ind1 << "return tmp_[ n - ( base - index ) ];\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1
+           << "return stack_[ gap_ - ( base - n ) + index ];\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
+           << ind1 << "void clear()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "stack_.clear();\n"
+           << ind1 << "}\n"
            << "\n"
            << "private:\n"
-           << "        std::vector< T > stack_;\n"
-           << "        std::vector< T > tmp_;\n"
-           << "        size_t gap_;\n"
+           << ind1 << "std::vector< T > stack_;\n"
+           << ind1 << "std::vector< T > tmp_;\n"
+           << ind1 << "size_t gap_;\n"
            << "\n"
            << "};\n\n"
             ;
@@ -134,98 +161,110 @@ void generate_cpp(
         os << "template < class T, int StackSize >\n"
            << "class Stack {\n"
            << "public:\n"
-           << "        Stack(){ top_ = 0; gap_ = 0; tmp_ = 0; }\n"
-           << "        ~Stack(){}\n"
-           << "        \n"
-           << "        void reset_tmp()\n"
-           << "        {\n"
-           << "                for( size_t i = 0 ; i < tmp_ ; i++ ) {\n"
-           << "                        at( StackSize - 1 - i ).~T(); // explicit destructor\n"
-           << "                }\n"
-           << "                tmp_ = 0;\n"
-           << "                gap_ = top_;\n"
-           << "        }\n"
+           << ind1 << "Stack(){ top_ = 0; gap_ = 0; tmp_ = 0; }\n"
+           << ind1 << "~Stack(){}\n"
+           << ind1 << "\n"
+           << ind1 << "void reset_tmp()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "for( size_t i = 0 ; i < tmp_ ; i++ ) {\n"
+           << ind1 << ind1 << ind1
+           << "at( StackSize - 1 - i ).~T(); // explicit destructor\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "tmp_ = 0;\n"
+           << ind1 << ind1 << "gap_ = top_;\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        void commit_tmp()\n"
-           << "        {\n"
-           << "                for( size_t i = 0 ; i < tmp_ ; i++ ) {\n"
-           << "                        if( gap_ + i < top_ ) {\n"
-           << "                                at( gap_ + i ) = at( StackSize - 1 - i );\n"
-           << "                        } else {\n"
-           << "                                // placement new copy constructor\n"
-           << "                                new ( &at( gap_ + i ) ) \n"
-           << "                                    T( at( StackSize - 1 - i ) );\n"
-           << "                        }\n"
-           << "                        at( StackSize - 1 - i).~T(); // explicit destructor\n"
-           << "                }\n"
-           << "                if( gap_ + tmp_ < top_ ) {\n"
-           << "                        for( int i = 0 ; i < int( top_ - gap_ - tmp_ ) ; i++ ) {\n"
-           << "                                at( top_ - 1 - i ).~T(); // explicit destructor\n"
-           << "                        }\n"
-           << "                }\n"
+           << ind1 << "void commit_tmp()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "for( size_t i = 0 ; i < tmp_ ; i++ ) {\n"
+           << ind1 << ind1 << ind1 << "if( gap_ + i < top_ ) {\n"
+           << ind1 << ind1 << ind1 << ind1
+           << "at( gap_ + i ) = at( StackSize - 1 - i );\n"
+           << ind1 << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1 << ind1
+           << "// placement new copy constructor\n"
+           << ind1 << ind1 << ind1 << ind1 << "new ( &at( gap_ + i ) ) \n"
+           << ind1 << ind1 << ind1 << ind1
+           << "    T( at( StackSize - 1 - i ) );\n"
+           << ind1 << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << ind1
+           << "at( StackSize - 1 - i).~T(); // explicit destructor\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "if( gap_ + tmp_ < top_ ) {\n"
+           << ind1 << ind1 << ind1
+           << "for( int i = 0 ; i < int( top_ - gap_ - tmp_ ) ; i++ ) {\n"
+           << ind1 << ind1 << ind1 << ind1
+           << "at( top_ - 1 - i ).~T(); // explicit destructor\n"
+           << ind1 << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "}\n"
            << "\n"
-           << "                top_ = gap_ = gap_ + tmp_;\n"
-           << "                tmp_ = 0;\n"
-           << "        }\n"
-           << "        \n"
-           << "        bool push( const T& f )\n"
-           << "        {\n"
-           << "                if( StackSize <= top_ + tmp_ ) { return false; }\n"
-           << "                // placement new copy constructor\n"
-           << "                new( &at( StackSize - 1 - tmp_++ ) ) T( f );\n"
-           << "                return true;\n"
-           << "        }\n"
+           << ind1 << ind1 << "top_ = gap_ = gap_ + tmp_;\n"
+           << ind1 << ind1 << "tmp_ = 0;\n"
+           << ind1 << "}\n"
+           << ind1 << "\n"
+           << ind1 << "bool push( const T& f )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1
+           << "if( StackSize <= top_ + tmp_ ) { return false; }\n"
+           << ind1 << ind1 << "// placement new copy constructor\n"
+           << ind1 << ind1 << "new( &at( StackSize - 1 - tmp_++ ) ) T( f );\n"
+           << ind1 << ind1 << "return true;\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        void pop( size_t n )\n"
-           << "        {\n"
-           << "                size_t m = n; if( m > tmp_ ) m = tmp_;\n"
+           << ind1 << "void pop( size_t n )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "size_t m = n; if( m > tmp_ ) m = tmp_;\n"
            << "\n"
-           << "                for( size_t i = 0 ; i < m ; i++ ) {\n"
-           << "                        at( StackSize - tmp_ + i ).~T(); // explicit destructor\n"
-           << "                }\n"
+           << ind1 << ind1 << "for( size_t i = 0 ; i < m ; i++ ) {\n"
+           << ind1 << ind1 << ind1
+           << "at( StackSize - tmp_ + i ).~T(); // explicit destructor\n"
+           << ind1 << ind1 << "}\n"
            << "\n"
-           << "                tmp_ -= m;\n"
-           << "                gap_ -= n - m;\n"
-           << "        }\n"
+           << ind1 << ind1 << "tmp_ -= m;\n"
+           << ind1 << ind1 << "gap_ -= n - m;\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        const T& top()\n"
-           << "        {\n"
-           << "                if( 0 < tmp_ ) {\n"
-           << "                        return at( StackSize - 1 - (tmp_-1) );\n"
-           << "                } else {\n"
-           << "                        return at( gap_ - 1 );\n"
-           << "                }\n"
-           << "        }\n"
+           << ind1 << "const T& top()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( 0 < tmp_ ) {\n"
+           << ind1 << ind1 << ind1
+           << "return at( StackSize - 1 - (tmp_-1) );\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1 << "return at( gap_ - 1 );\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        const T& get_arg( size_t base, size_t index )\n"
-           << "        {\n"
-           << "                if( base - index <= tmp_ ) {\n"
-           << "                        return at( StackSize-1-( tmp_ - ( base - index ) ) );\n"
-           << "                } else {\n"
-           << "                        return at( gap_ - ( base - tmp_ ) + index );\n"
-           << "                }\n"
-           << "        }\n"
+           << ind1 << "const T& get_arg( size_t base, size_t index )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( base - index <= tmp_ ) {\n"
+           << ind1 << ind1 << ind1
+           << "return at( StackSize-1-( tmp_ - ( base - index ) ) );\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1
+           << "return at( gap_ - ( base - tmp_ ) + index );\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
            << "\n"
-           << "        void clear()\n"
-           << "        {\n"
-           << "                reset_tmp();\n"
-           << "                for( size_t i = 0 ; i < top_ ; i++ ) {\n"
-           << "                        at( i ).~T(); // explicit destructor\n"
-           << "                }\n"
-           << "                top_ = gap_ = tmp_ = 0;\n"
-           << "        }\n"
+           << ind1 << "void clear()\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "reset_tmp();\n"
+           << ind1 << ind1 << "for( size_t i = 0 ; i < top_ ; i++ ) {\n"
+           << ind1 << ind1 << ind1 << "at( i ).~T(); // explicit destructor\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "top_ = gap_ = tmp_ = 0;\n"
+           << ind1 << "}\n"
            << "\n"
            << "private:\n"
-           << "        T& at( size_t n )\n"
-           << "        {\n"
-           << "                return *(T*)(stack_ + (n * sizeof(T) ));\n"
-           << "        }\n"
+           << ind1 << "T& at( size_t n )\n"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "return *(T*)(stack_ + (n * sizeof(T) ));\n"
+           << ind1 << "}\n"
            << "\n"
            << "private:\n"
-           << "        char stack_[ StackSize * sizeof(T) ];\n"
-           << "        size_t top_;\n"
-           << "        size_t gap_;\n"
-           << "        size_t tmp_;\n"
+           << ind1 << "char stack_[ StackSize * sizeof(T) ];\n"
+           << ind1 << "size_t top_;\n"
+           << ind1 << "size_t gap_;\n"
+           << ind1 << "size_t tmp_;\n"
            << "\n"
            << "};\n\n"
             ;
@@ -237,7 +276,9 @@ void generate_cpp(
         default_stacksize = "1024";
     }
 
-    std::string template_parameters = "class Value, class SemanticAction, int StackSize = " + default_stacksize;
+    std::string template_parameters =
+        "class Value, class SemanticAction, int StackSize = " +
+        default_stacksize;
     if( options.external_token ) {
         template_parameters = "class Token, " + template_parameters;
     }
@@ -247,122 +288,133 @@ void generate_cpp(
 
     // public interface
     os << "public:\n"
-       << "    typedef Token token_type;\n"
-       << "    typedef Value value_type;\n\n"
+       << ind1 << "typedef Token token_type;\n"
+       << ind1 << "typedef Value value_type;\n\n"
        << "public:\n"
-       << "    Parser( SemanticAction& sa ) : sa_( sa ) { reset(); }\n\n"
-       << "    void reset()\n"
-       << "    {\n"
-       << "        error_ = false;\n"
-       << "        accepted_ = false;\n"
-       << "        clear_stack();\n"
-       << "        reset_tmp_stack();\n"
-       << "        if( push_stack( "
+       << ind1 << "Parser( SemanticAction& sa ) : sa_( sa ) { reset(); }\n\n"
+       << ind1 << "void reset()\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "error_ = false;\n"
+       << ind1 << ind1 << "accepted_ = false;\n"
+       << ind1 << ind1 << "clear_stack();\n"
+       << ind1 << ind1 << "reset_tmp_stack();\n"
+       << ind1 << ind1 << "if( push_stack( "
        << "&Parser::state_" << table.first_state() << ", "
        << "&Parser::gotof_" << table.first_state() << ", "
        << "value_type() ) ) {\n"
-       << "            commit_tmp_stack();\n"
-       << "        } else {\n"
-       << "            sa_.stack_overflow();\n"
-       << "            error_ = true;\n"
-       << "        }\n"
-       << "    }\n\n"
-       << "    bool post( token_type token, const value_type& value )\n"
-       << "    {\n"
-       << "        assert( !error_ );\n"
-       << "        reset_tmp_stack();\n"
-       << "        while( (this->*(stack_top()->state) )( token, value ) ); // may throw\n"
-       << "        if( !error_ ) {\n"
-       << "            commit_tmp_stack();\n"
-       << "        }\n"
-       << "        return accepted_;\n"
-       << "    }\n\n"
-       << "    bool accept( value_type& v )\n"
-       << "    {\n"
-       << "        assert( accepted_ );\n"
-       << "        if( error_ ) { return false; }\n"
-       << "        v = accepted_value_;\n"
-       << "        return true;\n"
-       << "    }\n\n"
-       << "    bool error() { return error_; }\n\n"
+       << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
+       << ind1 << ind1 << "} else {\n"
+       << ind1 << ind1 << ind1 << "sa_.stack_overflow();\n"
+       << ind1 << ind1 << ind1 << "error_ = true;\n"
+       << ind1 << ind1 << "}\n"
+       << ind1 << "}\n\n"
+       << ind1 << "bool post( token_type token, const value_type& value )\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "assert( !error_ );\n"
+       << ind1 << ind1 << "reset_tmp_stack();\n"
+       << ind1 << ind1 << "while( (this->*(stack_top()->state) )"
+       << "( token, value ) ); "
+       << "// may throw\n"
+       << ind1 << ind1 << "if( !error_ ) {\n"
+       << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
+       << ind1 << ind1 << "}\n"
+       << ind1 << ind1 << "return accepted_;\n"
+       << ind1 << "}\n\n"
+       << ind1 << "bool accept( value_type& v )\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "assert( accepted_ );\n"
+       << ind1 << ind1 << "if( error_ ) { return false; }\n"
+       << ind1 << ind1 << "v = accepted_value_;\n"
+       << ind1 << ind1 << "return true;\n"
+       << ind1 << "}\n\n"
+       << ind1 << "bool error() { return error_; }\n\n"
         ;
 
     // implementation
     os << "private:\n";
     if( options.external_token ) {
-        os << "    typedef Parser< Token, Value, SemanticAction, StackSize > self_type;\n";
+        os << ind1 << "typedef "
+           << "Parser< Token, Value, SemanticAction, StackSize > self_type;\n";
     } else {
-        os << "    typedef Parser< Value, SemanticAction, StackSize > self_type;\n";
+        os << ind1 << "typedef "
+           << "Parser< Value, SemanticAction, StackSize > self_type;\n";
     }
-    os << "    typedef bool ( self_type::*state_type )( token_type, const value_type& );\n"
-       << "    typedef bool ( self_type::*gotof_type )( int, const value_type& );\n\n"
-       << "    bool            accepted_;\n"
-       << "    bool            error_;\n"
-       << "    value_type      accepted_value_;\n\n"
-       << "    SemanticAction& sa_;\n\n"
-       << "    struct stack_frame {\n"
-       << "        state_type state;\n"
-       << "        gotof_type gotof;\n"
-       << "        value_type value;\n\n"
-       << "        stack_frame( state_type s, gotof_type g, const value_type& v )\n"
-       << "            : state( s ), gotof( g ), value( v ) {}\n"
-       << "    };\n\n"
+    os << ind1 << "typedef bool ( self_type::*state_type )"
+       << "( token_type, const value_type& );\n"
+       << ind1 << "typedef bool ( self_type::*gotof_type )"
+       << "( int, const value_type& );\n\n"
+       << ind1 << "bool            accepted_;\n"
+       << ind1 << "bool            error_;\n"
+       << ind1 << "value_type      accepted_value_;\n\n"
+       << ind1 << "SemanticAction& sa_;\n\n"
+       << ind1 << "struct stack_frame {\n"
+       << ind1<< ind1 << "state_type state;\n"
+       << ind1<< ind1 << "gotof_type gotof;\n"
+       << ind1<< ind1 << "value_type value;\n\n"
+       << ind1<< ind1
+       << "stack_frame( state_type s, gotof_type g, const value_type& v )\n"
+       << ind1<< ind1 << "    : state( s ), gotof( g ), value( v ) {}\n"
+       << ind1 << "};\n\n"
         ;
 
     // stack operation
-    os << "    Stack< stack_frame, StackSize > stack_;\n"
-       << "    bool push_stack( state_type s, gotof_type g, const value_type& v )\n"
-       << "    {\n"
-       << "        bool f = stack_.push( stack_frame( s, g, v ) );\n"
-       << "        assert( !error_ );\n"
-       << "        if( !f ) {\n"
-       << "            error_ = true;\n"
-       << "            sa_.stack_overflow();\n"
-       << "        }\n"
-       << "        return f;\n"
-       << "    }\n\n"
-       << "    void pop_stack( size_t n )\n"
-       << "    {\n"
-       << "        stack_.pop( n );\n"
-       << "    }\n\n"
-       << "    const stack_frame* stack_top()\n"
-       << "    {\n"
-       << "        return &stack_.top();\n"
-       << "    }\n\n"
-       << "    const value_type& get_arg( size_t base, size_t index )\n"
-       << "    {\n"
-       << "        return stack_.get_arg( base, index ).value;\n"
-       << "    }\n\n"
-       << "    void clear_stack()\n"
-       << "    {\n"
-       << "        stack_.clear();\n"
-       << "    }\n\n"
-       << "    void reset_tmp_stack()\n"
-       << "    {\n"
-       << "        stack_.reset_tmp();\n"
-       << "    }\n\n"
-       << "    void commit_tmp_stack()\n"
-       << "    {\n"
-       << "        stack_.commit_tmp();\n"
-       << "    }\n\n"
+    os << ind1 << "Stack< stack_frame, StackSize > stack_;\n"
+       << ind1 << "bool push_stack( state_type s, gotof_type g, "
+       << "const value_type& v )\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "bool f = stack_.push( stack_frame( s, g, v ) );\n"
+       << ind1 << ind1 << "assert( !error_ );\n"
+       << ind1 << ind1 << "if( !f ) {\n"
+       << ind1 << ind1 << ind1 << "error_ = true;\n"
+       << ind1 << ind1 << ind1 << "sa_.stack_overflow();\n"
+       << ind1 << ind1 << "}\n"
+       << ind1<< ind1 << "return f;\n"
+       << ind1 << "}\n\n"
+       << ind1 << "void pop_stack( size_t n )\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "stack_.pop( n );\n"
+       << ind1 << "}\n\n"
+       << ind1 << "const stack_frame* stack_top()\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "return &stack_.top();\n"
+       << ind1 << "}\n\n"
+       << ind1 << "const value_type& get_arg( size_t base, size_t index )\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "return stack_.get_arg( base, index ).value;\n"
+       << ind1 << "}\n\n"
+       << ind1 << "void clear_stack()\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "stack_.clear();\n"
+       << ind1 << "}\n\n"
+       << ind1 << "void reset_tmp_stack()\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "stack_.reset_tmp();\n"
+       << ind1 << "}\n\n"
+       << ind1 << "void commit_tmp_stack()\n"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "stack_.commit_tmp();\n"
+       << ind1 << "}\n\n"
         ;
 
     // states handler
-    for( tgt::parsing_table::states_type::const_iterator i = table.states().begin();
+    for( tgt::parsing_table::states_type::const_iterator i =
+             table.states().begin();
          i != table.states().end() ;
          ++i ) {
         const tgt::parsing_table::state& s = *i;
 
         // gotof header
-        os << "    bool gotof_" << s.no << "( int nonterminal_index, const value_type& v )\n"
-           << "    {\n";
+        os << ind1 << "bool gotof_" << s.no
+           << "( int nonterminal_index, const value_type& v )\n"
+           << ind1 << "{\n";
 
         // gotof dispatcher
         std::stringstream ss;
-        ss << "        switch( nonterminal_index ) {\n";
+        ss << ind1 << ind1 << "switch( nonterminal_index ) {\n";
         bool output_switch = false;
         std::set<size_t> generated;
-        for( tgt::parsing_table::rules_type::const_iterator j = table.rules().begin() ;
+        for( tgt::parsing_table::rules_type::const_iterator j =
+                 table.rules().begin() ;
              j != table.rules().end() ;
              ++j ) {
 
@@ -378,8 +430,8 @@ void generate_cpp(
 
             if( k != (*i).goto_table.end() ) {
 
-
-                ss << "        case " << nonterminal_index
+                
+                ss << ind1 << ind1 << "case " << nonterminal_index
                    << ": return push_stack( &Parser::state_" << (*k).second
                    << ", &Parser::gotof_" << (*k).second
                    << ", v );\n";
@@ -387,51 +439,56 @@ void generate_cpp(
                 generated.insert( nonterminal_index );
             }
         }
-        ss << "        default: assert(0); return false;\n"; 
-        ss << "        }\n";
+        ss << ind1 << ind1 << "default: assert(0); return false;\n"; 
+        ss << ind1 << ind1 << "}\n";
         if( output_switch ) {
             os << ss.str();
         } else {
-            os << "        assert(0);\n"
-               << "        return true;\n";
+            os << ind1<< ind1 << "assert(0);\n"
+               << ind1<< ind1 << "return true;\n";
         }
 
         // gotof footer
-        os << "    }\n\n";
-
+        os << ind1 << "}\n\n";
+        
         // state header
-        os << "    bool state_" << s.no << "( token_type token, const value_type& value )\n";
-        os << "    {\n";
+        os << ind1 << "bool state_" << s.no
+           << "( token_type token, const value_type& value )\n";
+        os << ind1 << "{\n";
 
         // dispatcher header
-        os << "        switch( token ) {\n";
+        os << ind1 << ind1 << "switch( token ) {\n";
 
         // action table
-        for( tgt::parsing_table::state::action_table_type::const_iterator j = s.action_table.begin();
+        for( tgt::parsing_table::state::action_table_type::const_iterator j =
+                 s.action_table.begin();
              j != s.action_table.end() ;
              ++j ) {
             // action header 
-            os << "        case " << options.token_prefix
+            os << ind1 << ind1 << "case " << options.token_prefix
                << (*token_id_map.find( (*j).first )).second << ":\n";
 
             // action
             const tgt::parsing_table::action* a = &(*j).second;
             switch( a->type ) {
             case zw::gr::action_shift:
-                os << "            // shift\n"
-                   << "            push_stack( "
+                os << ind1 << ind1 << ind1 << "// shift\n"
+                   << ind1 << ind1 << ind1 << "push_stack( "
                    << "&Parser::state_" << a->dest_index << ", "
                    << "&Parser::gotof_" << a->dest_index << ", "
                    << "value );\n"
-                   << "            return false;\n";
+                   << ind1 << ind1 << ind1 << "return false;\n";
                 break;
             case zw::gr::action_reduce:
-                os << "            // reduce\n";
+                os << ind1 << ind1 << ind1 << "// reduce\n";
                 {
-                    size_t base = table.rules()[ a->rule_index ].right().size();
+                    size_t base =
+                        table.rules()[ a->rule_index ].right().size();
                                         
-                    const tgt::parsing_table::rule_type& rule = table.rules()[a->rule_index];
-                    action_map_type::const_iterator k = actions.find( rule );
+                    const tgt::parsing_table::rule_type& rule =
+                        table.rules()[a->rule_index];
+                    action_map_type::const_iterator k =
+                        actions.find( rule );
 
                     size_t nonterminal_index = std::distance(
                         nonterminal_types.begin(),
@@ -440,19 +497,22 @@ void generate_cpp(
                     if( k != actions.end() ) {
                         const semantic_action& sa = (*k).second;
 
-                        os << "            {\n";
+                        os << ind1 << ind1 << ind1 << "{\n";
                         // automatic argument conversion
                         for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
                             const semantic_action_argument& arg =
                                 (*sa.args.find( l )).second;
-                            os << "                " << arg.type << " arg" << l << "; "
-                               << "sa_.downcast( arg" << l << ", get_arg(" << base
+                            os << ind1 << ind1 << ind1 << ind1 << arg.type
+                               << " arg" << l << "; "
+                               << "sa_.downcast( arg" << l
+                               << ", get_arg(" << base
                                << ", " << arg.src_index << ") );\n";
                         }
 
                         // semantic action
-                        os << "                "
-                           << (*nonterminal_types.find( rule.left().name() )).second
+                        os << ind1 << ind1 << ind1 << ind1 << ""
+                           << (*nonterminal_types.find(
+                                   rule.left().name() )).second
                            << " r = sa_." << sa.name << "( ";
                         bool first = true;
                         for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
@@ -462,34 +522,39 @@ void generate_cpp(
                         os << " );\n";
 
                         // automatic return value conversion
-                        os << "                value_type v; sa_.upcast( v, r );\n";
-                        os << "                pop_stack( "
+                        os << ind1 << ind1 << ind1 << ind1
+                           << "value_type v; sa_.upcast( v, r );\n";
+                        os << ind1 << ind1 << ind1 << ind1 << "pop_stack( "
                            << base
                            << " );\n";
-                        os << "                return (this->*(stack_top()->gotof))( "
+                        os << ind1 << ind1 << ind1 << ind1
+                           << "return (this->*(stack_top()->gotof))( "
                            << nonterminal_index << ", v );\n";
-                        os << "            }\n";
+                        os << ind1 << ind1 << ind1 << "}\n";
                     } else {
-                        os << "            // run_semantic_action();\n";
-                        os << "            pop_stack( "
+                        os << ind1 << ind1 << ind1 << ind1
+                           << "// run_semantic_action();\n";
+                        os << ind1 << ind1 << ind1 << ind1 << "pop_stack( "
                            << base
                            << " );\n";
-                        os << "            return (this->*(stack_top()->gotof))( "
+                        os << ind1 << ind1 << ind1 << ind1
+                           << "return (this->*(stack_top()->gotof))( "
                            << nonterminal_index << ", value_type() );\n";
                     }
                 }
                 break;
             case zw::gr::action_accept:
-                os << "            // accept\n"
-                   << "            // run_semantic_action();\n"
-                   << "            accepted_ = true;\n"
-                   << "            accepted_value_  = get_arg( 1, 0 );\n" // implicit root
-                   << "            return false;\n";
+                os << ind1 << ind1 << ind1 << "// accept\n"
+                   << ind1 << ind1 << ind1 << "// run_semantic_action();\n"
+                   << ind1 << ind1 << ind1 << "accepted_ = true;\n"
+                   << ind1 << ind1 << ind1
+                   << "accepted_value_  = get_arg( 1, 0 );\n" // implicit root
+                   << ind1 << ind1 << ind1 << "return false;\n";
                 break;
             case zw::gr::action_error:
-                os << "            sa_.syntax_error();\n";
-                os << "            error_ = true;\n"; 
-                os << "            return false;\n";
+                os << ind1 << ind1 << ind1 << "sa_.syntax_error();\n";
+                os << ind1 << ind1 << ind1 << "error_ = true;\n"; 
+                os << ind1 << ind1 << ind1 << "return false;\n";
                 break;
             }
 
@@ -497,14 +562,14 @@ void generate_cpp(
         }
 
         // dispatcher footer
-        os << "        default:\n"
-           << "            sa_.syntax_error();\n"
-           << "            error_ = true;\n"
-           << "            return false;\n";
-        os << "        }\n";
+        os << ind1 << ind1 << "default:\n"
+           << ind1 << ind1 << ind1 << "sa_.syntax_error();\n"
+           << ind1 << ind1 << ind1 << "error_ = true;\n"
+           << ind1 << ind1 << ind1 << "return false;\n";
+        os << ind1 << ind1 << "}\n";
 
         // state footer
-        os << "    }\n\n";
+        os << ind1 << "}\n\n";
     }
 
     // parser class footer

@@ -144,7 +144,7 @@ public:
 		if( !error_ ) {
 			commit_tmp_stack();
 		}
-		return accepted_;
+		return accepted_ || error_;
 	}
 
 	bool accept( value_type& v )
@@ -330,12 +330,6 @@ private:
 	bool state_2( token_type token, const value_type& value )
 	{
 		switch( token ) {
-		case token_eof:
-			// reduce
-			return call_0_Identity();
-		case token_Add:
-			// reduce
-			return call_0_Identity();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -344,8 +338,9 @@ private:
 			// shift
 			push_stack( &Parser::state_8, &Parser::gotof_8, value );
 			return false;
+		case token_eof:
+		case token_Add:
 		case token_Sub:
-			// reduce
 			return call_0_Identity();
 		default:
 			sa_.syntax_error();
@@ -385,12 +380,6 @@ private:
 	bool state_4( token_type token, const value_type& value )
 	{
 		switch( token ) {
-		case token_eof:
-			// reduce
-			return call_0_MakeAdd();
-		case token_Add:
-			// reduce
-			return call_0_MakeAdd();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -399,8 +388,9 @@ private:
 			// shift
 			push_stack( &Parser::state_8, &Parser::gotof_8, value );
 			return false;
+		case token_eof:
+		case token_Add:
 		case token_Sub:
-			// reduce
 			return call_0_MakeAdd();
 		default:
 			sa_.syntax_error();
@@ -440,12 +430,6 @@ private:
 	bool state_6( token_type token, const value_type& value )
 	{
 		switch( token ) {
-		case token_eof:
-			// reduce
-			return call_0_MakeSub();
-		case token_Add:
-			// reduce
-			return call_0_MakeSub();
 		case token_Div:
 			// shift
 			push_stack( &Parser::state_10, &Parser::gotof_10, value );
@@ -454,8 +438,9 @@ private:
 			// shift
 			push_stack( &Parser::state_8, &Parser::gotof_8, value );
 			return false;
+		case token_eof:
+		case token_Add:
 		case token_Sub:
-			// reduce
 			return call_0_MakeSub();
 		default:
 			sa_.syntax_error();
@@ -474,19 +459,10 @@ private:
 	{
 		switch( token ) {
 		case token_eof:
-			// reduce
-			return call_0_Identity();
 		case token_Add:
-			// reduce
-			return call_0_Identity();
 		case token_Div:
-			// reduce
-			return call_0_Identity();
 		case token_Mul:
-			// reduce
-			return call_0_Identity();
 		case token_Sub:
-			// reduce
 			return call_0_Identity();
 		default:
 			sa_.syntax_error();
@@ -525,19 +501,10 @@ private:
 	{
 		switch( token ) {
 		case token_eof:
-			// reduce
-			return call_0_MakeMul();
 		case token_Add:
-			// reduce
-			return call_0_MakeMul();
 		case token_Div:
-			// reduce
-			return call_0_MakeMul();
 		case token_Mul:
-			// reduce
-			return call_0_MakeMul();
 		case token_Sub:
-			// reduce
 			return call_0_MakeMul();
 		default:
 			sa_.syntax_error();
@@ -576,19 +543,10 @@ private:
 	{
 		switch( token ) {
 		case token_eof:
-			// reduce
-			return call_0_MakeDiv();
 		case token_Add:
-			// reduce
-			return call_0_MakeDiv();
 		case token_Div:
-			// reduce
-			return call_0_MakeDiv();
 		case token_Mul:
-			// reduce
-			return call_0_MakeDiv();
 		case token_Sub:
-			// reduce
 			return call_0_MakeDiv();
 		default:
 			sa_.syntax_error();

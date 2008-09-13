@@ -341,7 +341,7 @@ void generate_cpp(
        << ind1 << ind1 << "if( !error_ ) {\n"
        << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
        << ind1 << ind1 << "}\n"
-       << ind1 << ind1 << "return accepted_;\n"
+       << ind1 << ind1 << "return accepted_ || error_;\n"
        << ind1 << "}\n\n"
        << ind1 << "bool accept( value_type& v )\n"
        << ind1 << "{\n"
@@ -575,19 +575,26 @@ void generate_cpp(
         // dispatcher header
         os << ind1 << ind1 << "switch( token ) {\n";
 
+        // reduce action cache
+        std::map< std::vector< std::string >, std::vector< std::string > >
+            reduce_action_cache;
+
         // action table
         for( tgt::parsing_table::state::action_table_type::const_iterator j =
                  s.action_table.begin();
              j != s.action_table.end() ;
              ++j ) {
             // action header 
-            os << ind1 << ind1 << "case " << options.token_prefix
-               << (*token_id_map.find( (*j).first )).second << ":\n";
+            std::string case_tag =
+                options.token_prefix +
+                (*token_id_map.find( (*j).first )).second;
 
             // action
             const tgt::parsing_table::action* a = &(*j).second;
             switch( a->type ) {
             case zw::gr::action_shift:
+                os << ind1 << ind1 << "case " << case_tag << ":\n";
+
                 os << ind1 << ind1 << ind1 << "// shift\n"
                    << ind1 << ind1 << ind1 << "push_stack( "
                    << "&Parser::state_" << a->dest_index << ", "
@@ -596,7 +603,6 @@ void generate_cpp(
                    << ind1 << ind1 << ind1 << "return false;\n";
                 break;
             case zw::gr::action_reduce:
-                os << ind1 << ind1 << ind1 << "// reduce\n";
                 {
                     size_t base =
                         table.rules()[ a->rule_index ].right().size();
@@ -619,16 +625,13 @@ void generate_cpp(
                             rule,
                             sa,
                             signature );
-                        int index = stub_index[signature];
 
-                        char function_name_header[256];
-                        sprintf( function_name_header, "call_%d_", index );
-                        std::string function_name =
-                            function_name_header + sa.name;
-
-                        os << ind1 << ind1 << ind1 << "return "
-                           << function_name << "();\n";
+                        reduce_action_cache[signature].push_back(
+                            case_tag );
                     } else {
+                        os << ind1 << ind1 << "case " << case_tag << ":\n";
+                        os << ind1 << ind1 << ind1 << "// reduce\n";
+
                         os << ind1 << ind1 << ind1 << ind1
                            << "// run_semantic_action();\n";
                         os << ind1 << ind1 << ind1 << ind1 << "pop_stack( "
@@ -641,6 +644,8 @@ void generate_cpp(
                 }
                 break;
             case zw::gr::action_accept:
+                os << ind1 << ind1 << "case " << case_tag << ":\n";
+
                 os << ind1 << ind1 << ind1 << "// accept\n"
                    << ind1 << ind1 << ind1 << "// run_semantic_action();\n"
                    << ind1 << ind1 << ind1 << "accepted_ = true;\n"
@@ -649,6 +654,8 @@ void generate_cpp(
                    << ind1 << ind1 << ind1 << "return false;\n";
                 break;
             case zw::gr::action_error:
+                os << ind1 << ind1 << "case " << case_tag << ":\n";
+
                 os << ind1 << ind1 << ind1 << "sa_.syntax_error();\n";
                 os << ind1 << ind1 << ind1 << "error_ = true;\n"; 
                 os << ind1 << ind1 << ind1 << "return false;\n";
@@ -656,6 +663,28 @@ void generate_cpp(
             }
 
             // action footer
+        }
+
+        // flush reduce action cache
+        for( std::map< std::vector< std::string >, std::vector< std::string > >
+                 ::const_iterator i = reduce_action_cache.begin() ;
+             i != reduce_action_cache.end();
+             ++i ) {
+            const std::vector< std::string >& signature = (*i).first;
+            const std::vector< std::string >& cases = (*i).second;
+            for( size_t j = 0 ; j < cases.size() ; j++ ) {
+                os << ind1 << ind1 << "case " << cases[j] << ":\n";
+            }
+                
+            int index = stub_index[signature];
+
+            char function_name_header[256];
+            sprintf( function_name_header, "call_%d_", index );
+            std::string function_name =
+                function_name_header + signature[0];
+
+            os << ind1 << ind1 << ind1 << "return "
+               << function_name << "();\n";
         }
 
         // dispatcher footer

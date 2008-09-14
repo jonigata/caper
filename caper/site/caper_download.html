@@ -38,13 +38,13 @@
       <div id="content">
 		<h2><a name="i3"> </a>ダウンロード</h2>
 		<p>
-		  最新版 <a href="caper-2008-08-15-1.zip"><code>caper-2008-08-30-1.zip</code></a><br/>
-		  一つ前 <a href="caper-2008-08-15-1.zip"><code>caper-2008-08-15-1.zip</code></a><br/>
-		  二つ前 <a href="caper-2008-03-24-1.zip"><code>caper-2008-03-24-1.zip</code></a><br/>
-		  三つ前 <a href="caper-2008-03-12-2.zip"><code>caper-2008-03-12-2.zip</code></a><br/>
+		  最新版 <a href="caper-2008-09-14-1.zip"><code>caper-2008-09-14-1.zip</code></a><br/>
+		  一つ前 <a href="caper-2008-08-30-1.zip"><code>caper-2008-08-30-1.zip</code></a><br/>
+		  二つ前 <a href="caper-2008-08-15-1.zip"><code>caper-2008-08-15-1.zip</code></a><br/>
+		  三つ前 <a href="caper-2008-03-24-1.zip"><code>caper-2008-03-24-1.zip</code></a><br/>
 		</p>
 		<p>
-		  <a href="http://code.google.com/p/caper/">Google Project(準備中)</a>
+		  <a href="http://code.google.com/p/caper/">Google Project(日々更新)</a>
 		</p>
 
 		<h2><a name="i4"> </a>インストール</h2>
@@ -69,6 +69,12 @@
 	</ul>
 
 	<h2><a name="i6"> </a>履歴</h2>
+	<p>2008年9月14日</p>
+	<ul>
+	  <li>出力コードのインデント等を美しくした</li>
+	  <li>出力コードの重複部分などの無駄を最適化</li>
+	  <li>※重要※ <code>post</code>の返値を 「<code>accept || error</code>」にしました。従ってエラーチェック ( <code>parser.error()</code> ) はループ脱出後に行う必要があります。</li>
+	</ul>
 	<p>2008年8月30日</p>
 	<ul>
 	  <li>Makefile, VC++のプロジェクトを修正して若干ビルドしやすくした</li>
@@ -91,7 +97,7 @@
 	<p>2008年3月12日(1)</p>
 	<ul>
 	  <li>ルートから連結していないルールが存在していたときに強制終了していたのを修正。</li>
-	  <li>%access_modifer &lt;identifier&gt;;宣言を追加。C#ジェネレータでParser/ISemanticAction/Tokenにアクセス限定子を付加します。</li>
+	  <li>%access_modifier &lt;identifier&gt;;宣言を追加。C#ジェネレータでParser/ISemanticAction/Tokenにアクセス限定子を付加します。</li>
 	  <li>%namespace宣言で識別子に'.(ピリオド)'を使えるように。C++だと出力コードがだめになる(ピリオドがついたまま出力してしまう)ので注意。</li>
 	  <li>コンパイラをVS2008に変更。</li>
 	</ul>

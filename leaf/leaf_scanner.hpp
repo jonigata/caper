@@ -45,6 +45,8 @@ public:
         reserved_["int"] = token_TypeInt;
         reserved_["short"] = token_TypeShort;
         reserved_["char"] = token_TypeChar;
+        reserved_["throw"] = token_Throw;
+        reserved_["catch"] = token_Catch;
 
         lines_ = &env.sm.get_lines( file ).v;
         lines_->clear();

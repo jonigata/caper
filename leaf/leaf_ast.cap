@@ -30,14 +30,14 @@ type TopLevelStructDef = StructDef(structdef);
 
 type Statements = Statement*(v);
 type Statement = FunDecl | FunDef | StructDef |
-				 VarDecl | IfThenElse | MultiExpr;
+				 VarDecl | IfThenElse | MultiExpr | Section | ThrowStatement;
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
 type StructDef = Identifier(name), Members(members);
 
 type Members = Member*(v);
-type Member = FormalArg(a);
+type Member = FormalArg(farg);
 
 type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
@@ -102,6 +102,9 @@ type Lambda = symbol_t(name),
 
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);
+
+type Section = FormalArg(farg);
+type ThrowStatement = Expr(e);
 
 type LiteralMembers = LiteralMember*(v);
 type LiteralMember = Identifier(name), MultiExpr(data);

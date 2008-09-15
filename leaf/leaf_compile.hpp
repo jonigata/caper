@@ -465,7 +465,7 @@ public:
     }
 
     LiteralStruct* makeLiteralStruct(
-		Identifier* name, LiteralMembers* members )
+        Identifier* name, LiteralMembers* members )
     {
         return h( members->h, c().allocate<LiteralStruct>( name, members ) );
     }
@@ -484,6 +484,21 @@ public:
     {
         return h( field->h + data->h, c().allocate<LiteralMember>(
                       field, data ) );
+    }
+
+    Section* makeCatchSec0()
+    {
+        return h( c().allocate<Section>( (FormalArg*)NULL ) );
+    }
+
+    Section* makeCatchSec1( FormalArg* farg )
+    {
+        return h( c().allocate<Section>( farg ) );
+    }
+
+    ThrowStatement* makeThrowStatement( Expr* e )
+    {
+        return h( c().allocate<ThrowStatement>( e ) );
     }
 
     Lambda* tt(){ return NULL; }
@@ -607,13 +622,13 @@ private:
             for(;;) {
                 token = scanner.get( v );
                 if( parser.post( token, v ) ) { break; }
+            }
 
-                // TODO
-                if( parser.error() ) {
-                    throw leaf::syntax_error(
-                        scanner.addr(),
-                        token_representation( token, v ) );
-                }
+            // TODO
+            if( parser.error() ) {
+                throw leaf::syntax_error(
+                    scanner.addr(),
+                    token_representation( token, v ) );
             }
 
             if( parser.accept( v ) ) {

@@ -12,6 +12,7 @@
 %token TypeInt<leaf::TypeRef*>;
 %token TypeShort<leaf::TypeRef*>;
 %token TypeChar<leaf::TypeRef*>;
+%token Catch Throw;
 %namespace leaf;
 
 ////////////////////////////////////////////////////////////////
@@ -78,6 +79,8 @@ Statement<leaf::Statement*>
 	| [identity] VarDecl(0) Semicolon
 	| [identity] IfThenElse(0)
 	| [identity] MultiExpr(0) Semicolon
+	| [identity] Section(0)
+	| [identity] ThrowStatement(0)
 	| [expectSemicolon] VarDecl RBra
 	| [expectSemicolon] MultiExpr RBra
 	;
@@ -361,4 +364,17 @@ ActualArgs<leaf::ActualArgs*>
 // ActualArg
 ActualArg<leaf::ActualArg*>
 	: [makeActualArg] Expr(0)
+	;
+
+////////////////////////////////////////////////////////////////
+// Section
+Section<leaf::Section*>
+	: [makeCatchSec0] Catch Colon
+	| [makeCatchSec1] Catch FormalArg(0) Colon
+	;
+
+////////////////////////////////////////////////////////////////
+// ThrowStatement
+ThrowStatement<leaf::ThrowStatement*>
+	: [makeThrowStatement] Throw Expr(0) Semicolon
 	;

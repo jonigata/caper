@@ -955,6 +955,19 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 {
     check_empty( value );
 
+    std::map< Statement*, llvm::BasicBlock* > sections;
+    for( size_t i = 0 ; i < v.size() ; i++ ) {
+        if( Section* s = dynamic_cast<Section*>(v[i]) ) {
+            if( i != v.size() - 1 &&
+                !dynamic_cast<Section*>(v[i+1]) ) {
+                llvm::BasicBlock* bb = llvm::BasicBlock::Create(
+                    label, cc.f );
+                sections[s] = bb;
+            }
+        }
+    }   
+
+
     for( size_t i = 0 ; i < v.size() ; i++ ) {
         bool this_drop_value = drop_value || i != v.size() - 1;
         v[i]->encode( cc, this_drop_value, value );

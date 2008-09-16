@@ -955,11 +955,13 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 {
     check_empty( value );
 
+	// ÉZÉNÉVÉáÉìÇÃçÏê¨
     std::map< Statement*, llvm::BasicBlock* > sections;
     for( size_t i = 0 ; i < v.size() ; i++ ) {
         if( Section* s = dynamic_cast<Section*>(v[i]) ) {
-            if( i != v.size() - 1 &&
-                !dynamic_cast<Section*>(v[i+1]) ) {
+            if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+				char label[256];
+				sprintf( label, "sec_%d", s->h.id );
                 llvm::BasicBlock* bb = llvm::BasicBlock::Create(
                     label, cc.f );
                 sections[s] = bb;
@@ -970,6 +972,12 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 
     for( size_t i = 0 ; i < v.size() ; i++ ) {
         bool this_drop_value = drop_value || i != v.size() - 1;
+
+        if( Section* s = dynamic_cast<Section*>(v[i]) ) {
+            if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+            }
+		}
+
         v[i]->encode( cc, this_drop_value, value );
         if( this_drop_value ) {
             value.clear();

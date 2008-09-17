@@ -436,9 +436,14 @@ public:
         return h( x->h + y->h, c().allocate<DivExpr>( x, y ) );
     }
 
-    Cast* makeCast( PrimExpr* e, TypeExpr* t )
+    Cast* makeCast( MemberExpr* e, TypeExpr* t )
     {
         return h( e->h + t->h, c().allocate<Cast>( e, t ) );
+    }
+
+    MemberRef* makeMemberRef( PrimExpr* e, Identifier* i )
+    {
+        return h( e->h + i->h, c().allocate<MemberRef>( e, i ) );
     }
 
     PrimExpr* makeVarRef( Identifier* i )

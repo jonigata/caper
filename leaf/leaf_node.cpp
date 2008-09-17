@@ -512,19 +512,24 @@ typeexpr_to_type( TypeExpr* t )
         }
         return Type::getTupleType( v );
     }
+	if( NamedType* tt = dynamic_cast< NamedType* >( t ) ) {
+		return tt->h.t;
+	}
     assert(0);
     return NULL;
 }
 
 static type_t
-formalargs_to_type( FormalArgs* formalargs )
+entype_formalargs( EntypeContext& tc, FormalArgs* formalargs )
 {
     typevec_t v;
     for( size_t i = 0 ; i < formalargs->v.size() ; i++ ) {
         if( !formalargs->v[i]->t ) {
             return NULL;
         }
-        v.push_back( typeexpr_to_type( formalargs->v[i]->t ) );
+		type_t t = typeexpr_to_type( formalargs->v[i]->t );
+		update_type( tc, formalargs->v[i]->h, t );
+        v.push_back( t );
     }
     return Type::getTupleType( v );
 }
@@ -702,7 +707,7 @@ entype_function(
     }
 
     // à¯êîÇÃå^
-    type_t attype = formalargs_to_type( formal_args );
+    type_t attype = entype_formalargs( tc, formal_args );
     if( !Type::isComplete( attype ) ) {
         throw inexplicit_argument_type( h.beg );
     }
@@ -802,8 +807,6 @@ void encode_vardecl( EncodeContext& cc, VarDeclElem* f, const Value& a )
     if( VarDeclIdentifier* fi = dynamic_cast<VarDeclIdentifier*>(f) ) {
         cc.env.bind(
             fi->name->s, Reference( a.getx(), a.gett(), symmap_t() ) );
-        std::cerr << "bind: " << fi->name->s->s << " => "
-                  << Type::getDisplay( a.gett() ) << ": " << a << std::endl;
         return;
     }
 
@@ -1040,7 +1043,7 @@ void FunDecl::entype( EntypeContext& tc, bool, type_t t )
     }
 
     // à¯êîÇÃå^
-    type_t args_type = formalargs_to_type( sig->fargs );
+    type_t args_type = entype_formalargs( tc, sig->fargs );
     if( !Type::isComplete( args_type ) ) {
         throw inexplicit_argument_type( h.beg );
     }
@@ -1942,6 +1945,61 @@ void Cast::entype( EntypeContext& tc, bool, type_t t )
 }
 
 ////////////////////////////////////////////////////////////////
+// MemberExpr
+void MemberExpr::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void MemberExpr::entype( EntypeContext& tc, bool, type_t t )
+{
+    assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// MemberRef
+void MemberRef::encode( EncodeContext& cc, bool, Value& value )
+{
+    check_empty( value );
+
+	expr->encode( cc, false, value );
+    llvm::Value* expr_value = check_value_1( value );
+    value.clear();
+
+	int slot_index = expr->h.t->getSlotIndex( field->s );
+
+	char reg[256];
+	sprintf( reg, "memref%d_%d", h.id, slot_index );
+	llvm::Instruction* lv = llvm::ExtractValueInst::Create(
+		expr_value, slot_index, reg, cc.bb );
+
+	value.assign_as_scalor( lv, h.t );
+}
+void MemberRef::entype( EntypeContext& tc, bool, type_t t )
+{
+	expr->entype( tc, false, NULL );
+	if( !expr->h.t ) { return; }
+
+	if( !Type::isStruct( expr->h.t ) ) {
+		throw wrong_memberref(
+			h.beg, Type::getDisplay( expr->h.t ), field->s->s );
+	}
+
+	int slot_index = expr->h.t->getSlotIndex( field->s );
+	if( slot_index < 0 ) {
+		throw wrong_memberref(
+			h.beg, Type::getDisplay( expr->h.t ), field->s->s );
+	}
+
+	update_type( tc, h, expr->h.t->getSlot( slot_index ).type );
+
+	if( !Type::match( h.t, t ) ) {
+        throw context_mismatch(
+			h.beg, Type::getDisplay( h.t ), Type::getDisplay( t ) );
+	}
+}
+
+
+////////////////////////////////////////////////////////////////
 // FunCall
 void
 encode_funcall_return_value(
@@ -2151,6 +2209,8 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
 // LiteralStruct
 void LiteralStruct::encode( EncodeContext& cc, bool, Value& value )
 {
+    check_empty( value );
+
     assert( Type::isStruct( h.t ) );
     std::vector< Value > values( h.t->getSlotCount() );
 
@@ -2189,6 +2249,12 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
         if( index < 0 ) {
             throw no_such_member( m->h.beg, name->s->s, m->name->s->s );
         }
+		
+		m->data->entype(
+			tc,
+			false,
+			Type::unify( st->getSlot( index ).type, m->data->h.t ) );
+
         assert( index <= int( used.size() ) ); 
         used[index] = true;
     }
@@ -2200,7 +2266,7 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
         }
     }
 
-    update_type( tc,h, st );
+    update_type( tc, h, st );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -2218,6 +2284,8 @@ void LiteralMembers::entype( EntypeContext& tc, bool, type_t t )
 // LiteralMember
 void LiteralMember::encode( EncodeContext& cc, bool, Value& value )
 {
+    check_empty( value );
+
     data->encode( cc, false, value );
 }
 void LiteralMember::entype( EntypeContext& tc, bool, type_t t )

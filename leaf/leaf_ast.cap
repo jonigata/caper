@@ -84,8 +84,11 @@ type Multiplicative = CastExpr | MulExpr | DivExpr;
 type MulExpr = Multiplicative(lhs), CastExpr(rhs);
 type DivExpr = Multiplicative(lhs), CastExpr(rhs);
 
-type CastExpr = Cast | PrimExpr;
-type Cast = PrimExpr(expr), TypeExpr(t);
+type CastExpr = Cast | MemberExpr;
+type Cast = MemberExpr(expr), TypeExpr(t);
+
+type MemberExpr = MemberRef | PrimExpr;
+type MemberRef = PrimExpr(expr), Identifier(field);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
               | VarRef | Parenthized | FunCall | LiteralStruct | Lambda;

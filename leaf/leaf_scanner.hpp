@@ -162,6 +162,8 @@ public:
                     v = h( b, e, env_.cage.allocate<LiteralChar>( c ) );
                     return token_LiteralChar;
                 }
+		case '.':
+			return token_Dot;
         case EOF:
             return token_eof;
         }

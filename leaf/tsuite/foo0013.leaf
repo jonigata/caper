@@ -9,6 +9,7 @@ struct Foo {
 
 fun main(): int
 {
-	var foo: Foo = Foo { x = 23; y = 42; power = 17; icon = 'a'; };
-	0;	
+	var foo: Foo = Foo { x = 23; y = 42; power = 17; icon = 'a'@char; };
+	puti( foo.icon@int );
+	foo.icon@int;
 }

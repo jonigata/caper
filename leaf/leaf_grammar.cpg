@@ -4,7 +4,7 @@
 %token LiteralChar<leaf::LiteralChar*>;
 %token Identifier<leaf::Identifier*>;
 %token Var Fun Struct If Else;
-%token Add Sub Mul Div Assign LPar RPar LBra RBra Comma Semicolon Colon;
+%token Add Sub Mul Div Assign LPar RPar LBra RBra Comma Semicolon Colon Dot;
 %token Lt Gt Le Ge Eq Ne Not And Or At;
 %token BitAnd BitOr;
 %token TypeVoid<leaf::TypeRef*>;
@@ -295,8 +295,15 @@ Multiplicative<leaf::Multiplicative*>
 ////////////////////////////////////////////////////////////////
 // CastExpr
 CastExpr<leaf::CastExpr*>
+	: [identity] MemberExpr(0)
+	| [makeCast] MemberExpr(0) At TypeExpr(1)
+	;
+
+////////////////////////////////////////////////////////////////
+// MemberExpr
+MemberExpr<leaf::MemberExpr*>
 	: [identity] PrimExpr(0)
-	| [makeCast] PrimExpr(0) At TypeExpr(1)
+	| [makeMemberRef] PrimExpr(0) Dot Identifier(1)
 	;
 
 ////////////////////////////////////////////////////////////////
@@ -348,7 +355,7 @@ LiteralMember<leaf::LiteralMember*>
 	;
 
 ////////////////////////////////////////////////////////////////
-//
+// Lambda
 Lambda<leaf::Lambda*>
 	: [makeLambda] Fun FormalArgList(0) Colon Types(1) Block(2)
 	;

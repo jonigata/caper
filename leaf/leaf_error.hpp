@@ -297,6 +297,35 @@ public:
     ~not_initialized_member() throw () {}
 };
 
+class wrong_memberref : public error {
+public:
+	wrong_memberref(
+		const Addr& a, const std::string& s, const std::string& n )
+		: error( a )
+	{
+        std::stringstream ss;
+        ss << "'" << s << "' has no member named '" << n << "'";
+        set_message( ss.str() );
+	}
+	~wrong_memberref() throw() {}
+
+};
+
+class wrong_member_type : public error {
+public:
+	wrong_member_type(
+		const Addr& a, const std::string& s, const std::string& n )
+		: error( a )
+	{
+        std::stringstream ss;
+        ss << "type mismatch: '" << s << "' is not a type '" << n << "'";
+        set_message( ss.str() );
+	}
+	~wrong_member_type() throw() {}
+
+};
+
+
 } // namespace leaf
 
 #endif // ERROR_HPP_

@@ -970,22 +970,34 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
                 sections[s] = bb;
             }
         }
-    }   
-
-
-    for( size_t i = 0 ; i < v.size() ; i++ ) {
-        bool this_drop_value = drop_value || i != v.size() - 1;
-
-        if( Section* s = dynamic_cast<Section*>(v[i]) ) {
-            if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
-            }
-		}
-
-        v[i]->encode( cc, this_drop_value, value );
-        if( this_drop_value ) {
-            value.clear();
-        }
     }
+
+		// エンコード
+	if( sections.empty() ) {
+		for( size_t i = 0 ; i < v.size() ; i++ ) {
+			bool this_drop_value = drop_value || i != v.size() - 1;
+
+			v[i]->encode( cc, this_drop_value, value );
+			if( this_drop_value ) {
+				value.clear();
+			}
+		}
+	} else {
+		for( size_t i = 0 ; i < v.size() ; i++ ) {
+			bool this_drop_value = drop_value || i != v.size() - 1;
+
+			if( Section* s = dynamic_cast<Section*>(v[i]) ) {
+				if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+					cc.bb = sections[s];
+				}
+			} else {
+				v[i]->encode( cc, this_drop_value, value );
+				if( this_drop_value ) {
+					value.clear();
+				}
+			}
+		}
+	}
 }
 void Statements::entype( EntypeContext& tc, bool, type_t t )
 {
@@ -2494,6 +2506,26 @@ void Section::encode( EncodeContext& cc, bool, Value& value )
 void Section::entype( EntypeContext& tc, bool, type_t t )
 {
     assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// CatchSection
+void CatchSection::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void CatchSection::entype( EntypeContext& tc, bool, type_t t )
+{
+}
+
+////////////////////////////////////////////////////////////////
+// FinallySection
+void FinallySection::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+void FinallySection::entype( EntypeContext& tc, bool, type_t t )
+{
 }
 
 ////////////////////////////////////////////////////////////////

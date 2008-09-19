@@ -491,14 +491,19 @@ public:
                       field, data ) );
     }
 
-    Section* makeCatchSec0()
+    CatchSection* makeCatchSec0()
     {
-        return h( c().allocate<Section>( (FormalArg*)NULL ) );
+        return h( c().allocate<CatchSection>( (FormalArg*)NULL ) );
     }
 
-    Section* makeCatchSec1( FormalArg* farg )
+    CatchSection* makeCatchSec1( FormalArg* farg )
     {
-        return h( c().allocate<Section>( farg ) );
+        return h( c().allocate<CatchSection>( farg ) );
+    }
+
+    FinallySection* makeFinallySec()
+    {
+        return h( c().allocate<FinallySection>() );
     }
 
     ThrowStatement* makeThrowStatement( Expr* e )

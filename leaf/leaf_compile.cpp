@@ -63,6 +63,7 @@ Compiler::token_representation( Token token, Node* v )
     case token_Req:         return "require";
     case token_RPar:            return ")";
     case token_Semicolon:       return ";";
+    case token_Colon:       return ":";
     case token_Sub:         return "-";
     case token_TypeChar:        return "<char>";
     case token_TypeInt:     return "<int>";
@@ -70,7 +71,10 @@ Compiler::token_representation( Token token, Node* v )
     case token_TypeShort:       return "<short>";
     case token_TypeVoid:        return "<void>";
     case token_Var:         return "var";
+	case token_Throw:		return "throw";
+	case token_Catch:		return "catch";
     default:
+		std::cerr << token << std::endl;
         return "<<<UNKNOWN TOKEN>>>";
     }
     return "";

@@ -47,6 +47,7 @@ public:
         reserved_["char"] = token_TypeChar;
         reserved_["throw"] = token_Throw;
         reserved_["catch"] = token_Catch;
+        reserved_["finally"] = token_Finally;
 
         lines_ = &env.sm.get_lines( file ).v;
         lines_->clear();

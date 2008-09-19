@@ -12,7 +12,7 @@
 %token TypeInt<leaf::TypeRef*>;
 %token TypeShort<leaf::TypeRef*>;
 %token TypeChar<leaf::TypeRef*>;
-%token Catch Throw;
+%token Catch Throw Finally;
 %namespace leaf;
 
 ////////////////////////////////////////////////////////////////
@@ -378,6 +378,7 @@ ActualArg<leaf::ActualArg*>
 Section<leaf::Section*>
 	: [makeCatchSec0] Catch Colon
 	| [makeCatchSec1] Catch FormalArg(0) Colon
+	| [makeFinallySec] Finally Colon
 	;
 
 ////////////////////////////////////////////////////////////////

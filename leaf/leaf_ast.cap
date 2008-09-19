@@ -30,7 +30,8 @@ type TopLevelStructDef = StructDef(structdef);
 
 type Statements = Statement*(v);
 type Statement = FunDecl | FunDef | StructDef |
-				 VarDecl | IfThenElse | MultiExpr | Section | ThrowStatement;
+				 VarDecl | IfThenElse | MultiExpr |
+				 SectionLabel | ThrowStatement;
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
@@ -106,9 +107,9 @@ type Lambda = symbol_t(name),
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);
 
-type Section = CatchSection | FinallySection;
-type CatchSection = FormalArg(farg);
-type FinallySection = int(dummy);
+type SectionLabel = CatchLabel | FinallyLabel;
+type CatchLabel = FormalArg(farg);
+type FinallyLabel = int(dummy);
 type ThrowStatement = Expr(e);
 
 type LiteralMembers = LiteralMember*(v);

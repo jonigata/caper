@@ -79,7 +79,7 @@ Statement<leaf::Statement*>
 	| [identity] VarDecl(0) Semicolon
 	| [identity] IfThenElse(0)
 	| [identity] MultiExpr(0) Semicolon
-	| [identity] Section(0)
+	| [identity] SectionLabel(0)
 	| [identity] ThrowStatement(0)
 	| [expectSemicolon] VarDecl RBra
 	| [expectSemicolon] MultiExpr RBra
@@ -374,11 +374,11 @@ ActualArg<leaf::ActualArg*>
 	;
 
 ////////////////////////////////////////////////////////////////
-// Section
-Section<leaf::Section*>
-	: [makeCatchSec0] Catch Colon
-	| [makeCatchSec1] Catch FormalArg(0) Colon
-	| [makeFinallySec] Finally Colon
+// SectionLabel
+SectionLabel<leaf::SectionLabel*>
+	: [makeCatchLabel0] Catch Colon
+	| [makeCatchLabel1] Catch FormalArg(0) Colon
+	| [makeFinallyLabel] Finally Colon
 	;
 
 ////////////////////////////////////////////////////////////////

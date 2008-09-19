@@ -961,8 +961,8 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 	// ÉZÉNÉVÉáÉìÇÃçÏê¨
     std::map< Statement*, llvm::BasicBlock* > sections;
     for( size_t i = 0 ; i < v.size() ; i++ ) {
-        if( Section* s = dynamic_cast<Section*>(v[i]) ) {
-            if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+        if( SectionLabel* s = dynamic_cast<SectionLabel*>(v[i]) ) {
+            if( i != v.size() - 1 && !dynamic_cast<SectionLabel*>(v[i+1]) ) {
 				char label[256];
 				sprintf( label, "sec_%d", s->h.id );
                 llvm::BasicBlock* bb = llvm::BasicBlock::Create(
@@ -986,8 +986,9 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 		for( size_t i = 0 ; i < v.size() ; i++ ) {
 			bool this_drop_value = drop_value || i != v.size() - 1;
 
-			if( Section* s = dynamic_cast<Section*>(v[i]) ) {
-				if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+			if( SectionLabel* s = dynamic_cast<SectionLabel*>(v[i]) ) {
+				if( i != v.size() - 1 &&
+					!dynamic_cast<SectionLabel*>(v[i+1]) ) {
 					cc.bb = sections[s];
 				}
 			} else {
@@ -2498,33 +2499,33 @@ void ActualArg::entype( EntypeContext& tc, bool, type_t t )
 }
 
 ////////////////////////////////////////////////////////////////
-// Section
-void Section::encode( EncodeContext& cc, bool, Value& value )
+// SectionLabel
+void SectionLabel::encode( EncodeContext& cc, bool, Value& value )
 {
     assert(0);
 }
-void Section::entype( EntypeContext& tc, bool, type_t t )
+void SectionLabel::entype( EntypeContext& tc, bool, type_t t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
-// CatchSection
-void CatchSection::encode( EncodeContext& cc, bool, Value& value )
+// CatchLabel
+void CatchLabel::encode( EncodeContext& cc, bool, Value& value )
 {
     assert(0);
 }
-void CatchSection::entype( EntypeContext& tc, bool, type_t t )
+void CatchLabel::entype( EntypeContext& tc, bool, type_t t )
 {
 }
 
 ////////////////////////////////////////////////////////////////
-// FinallySection
-void FinallySection::encode( EncodeContext& cc, bool, Value& value )
+// FinallyLabel
+void FinallyLabel::encode( EncodeContext& cc, bool, Value& value )
 {
     assert(0);
 }
-void FinallySection::entype( EntypeContext& tc, bool, type_t t )
+void FinallyLabel::entype( EntypeContext& tc, bool, type_t t )
 {
 }
 

@@ -97,6 +97,27 @@ public:
         return NULL;
     }
 
+	Block* expand_block_sugar( Statements* s )
+	{
+		return h( s->h, c().allocate<Block>( s ) );
+#if 0
+		// ÉZÉNÉVÉáÉìÇÃçÏê¨
+		std::map< Statement*, llvm::BasicBlock* > sections;
+		for( size_t i = 0 ; i < v.size() ; i++ ) {
+			if( Section* s = dynamic_cast<Section*>(v[i]) ) {
+				if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
+					char label[256];
+					sprintf( label, "sec_%d", s->h.id );
+					llvm::BasicBlock* bb = llvm::BasicBlock::Create(
+						label, cc.f );
+					sections[s] = bb;
+				}
+			}
+		}
+#endif
+	}
+
+public:
     void syntax_error() {}
     void stack_overflow(){}
 
@@ -251,7 +272,7 @@ public:
 
     Block* makeBlock( Statements* s )
     {
-        return h( s->h, c().allocate<Block>( s ) );
+        return expand_block_sugar( s );
     }
 
     VarDecl* makeVarDecl( VarDeclElems* v, MultiExpr* e )
@@ -491,19 +512,19 @@ public:
                       field, data ) );
     }
 
-    CatchSection* makeCatchSec0()
+    CatchLabel* makeCatchLabel0()
     {
-        return h( c().allocate<CatchSection>( (FormalArg*)NULL ) );
+        return h( c().allocate<CatchLabel>( (FormalArg*)NULL ) );
     }
 
-    CatchSection* makeCatchSec1( FormalArg* farg )
+    CatchLabel* makeCatchLabel1( FormalArg* farg )
     {
-        return h( c().allocate<CatchSection>( farg ) );
+        return h( c().allocate<CatchLabel>( farg ) );
     }
 
-    FinallySection* makeFinallySec()
+    FinallyLabel* makeFinallyLabel()
     {
-        return h( c().allocate<FinallySection>() );
+        return h( c().allocate<FinallyLabel>() );
     }
 
     ThrowStatement* makeThrowStatement( Expr* e )

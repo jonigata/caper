@@ -306,6 +306,9 @@ std::ostream& operator<<( std::ostream& os, const Value& v )
 ////////////////////////////////////////////////////////////////
 // EncodeContext
 struct EncodeContext : public boost::noncopyable {
+    EncodeContext( CompileEnv& ace ) : ce(ace) {}
+
+	CompileEnv&					ce;
     llvm::Module*               m;
     llvm::Function*             f;
     llvm::BasicBlock*           bb;
@@ -813,11 +816,123 @@ void encode_vardecl( EncodeContext& cc, VarDeclElem* f, const Value& a )
     assert(0);
 }
 
+template < class T >
+T* make_header( CompileEnv& ce, T* p )
+{
+	p->h.id = ce.idseed++;
+	return p;
+}
+
+template < class T >
+T* make_header( CompileEnv& ce, const Header& header, T* p )
+{
+	p->h = header;
+	p->h.id = ce.idseed++;
+	return p;
+}
+
+Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
+{
+	assert( t );
+
+	// for LLVM
+	bool have_try = false;
+	bool finally = false;
+	for( size_t i = 0 ; i < s->v.size() ; i++ ) {
+		if( dynamic_cast<SectionLabel*>(s->v[i]) ) {
+			if( i != s->v.size() - 1 &&
+				!dynamic_cast<SectionLabel*>(s->v[i+1]) ) {
+				have_try = true;
+				break;
+			}
+			if( dynamic_cast<FinallyLabel*>(s->v[i]) ) {
+				finally = true;
+			} else {
+				if( finally ) {
+					throw finally_must_be_the_last_section( s->h.beg );
+				}
+			}
+		}
+	}
+
+	if( !have_try ) {
+		// ÇªÇÃÇ‹Ç‹
+		return s;
+	} else {
+		// fun foo(): void
+		// {
+		//     bar();
+		// finally:
+		//     baz();
+		// }
+		// Ç
+		// fun foo(): void
+		// {
+		//     fun gensym1(): void
+		//     {
+		//         bar();
+		//     }
+		//     gensym1();
+		//  finally:
+		//     baz();
+		//  }
+		// Ç…ïœä∑Ç∑ÇÈ
+
+		// â¡çHÇ∑ÇÈ
+		std::vector< Statement* > sv;
+		bool try_section_done = false;
+		for( size_t i = 0 ; i < s->v.size() ; i++ ) {
+			if( !try_section_done &&
+				dynamic_cast<SectionLabel*>(s->v[i]) ) {
+
+				// try section done
+
+				// ...make internal function
+				Symbol* funname = ce.gensym();
+				FunSig* funsig = make_header(
+					ce, s->h,
+					ce.cage.allocate<FunSig>(
+						ce.cage.allocate<Identifier>( funname ),
+						make_header(
+							ce, s->h,
+							ce.cage.allocate<FormalArgs>() ),
+						ce.cage.allocate<TypeRef>( t ) ) );
+				Block* block = make_header(
+					ce, s->h,
+					ce.cage.allocate<Block>( 
+						ce.cage.allocate<Statements>( sv ),
+						false ) );
+				FunDef* fundef = make_header(
+					ce, s->h,
+					ce.cage.allocate<FunDef>( funsig, block, symmap_t() ) );
+
+				// ...make function call
+				FunCall* funcall = make_header(
+					ce, s->h,
+					ce.cage.allocate<FunCall>(
+						ce.cage.allocate<Identifier>( funname ),
+						ce.cage.allocate<ActualArgs>() ) );
+
+				sv.push_back( fundef );
+				sv.push_back(
+					make_header(
+						ce, s->h,
+						ce.cage.allocate<MultiExpr>( funcall ) ) );
+
+				try_section_done = true;
+			}
+			sv.push_back( s->v[i] );
+		}
+		
+		return ce.cage.allocate<Statements>( sv );
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 // Node
-void Node::encode( llvm::Module* m )
+void Node::encode( CompileEnv& ce, llvm::Module* m )
 {
-    EncodeContext cc;
+    EncodeContext cc( ce );
     cc.m = m;
     cc.f = NULL;
     cc.bb = NULL;
@@ -940,15 +1055,24 @@ void Block::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    statements->encode( cc, false, value );
+	statements->encode( cc, false, value );
 }
 void Block::entype( EntypeContext& tc, bool, type_t t )
 {
-    //std::cerr << "block " << Type::getDisplay( t ) << std::endl;
+	//expand_block_sugar( cc.ce, statements, h.t )
+
+	std::cerr << "block: " << Type::getDisplay( h.t ) << std::endl;
+
+	if( !expanded && h.t ) {
+		statements = expand_block_sugar( tc.ce, statements, h.t );
+		expanded = true;
+	}
+
     statements->entype( tc, false, t );
 
     if( !statements->v.empty() ) {
         update_type( tc, h, statements->v.back()->h.t );
+		std::cerr << "block: " << Type::getDisplay( h.t ) << std::endl;
     }
 }
 
@@ -2533,7 +2657,8 @@ void FinallyLabel::entype( EntypeContext& tc, bool, type_t t )
 // ThrowStatement
 void ThrowStatement::encode( EncodeContext& cc, bool, Value& value )
 {
-    assert(0);
+    check_empty( value );
+	new llvm::UnwindInst( cc.bb );
 }
 void ThrowStatement::entype( EntypeContext& tc, bool, type_t t )
 {

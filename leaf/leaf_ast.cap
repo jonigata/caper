@@ -44,7 +44,7 @@ type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
 type FormalArg = Identifier(name), TypeExpr(t);
 
-type Block = Statements(statements);
+type Block = Statements(statements), bool(expanded);
 
 type VarDecl = VarDeclElems(varelems), MultiExpr(data);
 type VarDeclElem = VarDeclElems | VarDeclIdentifier;

@@ -97,77 +97,6 @@ public:
         return NULL;
     }
 
-    Block* expand_block_sugar( Statements* s )
-    {
-        return h( s->h, c().allocate<Block>( s ) );
-#if 0
-        bool have_try = false;
-        for( size_t i = 0 ; i < s->v.size() ; i++ ) {
-            if( Section* sec = dynamic_cast<Section*>(s->v[i]) ) {
-                if( i != v.size() - 1 && !dynamic_cast<Section*>(s->v[i+1]) ) {
-                    have_try = true;
-                    break;
-                }
-            }
-        }
-
-        if( !have_try ) {
-            // ÇªÇÃÇ‹Ç‹
-            return h( s->h, c().allocate<Block>( s, NULL ) );
-        } else {
-            // fun foo(): void
-            // {
-            //     bar();
-            // finally:
-            //     baz();
-            // }
-            // Ç
-            // fun foo(): void
-            // {
-            //     fun gensym1(): void
-            //     {
-            //         bar();
-            //     }
-            //     gensym1();
-            //  finally:
-            //     baz();
-            //  }
-            // Ç…ïœä∑Ç∑ÇÈ
-
-            // â¡çHÇ∑ÇÈ
-            std::vector< Statement* > sv;
-            bool try_section_done = false;
-            for( size_t i = 0 ; i < s->v.size() ; i++ ) {
-                if( !try_section_done &&
-                    Section* sec = dynamic_cast<Section*>(s->v[i]) ) {
-
-                    // try section done
-
-                    // ...make internal function
-                    Symbol* funname = env_.gensym();
-                    FunSig* funsig = makeFunsig0(
-                        c().allocate<Identitier>( funname ),
-                        makeFormalArgs0() );
-                    Block* block = makeBlock(
-                        c().allocate<Statements>( sv ) );
-                    FunDef* fundef = makeFundef( funsig, block );
-
-                    // ...make function call
-                    Funcall* funcall = makeFuncall(
-                        c().allocate<Identitier>( funname ) );
-
-                    sv.push_back( fundef );
-                    sv.push_back( funcall );
-                } else {
-                    sv.push_back( s->v[i] );
-                }
-            }
-            return c().allocate<Block>(
-                c().allocate<Statements>( sv ) );
-        }
-#endif
-    }
-
 public:
     void syntax_error() {}
     void stack_overflow(){}
@@ -323,7 +252,7 @@ public:
 
     Block* makeBlock( Statements* s )
     {
-        return expand_block_sugar( s );
+        return h( s->h, c().allocate<Block>( s, false ) );
     }
 
     VarDecl* makeVarDecl( VarDeclElems* v, MultiExpr* e )
@@ -369,7 +298,8 @@ public:
     {
         Block* else_clause =
             h( ite->h, c().allocate<Block>(
-                   makeSeq1<Statements>( ite ) ) );
+                   makeSeq1<Statements>( ite ),
+				   false ) );
         
         return h( cond->h + t->h + ite->h,
                   c().allocate<IfThenElse>( cond, t, else_clause ) );

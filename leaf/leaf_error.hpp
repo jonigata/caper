@@ -325,6 +325,15 @@ public:
 
 };
 
+class finally_must_be_the_last_section : public error {
+public:
+	finally_must_be_the_last_section( const Addr& a ) : error( a )
+	{
+        set_message( "'finally' must be the last section" );
+	}
+	~finally_must_be_the_last_section() throw() {}
+
+};
 
 } // namespace leaf
 

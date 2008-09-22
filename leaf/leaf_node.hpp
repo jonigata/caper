@@ -183,7 +183,7 @@ struct Node {
     virtual void    encode( EncodeContext&, bool drop_value, Value& ) {}
     virtual void    entype( EntypeContext&, bool drop_value, type_t ) {}
 
-    void encode( llvm::Module* );
+    void encode( CompileEnv&, llvm::Module* );
     void entype( CompileEnv& );
 };
 

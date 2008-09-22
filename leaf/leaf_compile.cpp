@@ -88,7 +88,7 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
     try {
         // AST‚©‚ç•ÏŠ·
         n->entype( env_ );
-        n->encode( module.get() );
+        n->encode( env_, module.get() );
     }
     catch( error& e ){
         if( e.addr.file ) {

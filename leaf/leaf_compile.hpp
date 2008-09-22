@@ -97,25 +97,76 @@ public:
         return NULL;
     }
 
-	Block* expand_block_sugar( Statements* s )
-	{
-		return h( s->h, c().allocate<Block>( s ) );
+    Block* expand_block_sugar( Statements* s )
+    {
+        return h( s->h, c().allocate<Block>( s ) );
 #if 0
-		// ÉZÉNÉVÉáÉìÇÃçÏê¨
-		std::map< Statement*, llvm::BasicBlock* > sections;
-		for( size_t i = 0 ; i < v.size() ; i++ ) {
-			if( Section* s = dynamic_cast<Section*>(v[i]) ) {
-				if( i != v.size() - 1 && !dynamic_cast<Section*>(v[i+1]) ) {
-					char label[256];
-					sprintf( label, "sec_%d", s->h.id );
-					llvm::BasicBlock* bb = llvm::BasicBlock::Create(
-						label, cc.f );
-					sections[s] = bb;
-				}
-			}
-		}
+        bool have_try = false;
+        for( size_t i = 0 ; i < s->v.size() ; i++ ) {
+            if( Section* sec = dynamic_cast<Section*>(s->v[i]) ) {
+                if( i != v.size() - 1 && !dynamic_cast<Section*>(s->v[i+1]) ) {
+                    have_try = true;
+                    break;
+                }
+            }
+        }
+
+        if( !have_try ) {
+            // ÇªÇÃÇ‹Ç‹
+            return h( s->h, c().allocate<Block>( s, NULL ) );
+        } else {
+            // fun foo(): void
+            // {
+            //     bar();
+            // finally:
+            //     baz();
+            // }
+            // Ç
+            // fun foo(): void
+            // {
+            //     fun gensym1(): void
+            //     {
+            //         bar();
+            //     }
+            //     gensym1();
+            //  finally:
+            //     baz();
+            //  }
+            // Ç…ïœä∑Ç∑ÇÈ
+
+            // â¡çHÇ∑ÇÈ
+            std::vector< Statement* > sv;
+            bool try_section_done = false;
+            for( size_t i = 0 ; i < s->v.size() ; i++ ) {
+                if( !try_section_done &&
+                    Section* sec = dynamic_cast<Section*>(s->v[i]) ) {
+
+                    // try section done
+
+                    // ...make internal function
+                    Symbol* funname = env_.gensym();
+                    FunSig* funsig = makeFunsig0(
+                        c().allocate<Identitier>( funname ),
+                        makeFormalArgs0() );
+                    Block* block = makeBlock(
+                        c().allocate<Statements>( sv ) );
+                    FunDef* fundef = makeFundef( funsig, block );
+
+                    // ...make function call
+                    Funcall* funcall = makeFuncall(
+                        c().allocate<Identitier>( funname ) );
+
+                    sv.push_back( fundef );
+                    sv.push_back( funcall );
+                } else {
+                    sv.push_back( s->v[i] );
+                }
+            }
+            return c().allocate<Block>(
+                c().allocate<Statements>( sv ) );
+        }
 #endif
-	}
+    }
 
 public:
     void syntax_error() {}
@@ -204,15 +255,15 @@ public:
     }
 
     FunSig* makeFunSig0( Identifier* i,
-                               FormalArgs* fa )
+                         FormalArgs* fa )
     {
         return h( i->h + fa->h, c().allocate<FunSig>(
                       i, fa, (Types*)NULL ) );
     }
 
     FunSig* makeFunSig1( Identifier* i,
-                               FormalArgs* fa,
-                               Types* t )
+                         FormalArgs* fa,
+                         Types* t )
     {
         return h( i->h + fa->h + t->h,
                   c().allocate<FunSig>( i, fa, t ) );

@@ -194,7 +194,10 @@ struct EntypeContext;
 class Value;
 
 struct Node {
-    Header h;
+    Header h;	// h.t ‚Í
+				//   Expr‚Ì”h¶ƒNƒ‰ƒX => Ž®‚ÌŒ^
+				//   TypeExpr‚Ì”h¶ƒNƒ‰ƒX => Œ^Ž®‚Ì’l(‚Â‚Ü‚è•\Ž¦‚µ‚Ä‚¢‚éŒ^)
+				//   ‚»‚Ì‘¼ => NULL
     
     virtual ~Node(){}
     virtual void    encode( EncodeContext&, bool drop_value, Value& ) {}

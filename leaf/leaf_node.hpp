@@ -108,8 +108,25 @@ struct CompileEnv : public boost::noncopyable {
     int             idseed;
     SrcMarker       sm;
 
-    Symbol* intern( const std::string& s );
-    Symbol* gensym();
+    Symbol* intern( const std::string& s )
+	{
+		Symbol* sym;
+
+		symdic_type::const_iterator i = symdic.find( s );
+		if( i != symdic.end() ) {
+			sym = (*i).second;
+		} else {
+			sym = cage.allocate<Symbol>( s );
+			symdic[s] = sym;
+		}
+		return sym;
+	}
+    Symbol* gensym()
+	{
+		char buffer[256];
+		sprintf( buffer, "$gensym%d", idseed++ );
+		return intern( buffer );
+	}
 };
 
 ////////////////////////////////////////////////////////////////

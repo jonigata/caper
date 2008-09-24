@@ -18,30 +18,6 @@
 namespace leaf {
 
 ////////////////////////////////////////////////////////////////
-// CompileEnv
-Symbol*
-CompileEnv::intern( const std::string& s )
-{
-    Symbol* sym;
-
-    symdic_type::const_iterator i = symdic.find( s );
-    if( i != symdic.end() ) {
-        sym = (*i).second;
-    } else {
-        sym = cage.allocate<Symbol>( s );
-        symdic[s] = sym;
-    }
-    return sym;
-}
-
-Symbol* CompileEnv::gensym()
-{
-    char buffer[256];
-    sprintf( buffer, "$gensym%d", idseed++ );
-    return intern( buffer );
-}
-
-////////////////////////////////////////////////////////////////
 // Environment
 template < class T >
 class Environment : public boost::noncopyable {
@@ -1061,8 +1037,6 @@ void Block::entype( EntypeContext& tc, bool, type_t t )
 {
 	//expand_block_sugar( cc.ce, statements, h.t )
 
-	std::cerr << "block: " << Type::getDisplay( h.t ) << std::endl;
-
 	if( !expanded && h.t ) {
 		statements = expand_block_sugar( tc.ce, statements, h.t );
 		expanded = true;
@@ -1072,7 +1046,6 @@ void Block::entype( EntypeContext& tc, bool, type_t t )
 
     if( !statements->v.empty() ) {
         update_type( tc, h, statements->v.back()->h.t );
-		std::cerr << "block: " << Type::getDisplay( h.t ) << std::endl;
     }
 }
 

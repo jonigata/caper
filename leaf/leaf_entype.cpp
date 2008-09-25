@@ -23,6 +23,12 @@ struct EntypeContext : public boost::noncopyable {
 ////////////////////////////////////////////////////////////////
 // utility functions
 inline
+std::string disptype( type_t t )
+{
+	return Type::getDisplay( t );
+}
+
+inline
 void update_type( EntypeContext& tc, Header& h, type_t t )
 {
 	// TODO: 重要
@@ -33,7 +39,7 @@ inline
 void check_bool_expr_type( const Header& h, type_t t )
 {
     if( t && t != Type::getBoolType() ) {
-        throw context_mismatch( h.beg, Type::getDisplay( t ), "<bool>" );
+        throw context_mismatch( h.beg, disptype( t ), "<bool>" );
     }
 }
 
@@ -41,7 +47,7 @@ inline
 void check_int_expr_type( const Header& h, type_t t )
 {
     if( t && t != Type::getIntType() ) {
-        throw context_mismatch( h.beg, Type::getDisplay( t ), "<int>" );
+        throw context_mismatch( h.beg, disptype( t ), "<int>" );
     }
 }
 
@@ -59,31 +65,6 @@ void entype_int_binary_arithmetic( EntypeContext& te, T& x )
     x.lhs->entype( te, false, Type::getIntType() );
     x.rhs->entype( te, false, Type::getIntType() );
     update_type( te, x.h, Type::getIntType() );
-}
-
-static type_t
-entype_formalargs( EntypeContext& tc, FormalArgs* formalargs )
-{
-    typevec_t v;
-    for( size_t i = 0 ; i < formalargs->v.size() ; i++ ) {
-        if( !formalargs->v[i]->t ) {
-            return NULL;
-        }
-		formalargs->v[i]->t->entype( tc, false, NULL );
-		type_t t = formalargs->v[i]->t->h.t;
-		update_type( tc, formalargs->v[i]->h, t );
-        v.push_back( t );
-    }
-    return Type::getTupleType( v );
-}
-
-void freevars_to_typevec( const symmap_t& freevars, typevec_t& v )
-{
-    for( symmap_t::const_iterator i = freevars.begin() ;
-         i != freevars.end() ;
-         ++i ) {
-        v.push_back( (*i).second );
-    }
 }
 
 void
@@ -105,32 +86,26 @@ entype_function(
     // 返り値の型
 	result_type->entype( tc, false, NULL );
 	type_t rttype = result_type->h.t;
-    if( !Type::isComplete( rttype ) ) {
-        // あり得ないはず
-        assert(0);
-        throw imcomplete_return_type( h.beg );
-    }
 
+	// ...戻り値が関数型だったらクロージャに変換
     if( Type::isFunction( rttype ) ) {
         rttype = Type::getClosureType( rttype );
     }
 
     // 引数の型
-    type_t attype = entype_formalargs( tc, formal_args );
-    if( !Type::isComplete( attype ) ) {
-        throw inexplicit_argument_type( h.beg );
-    }
+	formal_args->entype( tc, false, NULL );
+    type_t attype = formal_args->h.t;
 
     // 再帰関数のために本体より先にbind
+	// TODO: ローカル関数が再帰関数だったとき、これで動くか？
     update_type( tc, h, Type::getFunctionType( rttype, attype ) );
     tc.env.bind( funcname, h.t );
 
     tc.env.push();
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
-		formal_args->v[i]->t->entype( tc, false, NULL );
         tc.env.bind(
             formal_args->v[i]->name->s,
-            formal_args->v[i]->t->h.t );
+            formal_args->v[i]->h.t );
     }
     tc.env.fix();
 
@@ -145,61 +120,29 @@ entype_function(
     }
 
     if( !body->h.t ) {
-        throw noreturn( h.end, Type::getDisplay( rttype ) );
+        throw noreturn( h.end, disptype( rttype ) );
     }
 
     // 自由変数
-    //std::cerr << "freevars: ";
     for( symmap_t::iterator i = tc.env.freevars().begin();
          i != tc.env.freevars().end() ;
          ++i ) {
         Symbol* s = (*i).first;
         if( !tc.env.find_in_toplevel( s ) ) {
             freevars[s] = (*i).second;
-            //std::cerr << (*i)->s << ", ";
         }
     }
-    //std::cerr << std::endl;
 
     // 引数の型をアップデート
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
         type_t t = tc.env.find( formal_args->v[i]->name->s );
         if( !t ) {
-            // TODO: error
+            // TODO: 引数の型を決定できないerror
         }
         formal_args->v[i]->h.t = t;
     }
 
     tc.env.pop();
-}
-
-type_t make_tuple_tree_from_vardeclelems( EntypeContext& tc, VarDeclElems* f )
-{
-    typevec_t v;
-    for( size_t i = 0 ; i < f->v.size() ; i++ ) {
-        VarDeclElem* e = f->v[i];
-
-        VarDeclElems* ev = dynamic_cast<VarDeclElems*>(e);
-        if( ev ) {
-            v.push_back( make_tuple_tree_from_vardeclelems( tc, ev ) );
-            continue;
-        }
-
-        VarDeclIdentifier* ei = dynamic_cast<VarDeclIdentifier*>(e);
-        if( ei ) {
-            if( ei->t ) {
-				ei->t->entype( tc, false, NULL );
-                v.push_back( ei->t->h.t );
-            } else {
-                v.push_back( NULL );
-            }
-            continue;
-        }
-
-        assert(0);
-    }
-
-    return Type::getTupleType( v );
 }
 
 template < class T >
@@ -377,20 +320,15 @@ void TopLevelStructDef::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Block
-void Block::entype( EntypeContext& tc, bool, type_t t )
+void Block::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
-	//expand_block_sugar( cc.ce, statements, h.t )
-
 	if( !expanded && h.t ) {
 		statements = expand_block_sugar( tc.ce, statements, h.t );
 		expanded = true;
 	}
 
-    statements->entype( tc, false, t );
-
-    if( !statements->v.empty() ) {
-        update_type( tc, h, statements->v.back()->h.t );
-    }
+    statements->entype( tc, drop_value, t );
+	update_type( tc, h, statements->h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -404,6 +342,10 @@ void Statements::entype( EntypeContext& tc, bool, type_t t )
             v[i]->entype( tc, false, t );
         }
     }
+
+	if( !v.empty() ) {
+		update_type( tc, h, v.back()->h.t );
+	}
 }
 
 ////////////////////////////////////////////////////////////////
@@ -425,7 +367,8 @@ void FunDecl::entype( EntypeContext& tc, bool, type_t t )
     }
 
     // 引数の型
-    type_t args_type = entype_formalargs( tc, sig->fargs );
+	sig->fargs->entype( tc, false, NULL );
+    type_t args_type = sig->fargs->h.t;
     if( !Type::isComplete( args_type ) ) {
         throw inexplicit_argument_type( h.beg );
     }
@@ -459,44 +402,51 @@ void FunSig::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // StructDef
-void StructDef::entype( EntypeContext& tc, bool, type_t t )
+void StructDef::entype( EntypeContext& tc, bool, type_t )
 {
-    std::vector< Slot > sv;
-    for( size_t i = 0 ; i < members->v.size() ; i++ ) {
-        Member* m = members->v[i];
-		m->farg->t->entype( tc, false, NULL );
-        sv.push_back( Slot( m->farg->name->s, m->farg->t->h.t ) );
-    }
-    update_type( tc, h, Type::getStructType( sv ) );
+	members->entype( tc, false, NULL );
+    update_type( tc, h, members->h.t );
     tc.env.bind( name->s, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
 // Slots
-void Members::entype( EntypeContext& tc, bool, type_t t )
+void Members::entype( EntypeContext& tc, bool, type_t )
 {
-    assert(0);
+    std::vector< Slot > sv;
+    for( size_t i = 0 ; i < v.size() ; i++ ) {
+		FormalArg* farg = v[i]->farg;
+		farg->entype( tc, false, NULL );
+        sv.push_back( Slot( farg->name->s, farg->h.t ) );
+    }
+    update_type( tc, h, Type::getStructType( sv ) );
 }
 
 ////////////////////////////////////////////////////////////////
 // Member
-void Member::entype( EntypeContext& tc, bool, type_t t )
+void Member::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // FormalArgs
-void FormalArgs::entype( EntypeContext& tc, bool, type_t t )
+void FormalArgs::entype( EntypeContext& tc, bool, type_t )
 {
-    assert(0);
+    typevec_t tv;
+    for( size_t i = 0 ; i < v.size() ; i++ ) {
+		v[i]->entype( tc, false, NULL );
+        tv.push_back( v[i]->h.t );
+    }
+	update_type( tc, h, Type::getTupleType( tv ) );
 }
 
 ////////////////////////////////////////////////////////////////
 // FormalArg
-void FormalArg::entype( EntypeContext& tc, bool, type_t t )
+void FormalArg::entype( EntypeContext& tc, bool, type_t )
 {
-    assert(0);
+	this->t->entype( tc, false, NULL );
+	update_type( tc, h, this->t->h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -507,26 +457,25 @@ void VarDecl::entype( EntypeContext& tc, bool drop_value, type_t )
         throw unused_variable( h.beg, "@@@@" );
     }
 
-    varelems->entype( tc, drop_value, NULL );
-    type_t ft = make_tuple_tree_from_vardeclelems( tc, varelems );
-
+	type_t t = NULL;
   retry:
-    data->entype( tc, false, ft );
+    varelems->entype( tc, drop_value, t );
+    data->entype( tc, false, t );
+
+    type_t ft = varelems->h.t;
     type_t at = data->h.t;
-    
-    if( ft != at ) {
-        type_t ut = Type::unify( ft, at );
-        if( !ut ) {
-            throw type_mismatch(
-                h.beg,
-                Type::getDisplay( ft ) + " at variable" ,
-                Type::getDisplay( at ) + " at value" );
-        }
-        varelems->entype( tc, false, ut );
-        data->entype( tc, false, ut );
-        ft = ut;
-        goto retry;
-    }
+	if( !Type::match( ft, at ) ) {
+		throw type_mismatch(
+			h.beg,
+			disptype( ft ) + " at variable" ,
+			disptype( at ) + " at value" );
+	}
+
+	type_t ut = Type::unify( ft, at );
+	if( ft != ut || at != ut ) {
+		t = ut;
+		goto retry;
+	}
 }
 
 ////////////////////////////////////////////////////////////////
@@ -546,11 +495,11 @@ void VarDeclElems::entype( EntypeContext& tc, bool, type_t t )
         return;
     }
 
-    if( t && int( v.size() ) != Type::getTupleSize( t ) ) {
-        throw type_mismatch(
-            h.beg,
-            Type::getDisplay( h.t ) + " at variable" ,
-            Type::getDisplay( t ) + " at value" );
+    if( t ) {
+		int n = Type::getTupleSize( t );
+		if( int( v.size() ) != n ) {
+			throw wrong_multiple_value( h.beg, v.size(), n );
+		}
     }
 
     typevec_t tv;
@@ -565,13 +514,13 @@ void VarDeclElems::entype( EntypeContext& tc, bool, type_t t )
 // VarDeclIdentifier
 void VarDeclIdentifier::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( t && h.t && t != h.t ) {
+    if( !Type::match( h.t, t ) ) {
         throw type_mismatch(
             h.beg,
-            Type::getDisplay( h.t ) + " at variabne" ,
-            Type::getDisplay( t ) + " at value" );
+            disptype( h.t ) + " at variabne" ,
+            disptype( t ) + " at value" );
     }
-    update_type( tc, h, t );
+    update_type( tc, h, Type::unify( h.t, t ) );
     tc.env.bind( name->s, h.t );
 }
 
@@ -581,60 +530,29 @@ void IfThenElse::entype( EntypeContext& tc, bool drop_value, type_t t )
 {
     cond->entype( tc, false, Type::getBoolType() );
 
-    iftrue->entype( tc, false, t );
-    iffalse->entype( tc, false, t );
+  retry:
+    iftrue->entype( tc, drop_value, t );
+    iffalse->entype( tc, drop_value, t );
 
-    if( !drop_value && !t ) {
-        if( !iftrue->h.t && !iffalse->h.t ) {
-
-        } else if( iftrue->h.t && iffalse->h.t ) {
-            if( iftrue->h.t != iffalse->h.t ) {
-                throw type_mismatch(
-                    h.beg,
-                    Type::getDisplay( iftrue->h.t ) + " at true-clause" ,
-                    Type::getDisplay( iffalse->h.t ) + " at false-clause" );
-            }
-        } else if( iftrue->h.t && !iffalse->h.t ) {
-            iffalse->entype( tc, false, iftrue->h.t );
-        } else if( !iftrue->h.t && iffalse->h.t ) {
-            iftrue->entype( tc, false, iffalse->h.t );
-        }
+    if( !drop_value ) {
+		type_t tt = iftrue->h.t;
+		type_t ft = iffalse->h.t;
+									
+		if( Type::match( tt, ft ) ) {
+			type_t ut = Type::unify( tt, ft );
+			if( t != ut ) {
+				t = ut;
+				goto retry;
+			}
+		} else {
+			throw type_mismatch(
+				h.beg,
+				disptype( iftrue->h.t ) + " at true-clause" ,
+				disptype( iffalse->h.t ) + " at false-clause" );
+		}
     }
 
     update_type( tc, h, iftrue->h.t );
-}
-
-////////////////////////////////////////////////////////////////
-// TypeExpr
-void TypeExpr::entype( EntypeContext& tc, bool, type_t t )
-{
-    assert(0);
-}
-
-////////////////////////////////////////////////////////////////
-// NamedType
-void NamedType::entype( EntypeContext& tc, bool, type_t t )
-{
-	update_type( tc, h, tc.env.find( name->s ) );
-}
-
-////////////////////////////////////////////////////////////////
-// Types
-void Types::entype( EntypeContext& tc, bool, type_t )
-{
-	typevec_t tv;
-	for( size_t i = 0 ; i < v.size() ; i++ ) {
-		v[i]->entype( tc, false, NULL );
-		tv.push_back( v[i]->h.t );
-	}
-	update_type( tc, h, Type::getTupleType( tv ) );
-}
-
-////////////////////////////////////////////////////////////////
-// TypeRef
-void TypeRef::entype( EntypeContext& tc, bool, type_t )
-{
-	update_type( tc, h, this->t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -647,7 +565,7 @@ void MultiExpr::entype( EntypeContext& tc, bool drop_value, type_t t )
     } else {
         if( t ) {
             int n = Type::getTupleSize( t );
-            if( v.size() != 1 && n != int(v.size()) ) {
+            if( n != int( v.size() ) ) {
                 Addr addr;
                 if( !v.empty() ) { addr = v[0]->h.beg; }
                 throw wrong_multiple_value( addr, v.size(), n );
@@ -666,14 +584,14 @@ void MultiExpr::entype( EntypeContext& tc, bool drop_value, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Expr
-void Expr::entype( EntypeContext& tc, bool, type_t t )
+void Expr::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // LogicalOr
-void LogicalOr::entype( EntypeContext& tc, bool, type_t t )
+void LogicalOr::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -690,7 +608,7 @@ void LogicalOrElems::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // LogicalAnd
-void LogicalAnd::entype( EntypeContext& tc, bool, type_t t )
+void LogicalAnd::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -707,7 +625,7 @@ void LogicalAndElems::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Equality
-void Equality::entype( EntypeContext& tc, bool, type_t t )
+void Equality::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -730,7 +648,7 @@ void EqualityNe::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Relational
-void Relational::entype( EntypeContext& tc, bool, type_t t )
+void Relational::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -769,7 +687,7 @@ void RelationalGe::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Additive
-void Additive::entype( EntypeContext& tc, bool, type_t t )
+void Additive::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -792,7 +710,7 @@ void SubExpr::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // Multiplicative
-void Multiplicative::entype( EntypeContext& tc, bool, type_t t )
+void Multiplicative::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -815,7 +733,7 @@ void DivExpr::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // PrimExpr
-void PrimExpr::entype( EntypeContext& tc, bool, type_t t )
+void PrimExpr::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -824,8 +742,8 @@ void PrimExpr::entype( EntypeContext& tc, bool, type_t t )
 // LiteralBoolean
 void LiteralBoolean::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( t && t != Type::getBoolType() ) {
-        throw context_mismatch( h.beg, "<bool>", Type::getDisplay( t ) );
+    if( !Type::match( Type::getBoolType(), t ) ) {
+        throw context_mismatch( h.beg, "<bool>", disptype( t ) );
     }
     update_type( tc, h, Type::getBoolType() );
 }
@@ -834,8 +752,8 @@ void LiteralBoolean::entype( EntypeContext& tc, bool, type_t t )
 // LiteralInteger
 void LiteralInteger::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( t && t != Type::getIntType() ) {
-        throw context_mismatch( h.beg, "<int>", Type::getDisplay( t ) );
+    if( !Type::match( Type::getIntType(), t ) ) {
+        throw context_mismatch( h.beg, "<int>", disptype( t ) );
     }
     update_type( tc, h, Type::getIntType() );
 }
@@ -844,8 +762,8 @@ void LiteralInteger::entype( EntypeContext& tc, bool, type_t t )
 // LiteralChar
 void LiteralChar::entype( EntypeContext& tc, bool, type_t t )
 {
-    if( t && t != Type::getIntType() ) {
-        throw context_mismatch( h.beg, "<int>", Type::getDisplay( t ) );
+    if( !Type::match( Type::getIntType(), t ) ) {
+        throw context_mismatch( h.beg, "<int>", disptype( t ) );
     }
     update_type( tc, h, Type::getIntType() );
 }
@@ -856,24 +774,13 @@ void VarRef::entype( EntypeContext& tc, bool, type_t t )
 {
     type_t vt = tc.env.find( name->s );
 
-    if( vt ) {
-        // すでに変数の型が決まっている
-        if( t ) {
-            // コンテキスト型がanyでない
-            if( vt != t ) {
-                throw context_mismatch(
-                    h.beg, Type::getDisplay( vt ), Type::getDisplay( t ) );
-            }
-        }
-        tc.env.update( name->s, vt );
-        update_type( tc, h, vt );
-    } else {
-        // 変数の型がまだ決まってない
-        if( t ) {
-            // コンテキスト型が決まっている
-            tc.env.update( name->s, t );
-            update_type( tc, h, t );
-        }
+	if( !Type::match( vt, t ) ) {
+		throw context_mismatch(
+			h.beg, disptype( vt ), disptype( t ) );
+	} else {
+		type_t ut = Type::unify( vt, t );
+        tc.env.update( name->s, ut );
+        update_type( tc, h, ut );
     }        
 
     tc.env.refer( name->s, h.t );
@@ -889,7 +796,7 @@ void Parenthized::entype( EntypeContext& tc, bool, type_t t )
 
 ////////////////////////////////////////////////////////////////
 // CastExpr
-void CastExpr::entype( EntypeContext& tc, bool, type_t t )
+void CastExpr::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -899,20 +806,23 @@ void CastExpr::entype( EntypeContext& tc, bool, type_t t )
 void Cast::entype( EntypeContext& tc, bool, type_t t )
 {
 	this->t->entype( tc, false, NULL );
-    type_t tt = this->t->h.t;
-    if( t != tt ) {
-        throw context_mismatch(
-            h.beg,
-            Type::getDisplay( tt ),
-            Type::getDisplay( t ) );
+
+    type_t ct = this->t->h.t;
+	if( Type::isComplete( ct ) ) {
+		throw cast_to_imcomplete_type( h.beg, disptype( ct ) );
+	}
+
+    if( !Type::match( ct, t ) ) {
+        throw context_mismatch( h.beg, disptype( ct ), disptype( t ) );
     }
+
     expr->entype( tc, false, NULL );
-    update_type( tc, h, tt );
+    update_type( tc, h, ct );
 }
 
 ////////////////////////////////////////////////////////////////
 // MemberExpr
-void MemberExpr::entype( EntypeContext& tc, bool, type_t t )
+void MemberExpr::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -922,24 +832,23 @@ void MemberExpr::entype( EntypeContext& tc, bool, type_t t )
 void MemberRef::entype( EntypeContext& tc, bool, type_t t )
 {
 	expr->entype( tc, false, NULL );
-	if( !expr->h.t ) { return; }
 
-	if( !Type::isStruct( expr->h.t ) ) {
-		throw wrong_memberref(
-			h.beg, Type::getDisplay( expr->h.t ), field->s->s );
+	type_t st = expr->h.t;
+	if( !st ) { return; }
+
+	if( !Type::isStruct( st ) ) {
+		throw wrong_memberref( h.beg, disptype( st ), field->s->s );
 	}
 
-	int slot_index = expr->h.t->getSlotIndex( field->s );
+	int slot_index = st->getSlotIndex( field->s );
 	if( slot_index < 0 ) {
-		throw wrong_memberref(
-			h.beg, Type::getDisplay( expr->h.t ), field->s->s );
+		throw wrong_memberref( h.beg, disptype( st ), field->s->s );
 	}
 
-	update_type( tc, h, expr->h.t->getSlot( slot_index ).type );
+	update_type( tc, h, st->getSlot( slot_index ).type );
 
 	if( !Type::match( h.t, t ) ) {
-        throw context_mismatch(
-			h.beg, Type::getDisplay( h.t ), Type::getDisplay( t ) );
+        throw context_mismatch( h.beg, disptype( h.t ), disptype( t ) );
 	}
 }
 
@@ -948,40 +857,31 @@ void MemberRef::entype( EntypeContext& tc, bool, type_t t )
 void FunCall::entype( EntypeContext& tc, bool, type_t t )
 {
     type_t ft = tc.env.find( func->s );
-    //std::cerr << "Funcall::entype " << func->s->s << " => "
-    //<< Type::getDisplay( ft->getReturnType() ) << std::endl;
     if( !Type::isCallable( ft ) ) {
-        throw uncallable(
-            h.beg, func->s->s + "(" + Type::getDisplay( ft ) + ")" );
+        throw uncallable( h.beg, func->s->s + "(" + disptype( ft ) + ")" );
     }
 
     // 戻り値とコンテキスト型がミスマッチ
-    if( t && !Type::match( ft->getReturnType(), t ) ) {
+	type_t rt = ft->getReturnType();
+    if( !Type::match( rt, t ) ) {
         throw context_mismatch(
-            h.beg,
-            func->s->s + "(" + Type::getDisplay( ft->getReturnType() ) + ")",
-            Type::getDisplay( t ) );
+            h.beg, func->s->s + "(" + disptype( rt ) + ")", disptype( t ) );
     }
 
     // 引数の個数が合わない
-    int farity = Type::getTupleSize( ft->getArgumentType() );
+	type_t at = ft->getArgumentType();
+    int farity = Type::getTupleSize( at );
     if( int( aargs->v.size() ) != farity ) {
         throw wrong_arity(
-            h.beg,
-            aargs->v.size(),
-            farity,
-            func->s->s );
+            h.beg, aargs->v.size(), farity, func->s->s );
     }
 
     // 実引数の型付け
-    for( size_t i = 0 ; i < aargs->v.size() ; i++ ) {
-        aargs->v[i]->entype(
-            tc, false, ft->getArgumentType()->getElement(i) );
-    }
+	aargs->entype( tc, false, at );
 
-    update_type( tc, h, ft->getReturnType() );
+    tc.env.refer( func->s, ft );
 
-    tc.env.refer( func->s, h.t );
+	update_type( tc, h, rt );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -993,7 +893,7 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
         throw not_struct( h.beg, name->s->s );
     }
 
-    std::vector<bool> used( st->Type::getSlotCount(), false );
+    std::vector<bool> used( st->getSlotCount(), false );
     for( size_t i = 0 ; i < members->v.size() ; i++ ) {
         LiteralMember* m = members->v[i];
         int index = st->getSlotIndex( m->name->s );
@@ -1001,10 +901,7 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
             throw no_such_member( m->h.beg, name->s->s, m->name->s->s );
         }
 		
-		m->data->entype(
-			tc,
-			false,
-			Type::unify( st->getSlot( index ).type, m->data->h.t ) );
+		m->data->entype( tc, false, st->getSlot( index ).type );
 
         assert( index <= int( used.size() ) ); 
         used[index] = true;
@@ -1017,19 +914,19 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
         }
     }
 
-    update_type( tc, h, st );
+	update_type( tc, h, st );
 }
 
 ////////////////////////////////////////////////////////////////
 // LiteralMembers
-void LiteralMembers::entype( EntypeContext& tc, bool, type_t t )
+void LiteralMembers::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // LiteralMember
-void LiteralMember::entype( EntypeContext& tc, bool, type_t t )
+void LiteralMember::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
@@ -1055,14 +952,19 @@ void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
 
     assert( Type::isFunction( h.t ) );
 
-    update_type( tc, h, Type::getClosureType( h.t ) );
+	update_type( tc, h, Type::getClosureType( h.t ) );
 }
 
 ////////////////////////////////////////////////////////////////
 // ActualArgs
 void ActualArgs::entype( EntypeContext& tc, bool, type_t t )
 {
-    assert(0);
+	typevec_t tv;
+    for( size_t i = 0 ; i < v.size() ; i++ ) {
+        v[i]->entype( tc, false, Type::getElementType( t, i ) );
+		tv.push_back( v[i]->h.t );
+    }
+	update_type( tc, h, Type::getTupleType( tv ) );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1070,39 +972,72 @@ void ActualArgs::entype( EntypeContext& tc, bool, type_t t )
 void ActualArg::entype( EntypeContext& tc, bool, type_t t )
 {
     expr->entype( tc, false, t );
-    update_type( tc, h, expr->h.t );
+	update_type( tc, h, expr->h.t );
 }
 
 ////////////////////////////////////////////////////////////////
 // SectionLabel
-void SectionLabel::entype( EntypeContext& tc, bool, type_t t )
+void SectionLabel::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
 // CatchLabel
-void CatchLabel::entype( EntypeContext& tc, bool, type_t t )
+void CatchLabel::entype( EntypeContext&, bool, type_t )
 {
 }
 
 ////////////////////////////////////////////////////////////////
 // FinallyLabel
-void FinallyLabel::entype( EntypeContext& tc, bool, type_t t )
+void FinallyLabel::entype( EntypeContext&, bool, type_t )
 {
 }
 
 ////////////////////////////////////////////////////////////////
 // ThrowStatement
-void ThrowStatement::entype( EntypeContext& tc, bool, type_t t )
+void ThrowStatement::entype( EntypeContext&, bool, type_t )
 {
 }
 
 ////////////////////////////////////////////////////////////////
 // Identifier
-void Identifier::entype( EntypeContext& tc, bool, type_t t )
+void Identifier::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// TypeExpr
+void TypeExpr::entype( EntypeContext&, bool, type_t )
+{
+    assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// NamedType
+void NamedType::entype( EntypeContext& tc, bool, type_t )
+{
+	update_type( tc, h, tc.env.find( name->s ) );
+}
+
+////////////////////////////////////////////////////////////////
+// Types
+void Types::entype( EntypeContext& tc, bool, type_t )
+{
+	typevec_t tv;
+	for( size_t i = 0 ; i < v.size() ; i++ ) {
+		v[i]->entype( tc, false, NULL );
+		tv.push_back( v[i]->h.t );
+	}
+	update_type( tc, h, Type::getTupleType( tv ) );
+}
+
+////////////////////////////////////////////////////////////////
+// TypeRef
+void TypeRef::entype( EntypeContext& tc, bool, type_t )
+{
+	update_type( tc, h, this->t );
 }
 
 } // namespace leaf

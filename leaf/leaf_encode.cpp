@@ -1211,6 +1211,7 @@ void MemberRef::encode( EncodeContext& cc, bool, Value& value )
     value.clear();
 
 	int slot_index = expr->h.t->getSlotIndex( field->s );
+	assert( 0 <= slot_index );
 
 	char reg[256];
 	sprintf( reg, "memref%d_%d", h.id, slot_index );

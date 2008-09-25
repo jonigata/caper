@@ -335,6 +335,16 @@ public:
 
 };
 
+class cast_to_imcomplete_type : public error {
+public:
+	cast_to_imcomplete_type( const Addr& a, const std::string& n ) : error( a )
+	{
+        set_message( "cast to imcomplete type: " + n );
+	}
+	~cast_to_imcomplete_type() throw() {}
+
+};
+
 } // namespace leaf
 
 #endif // ERROR_HPP_

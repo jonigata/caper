@@ -125,10 +125,6 @@ entype_function(
         goto retry;
     }
 
-    if( !body->h.t ) {
-        throw noreturn( h.end, disptype( rttype ) );
-    }
-
     // 自由変数
     for( symmap_t::iterator i = tc.env.freevars().begin();
          i != tc.env.freevars().end() ;
@@ -244,18 +240,14 @@ Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
 					ce.cage.allocate<FunDef>( funsig, block, symmap_t() ) );
 
 				// ...make function call
-				FunCall* funcall = make_header(
+				Invoke* invoke = make_header(
 					ce, h,
-					ce.cage.allocate<FunCall>(
-						ce.cage.allocate<Identifier>( funname ),
-						ce.cage.allocate<ActualArgs>() ) );
+					ce.cage.allocate<Invoke>(
+						ce.cage.allocate<Identifier>( funname ) ) );
 
 				sv.clear();
 				sv.push_back( fundef );
-				sv.push_back(
-					make_header(
-						ce, h,
-						ce.cage.allocate<MultiExpr>( funcall ) ) );
+				sv.push_back( invoke );
 
 				try_section_done = true;
 			}
@@ -902,6 +894,50 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
 }
 
 ////////////////////////////////////////////////////////////////
+// Invoke
+void Invoke::entype( EntypeContext& tc, bool, type_t t )
+{
+    type_t ft = tc.env.find( func->s );
+    if( !Type::isCallable( ft ) ) {
+        throw uncallable( h.beg, func->s->s + "(" + disptype( ft ) + ")" );
+    }
+
+    // 戻り値とコンテキスト型がミスマッチ
+	type_t rt = ft->getReturnType();
+    if( !Type::match( rt, t ) ) {
+        throw context_mismatch(
+            h.beg, func->s->s + "(" + disptype( rt ) + ")", disptype( t ) );
+    }
+
+    tc.env.refer( func->s, ft );
+	update_type( tc, h, rt );
+}
+
+////////////////////////////////////////////////////////////////
+// Lambda
+void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
+{
+    if( !name ) {
+        name = tc.ce.gensym();
+    }
+
+    entype_function(
+        tc,
+        drop_value,
+        t,
+        h,
+        name,
+        fargs,
+        result_type,
+        body,
+        freevars );
+
+    if( Type::isFunction( h.t ) ) {
+		update_type( tc, h, Type::getClosureType( h.t ) );
+	}
+}
+
+////////////////////////////////////////////////////////////////
 // LiteralStruct
 void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
 {
@@ -946,30 +982,6 @@ void LiteralMembers::entype( EntypeContext&, bool, type_t )
 void LiteralMember::entype( EntypeContext&, bool, type_t )
 {
     assert(0);
-}
-
-////////////////////////////////////////////////////////////////
-// Lambda
-void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
-{
-    if( !name ) {
-        name = tc.ce.gensym();
-    }
-
-    entype_function(
-        tc,
-        drop_value,
-        t,
-        h,
-        name,
-        fargs,
-        result_type,
-        body,
-        freevars );
-
-    if( Type::isFunction( h.t ) ) {
-		update_type( tc, h, Type::getClosureType( h.t ) );
-	}
 }
 
 ////////////////////////////////////////////////////////////////

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <map>
 #include <string>
+#include <cstdarg>
 #include "leaf_node.hpp"
 #include "leaf_ast.hpp"
 #include "leaf_error.hpp"
@@ -165,13 +166,36 @@ struct EncodeContext : public boost::noncopyable {
 };
 
 ////////////////////////////////////////////////////////////////
-// utility functions
-inline
-void make_reg( char* s, int id )
-{
-    sprintf( s, "reg%d", id );
-}
+// reg
+class Reg {
+public:
+	Reg( const char* s, ... )
+	{
+		va_list ap;
+		va_start( ap, s );
+		vsprintf( buffer_, s, ap );
+		va_end( ap );
+	}
 
+	void make( const char* s, ... )
+	{
+		va_list ap;
+		va_start( ap, s );
+		vsprintf( buffer_, s, ap );
+		va_end( ap );
+	}
+
+	operator std::string() const
+	{
+		return buffer_;
+	}
+
+private:
+	char buffer_[256];
+};
+
+////////////////////////////////////////////////////////////////
+// utility functions
 inline
 llvm::Value* check_value_1( const Value& v )
 {
@@ -216,7 +240,8 @@ encode_binary_operator(
     llvm::Instruction::BinaryOps    op,
     Value&                          value )
 {
-    char reg[256]; make_reg( reg, id );
+    char reg[256]; 
+	sprintf( reg, "reg_%d", id );
 
     lhs->encode( cc, false, value );
     llvm::Value* v0 = check_value_1( value );
@@ -562,20 +587,16 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
     check_empty( value );
 
 	// セクションの作成
-    std::map< Statement*, llvm::BasicBlock* > sections;
+    std::vector< Statement* > sections;
     for( size_t i = 0 ; i < v.size() ; i++ ) {
         if( SectionLabel* s = dynamic_cast<SectionLabel*>(v[i]) ) {
-            if( i != v.size() - 1 && !dynamic_cast<SectionLabel*>(v[i+1]) ) {
-				char label[256];
-				sprintf( label, "sec_%d", s->h.id );
-                llvm::BasicBlock* bb = llvm::BasicBlock::Create(
-                    label, cc.f );
-                sections[s] = bb;
+			if( i != v.size() - 1 && !dynamic_cast<SectionLabel*>(v[i+1]) ) {
+                sections.push_back( s );
             }
         }
     }
 
-		// エンコード
+	// エンコード
 	if( sections.empty() ) {
 		for( size_t i = 0 ; i < v.size() ; i++ ) {
 			bool this_drop_value = drop_value || i != v.size() - 1;
@@ -586,21 +607,44 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 			}
 		}
 	} else {
+		llvm::Function* f = cc.f;
+
+		llvm::BasicBlock* normal_bb = llvm::BasicBlock::Create( "NORMAL", f );
+		llvm::BasicBlock* catch_bb = llvm::BasicBlock::Create( "CATCH", f );
+		llvm::BasicBlock* finally = NULL;
+	
+		llvm::Value* invoke = NULL;
 		for( size_t i = 0 ; i < v.size() ; i++ ) {
 			bool this_drop_value = drop_value || i != v.size() - 1;
-
-			if( SectionLabel* s = dynamic_cast<SectionLabel*>(v[i]) ) {
+			 
+			if( dynamic_cast<FinallyLabel*>(v[i]) ) {
+				finally = llvm::BasicBlock::Create( "FINALLY", f );
+			} else if( SectionLabel* s = dynamic_cast<SectionLabel*>(v[i]) ) {
 				if( i != v.size() - 1 &&
 					!dynamic_cast<SectionLabel*>(v[i+1]) ) {
-					cc.bb = sections[s];
+					cc.bb = llvm::BasicBlock::Create(
+						Reg( "sec_%d", s->h.id ), f );
 				}
 			} else {
+				if( Invoke* inv = dynamic_cast<Invoke*>(v[i]) ) {	
+					invoke = llvm::InvokeInst::Create(
+						cc.m->getFunction( inv->func->s->s ),
+						normal_bb,
+						catch_bb,
+						(llvm::Value**)NULL,(llvm::Value**)NULL,
+						(std::string)Reg( "invoke_%d", inv->h.id ),
+						cc.bb );
+					continue;
+				}
 				v[i]->encode( cc, this_drop_value, value );
 				if( this_drop_value ) {
 					value.clear();
 				}
 			}
 		}
+
+        llvm::ReturnInst::Create( invoke, normal_bb );
+        llvm::ReturnInst::Create( invoke, catch_bb ); // TODO: ダミー
 	}
 }
 
@@ -1254,17 +1298,12 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
     check_empty( value );
 
     Reference r = cc.env.find( func->s );
-    //std::cerr << "funcall: " << func->s->s << std::endl;
     if( !r.t ) {
         throw no_such_function( h.beg, func->s->s );
     }
 
-    //std::cerr << func->s->s << ": " << Type::getDisplay( v.t ) << std::endl;
-    if( Type::isFunction( r.t ) ) {
+	if( Type::isFunction( r.t ) ) {
         llvm::Function* f = cc.m->getFunction( func->s->s );
-
-        //std::cerr << "funcall type(" << func->s->s << "): "
-        //<< *f->getType() << std::endl;
 
         std::vector< llvm::Value* > args;
         for( symmap_t::const_iterator i = r.c.begin() ;
@@ -1288,8 +1327,6 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
         char reg[256];
         sprintf( reg, "ret%d", h.id );
 
-        //std::cerr << "args: " << args.size() << std::endl;
-
         llvm::Value* ret = llvm::CallInst::Create(
             f, args.begin(), args.end(), reg, cc.bb );
 
@@ -1303,8 +1340,6 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
     } else if( Type::isClosure( r.t ) ) {
         char reg[256];
 
-        //std::cerr << "closure call: " << *v.v->getType() << std::endl;
-        
         llvm::Value* indices[2];
         indices[0] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
         indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 0 );
@@ -1317,24 +1352,12 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
         sprintf( reg, "stub_func_ptr%d", h.id );
         llvm::Value* fptr = new llvm::LoadInst( faddr, reg, cc.bb );
 
-/*
-        const llvm::PointerType* fptr_type =
-            llvm::cast<llvm::PointerType>(fptr->getType());
-
-        const llvm::FunctionType* func_type =
-            llvm::cast<llvm::FunctionType>(fptr_type->getElementType());
-*/
-        //std::cerr << "func ptr: " << *fptr_type << std::endl;
-
         // stub env type
         indices[1] = llvm::ConstantInt::get( llvm::Type::Int32Ty, 1 );
 
         sprintf( reg, "stub_env_addr%d", h.id );
         llvm::Value* eaddr = llvm::GetElementPtrInst::Create(
             r.v, indices, indices+2, reg, cc.bb );
-
-        //std::cerr << "stub env addr: " << *eaddr->getType()
-        //<< std::endl;
 
         std::vector< llvm::Value* > args;
         args.push_back( eaddr );
@@ -1348,19 +1371,6 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             args.push_back( vv );
         }
 
-/*
-        std::cerr << "final fptr: "
-                  << *fptr->getType() << ", "
-                  << *fptr_type << ", "
-                  << *func_type
-                  << std::endl;
-        for( size_t i = 0 ; i < args.size() ; i++ ) {
-            std::cerr << "arg" << i << "f: " << *func_type->getParamType(i)
-                      << std::endl;
-            std::cerr << "arg" << i << "a: " << *args[i]->getType()
-                      << std::endl;
-        }
-*/        
         sprintf( reg, "ret%d", h.id );
 
         int n = Type::getTupleSize( r.t->getReturnType() );
@@ -1383,57 +1393,16 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
             }
         }
     } else {
-        //std::cerr << Type::getDisplay( v.t ) << std::endl;
         assert(0);
     }
 
 }
 
 ////////////////////////////////////////////////////////////////
-// LiteralStruct
-void LiteralStruct::encode( EncodeContext& cc, bool, Value& value )
+// Invoke
+void Invoke::encode( EncodeContext& cc, bool drop_value, Value& value )
 {
-    check_empty( value );
-
-    assert( Type::isStruct( h.t ) );
-    std::vector< Value > values( h.t->getSlotCount() );
-
-    for( size_t i = 0 ; i < members->v.size() ; i++ ) {
-        LiteralMember* m = members->v[i];
-
-        int index = h.t->getSlotIndex( m->name->s );
-        assert( 0 <= index );
-
-        m->encode( cc, false, values[index] );
-    }
-
-    const llvm::Type* st = getLLVMType( h.t );
-    llvm::Value* prev = llvm::UndefValue::get( st ); 
-    for( size_t i = 0 ; i < members->v.size() ; i++ ) {
-        char reg[256];
-        sprintf( reg, "mem%d_%d", h.id, int(i) );
-
-        prev = llvm::InsertValueInst::Create(
-            prev, values[i].getx(), i, reg, cc.bb );
-    }   
-
-    value.assign_as_scalor( prev, h.t );
-}
-
-////////////////////////////////////////////////////////////////
-// LiteralMembers
-void LiteralMembers::encode( EncodeContext& cc, bool, Value& value )
-{
-    assert(0);
-}
-
-////////////////////////////////////////////////////////////////
-// LiteralMember
-void LiteralMember::encode( EncodeContext& cc, bool, Value& value )
-{
-    check_empty( value );
-
-    data->encode( cc, false, value );
+	assert(0);
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1580,6 +1549,53 @@ void Lambda::encode( EncodeContext& cc, bool drop_value, Value& value )
             closure, getLLVMType( h.t ), reg, cc.bb );
 
     value.assign_as_scalor( casted_closure, h.t );
+}
+
+////////////////////////////////////////////////////////////////
+// LiteralStruct
+void LiteralStruct::encode( EncodeContext& cc, bool, Value& value )
+{
+    check_empty( value );
+
+    assert( Type::isStruct( h.t ) );
+    std::vector< Value > values( h.t->getSlotCount() );
+
+    for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+        LiteralMember* m = members->v[i];
+
+        int index = h.t->getSlotIndex( m->name->s );
+        assert( 0 <= index );
+
+        m->encode( cc, false, values[index] );
+    }
+
+    const llvm::Type* st = getLLVMType( h.t );
+    llvm::Value* prev = llvm::UndefValue::get( st ); 
+    for( size_t i = 0 ; i < members->v.size() ; i++ ) {
+        char reg[256];
+        sprintf( reg, "mem%d_%d", h.id, int(i) );
+
+        prev = llvm::InsertValueInst::Create(
+            prev, values[i].getx(), i, reg, cc.bb );
+    }   
+
+    value.assign_as_scalor( prev, h.t );
+}
+
+////////////////////////////////////////////////////////////////
+// LiteralMembers
+void LiteralMembers::encode( EncodeContext& cc, bool, Value& value )
+{
+    assert(0);
+}
+
+////////////////////////////////////////////////////////////////
+// LiteralMember
+void LiteralMember::encode( EncodeContext& cc, bool, Value& value )
+{
+    check_empty( value );
+
+    data->encode( cc, false, value );
 }
 
 ////////////////////////////////////////////////////////////////

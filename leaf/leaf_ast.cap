@@ -31,7 +31,7 @@ type TopLevelStructDef = StructDef(structdef);
 type Statements = Statement*(v);
 type Statement = FunDecl | FunDef | StructDef |
 				 VarDecl | IfThenElse | MultiExpr |
-				 SectionLabel | ThrowStatement;
+				 SectionLabel | ThrowStatement | Invoke;
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
@@ -92,7 +92,8 @@ type MemberExpr = MemberRef | PrimExpr;
 type MemberRef = PrimExpr(expr), Identifier(field);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
-              | VarRef | Parenthized | FunCall | LiteralStruct | Lambda;
+              | VarRef | Parenthized | FunCall | Lambda
+			  | LiteralStruct;
 type LiteralBoolean = bool(data);
 type LiteralInteger = int(data);
 type LiteralChar = char(data);
@@ -111,6 +112,7 @@ type SectionLabel = CatchLabel | FinallyLabel;
 type CatchLabel = FormalArg(farg);
 type FinallyLabel = int(dummy);
 type ThrowStatement = Expr(e);
+type Invoke = Identifier(func);
 
 type LiteralMembers = LiteralMember*(v);
 type LiteralMember = Identifier(name), MultiExpr(data);

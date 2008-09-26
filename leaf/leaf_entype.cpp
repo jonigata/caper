@@ -221,37 +221,40 @@ Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
 				dynamic_cast<SectionLabel*>(s->v[i]) ) {
 
 				// try section done
+				Header h = s->h;
+				h.t = NULL;
 
 				// ...make internal function
 				Symbol* funname = ce.gensym();
 				FunSig* funsig = make_header(
-					ce, s->h,
+					ce, h,
 					ce.cage.allocate<FunSig>(
 						ce.cage.allocate<Identifier>( funname ),
 						make_header(
-							ce, s->h,
+							ce, h,
 							ce.cage.allocate<FormalArgs>() ),
 						ce.cage.allocate<TypeRef>( t ) ) );
 				Block* block = make_header(
-					ce, s->h,
+					ce, h,
 					ce.cage.allocate<Block>( 
 						ce.cage.allocate<Statements>( sv ),
 						false ) );
 				FunDef* fundef = make_header(
-					ce, s->h,
+					ce, h,
 					ce.cage.allocate<FunDef>( funsig, block, symmap_t() ) );
 
 				// ...make function call
 				FunCall* funcall = make_header(
-					ce, s->h,
+					ce, h,
 					ce.cage.allocate<FunCall>(
 						ce.cage.allocate<Identifier>( funname ),
 						ce.cage.allocate<ActualArgs>() ) );
 
+				sv.clear();
 				sv.push_back( fundef );
 				sv.push_back(
 					make_header(
-						ce, s->h,
+						ce, h,
 						ce.cage.allocate<MultiExpr>( funcall ) ) );
 
 				try_section_done = true;
@@ -451,6 +454,7 @@ void FormalArgs::entype( EntypeContext& tc, bool, type_t )
 		v[i]->entype( tc, false, NULL );
         tv.push_back( v[i]->h.t );
     }
+
 	update_type( tc, h, Type::getTupleType( tv ) );
 }
 

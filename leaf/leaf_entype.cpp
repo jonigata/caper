@@ -14,10 +14,11 @@ namespace leaf {
 ////////////////////////////////////////////////////////////////
 // EntypeContext
 struct EntypeContext : public boost::noncopyable {
-    EntypeContext( CompileEnv& ace ) : ce(ace) {}
+    EntypeContext( CompileEnv& ace ) : ce(ace), updated(false) {}
     
     CompileEnv&                 ce;
     Environment< type_t >       env;
+	bool						updated;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -31,8 +32,12 @@ std::string disptype( type_t t )
 inline
 void update_type( EntypeContext& tc, Header& h, type_t t )
 {
-	// TODO: 重要
-    if( t && h.t != t ) { h.t = t; }
+	assert( Type::unify( h.t, t ) == t );
+	
+    if( h.t != t ) {
+		h.t = t;
+		tc.updated = true;
+	}
 }
 
 inline
@@ -98,7 +103,8 @@ entype_function(
 
     // 再帰関数のために本体より先にbind
 	// TODO: ローカル関数が再帰関数だったとき、これで動くか？
-    update_type( tc, h, Type::getFunctionType( rttype, attype ) );
+    update_type(
+		tc, h, Type::unify( h.t, Type::getFunctionType( rttype, attype )  ) );
     tc.env.bind( funcname, h.t );
 
     tc.env.push();
@@ -262,9 +268,16 @@ Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
 void Node::entype( CompileEnv& ce )
 {
     EntypeContext tc( ce );
+
+  retry:
     tc.env.push();
     entype( tc, false, NULL );
     tc.env.pop();
+
+	if( tc.updated ) {
+		tc.updated = false;
+		goto retry;
+	}
 }
 
 ////////////////////////////////////////////////////////////////
@@ -808,7 +821,7 @@ void Cast::entype( EntypeContext& tc, bool, type_t t )
 	this->t->entype( tc, false, NULL );
 
     type_t ct = this->t->h.t;
-	if( Type::isComplete( ct ) ) {
+	if( !Type::isComplete( ct ) ) {
 		throw cast_to_imcomplete_type( h.beg, disptype( ct ) );
 	}
 
@@ -950,9 +963,9 @@ void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
         body,
         freevars );
 
-    assert( Type::isFunction( h.t ) );
-
-	update_type( tc, h, Type::getClosureType( h.t ) );
+    if( Type::isFunction( h.t ) ) {
+		update_type( tc, h, Type::getClosureType( h.t ) );
+	}
 }
 
 ////////////////////////////////////////////////////////////////

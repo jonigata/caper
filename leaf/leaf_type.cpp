@@ -204,7 +204,26 @@ std::string Type::getDisplay( Type* t )
 			return s + ">";
 		}
 		return "<function>";
-    case TAG_CLOSURE: return "<closure>";
+    case TAG_CLOSURE:
+		{
+			std::string s = "<closure (";
+			Type* p = t->getArgumentType();
+			for( int i = 0 ; i < getTupleSize( p ) ; i++ ) {
+				s += getDisplay( getElementType( p, i ) );
+				if( i < getTupleSize(p) -1 ) {
+					s += ",";
+				}
+			}
+			s += "): ";
+			p = t->getReturnType();
+			for( int i = 0 ; i < getTupleSize( p ) ; i++ ) {
+				s += getDisplay( getElementType( p, i ) );
+				if( i < getTupleSize(p) -1 ) {
+					s += ",";
+				}
+			}
+			return s + ">";
+		}
     case TAG_TUPLE:
         if( t->elems_.empty() ) {
             return "<void>";
@@ -308,6 +327,16 @@ Type* Type::unify( Type* x, Type* y )
     }
 
     if( xn == 1 ) {
+		if( isClosure( x ) && isFunction( y ) ) {
+			if( x->getRawFunc() == y ) {
+				return x;
+			}
+		} else if( isFunction( x ) && isClosure( y ) ) {
+			if( y->getRawFunc() == x ) {
+				return y;
+			}
+		}
+
         if( x != y ) {
             throw type_mismatch(
                 Addr(),

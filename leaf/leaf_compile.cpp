@@ -88,6 +88,7 @@ void Compiler::compile_internal( leaf::Node* n, std::ostream& os )
     try {
         // AST‚©‚ç•ÏŠ·
         n->entype( env_ );
+		n->display( 0, std::cerr );
         n->encode( env_, module.get() );
     }
     catch( error& e ){

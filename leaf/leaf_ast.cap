@@ -1,6 +1,8 @@
 base = Node;
 
 module-header = @{
+#include "leaf_node.hpp"
+
 namespace leaf {
 
 }@
@@ -13,6 +15,7 @@ module-footer = @{
 class-footer = @{
     void encode( EncodeContext&, bool, Value& );
     void entype( EntypeContext&, bool, type_t );
+	void display( int indent, std::ostream& );
 
 }@
 

@@ -202,6 +202,7 @@ struct Node {
     virtual ~Node(){}
     virtual void    encode( EncodeContext&, bool drop_value, Value& ) {}
     virtual void    entype( EntypeContext&, bool drop_value, type_t ) {}
+	virtual void	display( int indent, std::ostream& ) {}
 
     void encode( CompileEnv&, llvm::Module* );
     void entype( CompileEnv& );

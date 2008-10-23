@@ -155,7 +155,9 @@ void FunDef::display( int indent, std::ostream& os )
 // FunSig
 void FunSig::display( int indent, std::ostream& os )
 {
-	os << "<FunSig " << name->source->s << " = ( " << dsp( 0, fargs ) << " ): "
+	os << "<FunSig " << name->source->s;
+	if( name->fresh ) { os << "~" << name->fresh->s; }
+	os << " = ( " << dsp( 0, fargs ) << " ): "
 	   << dsp( 0, result_type ) << ">" << hdr( h );
 }
 
@@ -225,6 +227,7 @@ void VarDeclElems::display( int indent, std::ostream& os )
 void VarDeclIdentifier::display( int indent, std::ostream& os )
 {
 	os << name->source->s;
+	if( name->fresh ) { os << "~" << name->fresh->s; }
 	if( t ) { os << ": " << dsp( 0, t ); }
 }
 
@@ -459,6 +462,7 @@ void LiteralChar::display( int indent, std::ostream& os )
 void VarRef::display( int indent, std::ostream& os )
 {
 	os << name->source->s;
+	if( name->fresh ) { os << "~" << name->fresh->s; }
 }
 
 ////////////////////////////////////////////////////////////////

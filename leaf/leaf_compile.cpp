@@ -29,7 +29,7 @@ Compiler::token_representation( Token token, Node* v )
     case token_Ge:          return ">";
     case token_Gt:          return ">=";
     case token_Identifier:
-        return static_cast<Identifier*>(v)->s->s + "<identifier>";
+        return static_cast<Identifier*>(v)->source->s + "<identifier>";
     case token_If:          return "if";
     case token_LBra:            return "{";
     case token_Le:          return "<";

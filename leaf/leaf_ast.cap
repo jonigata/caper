@@ -13,6 +13,7 @@ module-footer = @{
 }@
 
 class-footer = @{
+	void alpha( AlphaContext& );
     void encode( EncodeContext&, bool, Value& );
     void entype( EntypeContext&, bool, type_t );
 	void display( int indent, std::ostream& );
@@ -31,6 +32,8 @@ type TopLevelFunDecl = FunDecl(fundecl);
 type TopLevelFunDef = FunDef(fundef);
 type TopLevelStructDef = StructDef(structdef);
 
+type Block = Statements(statements), bool(expanded);
+
 type Statements = Statement*(v);
 type Statement = FunDecl | FunDef | StructDef |
 				 VarDecl | IfThenElse | MultiExpr |
@@ -46,8 +49,6 @@ type Member = FormalArg(farg);
 type FunSig = Identifier(name), FormalArgs(fargs), TypeExpr(result_type);
 type FormalArgs = FormalArg*(v);
 type FormalArg = Identifier(name), TypeExpr(t);
-
-type Block = Statements(statements), bool(expanded);
 
 type VarDecl = VarDeclElems(varelems), MultiExpr(data);
 type VarDeclElem = VarDeclElems | VarDeclIdentifier;
@@ -125,4 +126,4 @@ type Types = TypeExpr*(v);
 type TypeRef = type_t(t);
 type NamedType = Identifier(name);
 
-type Identifier = symbol_t(s);
+type Identifier = symbol_t(source), symbol_t(fresh);

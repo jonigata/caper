@@ -110,7 +110,7 @@ entype_function(
     tc.env.push();
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
         tc.env.bind(
-            formal_args->v[i]->name->s,
+            formal_args->v[i]->name->source,
             formal_args->v[i]->h.t );
     }
     tc.env.fix();
@@ -137,7 +137,7 @@ entype_function(
 
     // 引数の型をアップデート
     for( size_t i = 0 ; i < formal_args->v.size() ; i++ ) {
-        type_t t = tc.env.find( formal_args->v[i]->name->s );
+        type_t t = tc.env.find( formal_args->v[i]->name->source );
         if( !t ) {
             // TODO: 引数の型を決定できないerror
         }
@@ -225,7 +225,8 @@ Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
 				FunSig* funsig = make_header(
 					ce, h,
 					ce.cage.allocate<FunSig>(
-						ce.cage.allocate<Identifier>( funname ),
+						ce.cage.allocate<Identifier>(
+							funname, (Symbol*)NULL ),
 						make_header(
 							ce, h,
 							ce.cage.allocate<FormalArgs>() ),
@@ -243,7 +244,8 @@ Statements* expand_block_sugar( CompileEnv& ce, Statements* s, type_t t )
 				Invoke* invoke = make_header(
 					ce, h,
 					ce.cage.allocate<Invoke>(
-						ce.cage.allocate<Identifier>( funname ) ) );
+						ce.cage.allocate<Identifier>(
+							funname, (Symbol*)NULL ) ) );
 
 				sv.clear();
 				sv.push_back( fundef );
@@ -382,7 +384,7 @@ void FunDecl::entype( EntypeContext& tc, bool, type_t t )
     }
 
     update_type( tc, h, Type::getFunctionType( result_type, args_type ) );
-    tc.env.bind( sig->name->s, h.t );
+    tc.env.bind( sig->name->source, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -394,7 +396,7 @@ void FunDef::entype( EntypeContext& tc, bool drop_value, type_t t )
         drop_value,
         t,
         h,
-        sig->name->s,
+        sig->name->source,
         sig->fargs,
         sig->result_type,
         body,
@@ -414,7 +416,7 @@ void StructDef::entype( EntypeContext& tc, bool, type_t )
 {
 	members->entype( tc, false, NULL );
     update_type( tc, h, members->h.t );
-    tc.env.bind( name->s, h.t );
+    tc.env.bind( name->source, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -425,7 +427,7 @@ void Members::entype( EntypeContext& tc, bool, type_t )
     for( size_t i = 0 ; i < v.size() ; i++ ) {
 		FormalArg* farg = v[i]->farg;
 		farg->entype( tc, false, NULL );
-        sv.push_back( Slot( farg->name->s, farg->h.t ) );
+        sv.push_back( Slot( farg->name->source, farg->h.t ) );
     }
     update_type( tc, h, Type::getStructType( sv ) );
 }
@@ -530,7 +532,7 @@ void VarDeclIdentifier::entype( EntypeContext& tc, bool, type_t t )
             disptype( t ) + " at value" );
     }
     update_type( tc, h, Type::unify( h.t, t ) );
-    tc.env.bind( name->s, h.t );
+    tc.env.bind( name->source, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -781,18 +783,18 @@ void LiteralChar::entype( EntypeContext& tc, bool, type_t t )
 // VarRef
 void VarRef::entype( EntypeContext& tc, bool, type_t t )
 {
-    type_t vt = tc.env.find( name->s );
+    type_t vt = tc.env.find( name->source );
 
 	if( !Type::match( vt, t ) ) {
 		throw context_mismatch(
 			h.beg, disptype( vt ), disptype( t ) );
 	} else {
 		type_t ut = Type::unify( vt, t );
-        tc.env.update( name->s, ut );
+        tc.env.update( name->source, ut );
         update_type( tc, h, ut );
     }        
 
-    tc.env.refer( name->s, h.t );
+    tc.env.refer( name->source, h.t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -846,12 +848,12 @@ void MemberRef::entype( EntypeContext& tc, bool, type_t t )
 	if( !st ) { return; }
 
 	if( !Type::isStruct( st ) ) {
-		throw wrong_memberref( h.beg, disptype( st ), field->s->s );
+		throw wrong_memberref( h.beg, disptype( st ), field->source->s );
 	}
 
-	int slot_index = st->getSlotIndex( field->s );
+	int slot_index = st->getSlotIndex( field->source );
 	if( slot_index < 0 ) {
-		throw wrong_memberref( h.beg, disptype( st ), field->s->s );
+		throw wrong_memberref( h.beg, disptype( st ), field->source->s );
 	}
 
 	update_type( tc, h, st->getSlot( slot_index ).type );
@@ -865,16 +867,19 @@ void MemberRef::entype( EntypeContext& tc, bool, type_t t )
 // FunCall
 void FunCall::entype( EntypeContext& tc, bool, type_t t )
 {
-    type_t ft = tc.env.find( func->s );
+    type_t ft = tc.env.find( func->source );
     if( !Type::isCallable( ft ) ) {
-        throw uncallable( h.beg, func->s->s + "(" + disptype( ft ) + ")" );
+        throw uncallable(
+			h.beg, func->source->s + "(" + disptype( ft ) + ")" );
     }
 
     // 戻り値とコンテキスト型がミスマッチ
 	type_t rt = ft->getReturnType();
     if( !Type::match( rt, t ) ) {
         throw context_mismatch(
-            h.beg, func->s->s + "(" + disptype( rt ) + ")", disptype( t ) );
+            h.beg,
+			func->source->s + "(" + disptype( rt ) + ")",
+			disptype( t ) );
     }
 
     // 引数の個数が合わない
@@ -882,13 +887,13 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
     int farity = Type::getTupleSize( at );
     if( int( aargs->v.size() ) != farity ) {
         throw wrong_arity(
-            h.beg, aargs->v.size(), farity, func->s->s );
+            h.beg, aargs->v.size(), farity, func->source->s );
     }
 
     // 実引数の型付け
 	aargs->entype( tc, false, at );
 
-    tc.env.refer( func->s, ft );
+    tc.env.refer( func->source, ft );
 
 	update_type( tc, h, rt );
 }
@@ -897,19 +902,22 @@ void FunCall::entype( EntypeContext& tc, bool, type_t t )
 // Invoke
 void Invoke::entype( EntypeContext& tc, bool, type_t t )
 {
-    type_t ft = tc.env.find( func->s );
+    type_t ft = tc.env.find( func->source );
     if( !Type::isCallable( ft ) ) {
-        throw uncallable( h.beg, func->s->s + "(" + disptype( ft ) + ")" );
+        throw uncallable(
+			h.beg, func->source->s + "(" + disptype( ft ) + ")" );
     }
 
     // 戻り値とコンテキスト型がミスマッチ
 	type_t rt = ft->getReturnType();
     if( !Type::match( rt, t ) ) {
         throw context_mismatch(
-            h.beg, func->s->s + "(" + disptype( rt ) + ")", disptype( t ) );
+            h.beg,
+			func->source->s + "(" + disptype( rt ) + ")", 
+			disptype( t ) );
     }
 
-    tc.env.refer( func->s, ft );
+    tc.env.refer( func->source, ft );
 	update_type( tc, h, rt );
 }
 
@@ -941,17 +949,18 @@ void Lambda::entype( EntypeContext& tc, bool drop_value, type_t t )
 // LiteralStruct
 void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
 {
-    type_t st = tc.env.find( name->s );
+    type_t st = tc.env.find( name->source );
     if( !Type::isStruct( st ) ) {
-        throw not_struct( h.beg, name->s->s );
+        throw not_struct( h.beg, name->source->s );
     }
 
     std::vector<bool> used( st->getSlotCount(), false );
     for( size_t i = 0 ; i < members->v.size() ; i++ ) {
         LiteralMember* m = members->v[i];
-        int index = st->getSlotIndex( m->name->s );
+        int index = st->getSlotIndex( m->name->source );
         if( index < 0 ) {
-            throw no_such_member( m->h.beg, name->s->s, m->name->s->s );
+            throw no_such_member(
+				m->h.beg, name->source->s, m->name->source->s );
         }
 		
 		m->data->entype( tc, false, st->getSlot( index ).type );
@@ -963,7 +972,7 @@ void LiteralStruct::entype( EntypeContext& tc, bool, type_t t )
     for( size_t i = 0 ; i < members->v.size() ; i++ ) {
         if( !used[i] ) {
             throw not_initialized_member(
-                h.beg, name->s->s, members->v[i]->name->s->s );
+                h.beg, name->source->s, members->v[i]->name->source->s );
         }
     }
 
@@ -1047,7 +1056,7 @@ void TypeExpr::entype( EntypeContext&, bool, type_t )
 // NamedType
 void NamedType::entype( EntypeContext& tc, bool, type_t )
 {
-	update_type( tc, h, tc.env.find( name->s ) );
+	update_type( tc, h, tc.env.find( name->source ) );
 }
 
 ////////////////////////////////////////////////////////////////

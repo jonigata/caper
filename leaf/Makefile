@@ -1,7 +1,7 @@
 .SUFFIXES: .o .c .cpp .d .hpp
 CPPFLAGS	= -D__STDC_LIMIT_MACROS --input-charset=cp932
 TARGET		= leaf
-OBJS		= $(TARGET).o leaf_type.o leaf_compile.o leaf_encode.o leaf_entype.o leaf_display.o
+OBJS		= $(TARGET).o leaf_type.o leaf_compile.o leaf_alpha.o leaf_encode.o leaf_entype.o leaf_display.o
 DEPENDDIR	= ./depend
 CC = g++
 

@@ -425,9 +425,9 @@ encode_function(
                     Reference( i, (*env_iterator).second, symmap_t() ) );
                 env_iterator++;
             } else {
-                i->setName( "arg_" + (*arg_iterator)->name->s->s );
+                i->setName( "arg_" + (*arg_iterator)->name->source->s );
                 cc.env.bind(
-                    (*arg_iterator)->name->s,
+                    (*arg_iterator)->name->source,
                     Reference( i, (*arg_iterator)->h.t, symmap_t() ) );
                 arg_iterator++;
             }
@@ -480,7 +480,7 @@ void encode_vardecl( EncodeContext& cc, VarDeclElem* f, const Value& a )
 
     if( VarDeclIdentifier* fi = dynamic_cast<VarDeclIdentifier*>(f) ) {
         cc.env.bind(
-            fi->name->s, Reference( a.getx(), a.gett(), symmap_t() ) );
+            fi->name->source, Reference( a.getx(), a.gett(), symmap_t() ) );
         return;
     }
 
@@ -628,7 +628,7 @@ void Statements::encode( EncodeContext& cc, bool drop_value, Value& value )
 			} else {
 				if( Invoke* inv = dynamic_cast<Invoke*>(v[i]) ) {	
 					invoke = llvm::InvokeInst::Create(
-						cc.m->getFunction( inv->func->s->s ),
+						cc.m->getFunction( inv->func->source->s ),
 						normal_bb,
 						catch_bb,
 						(llvm::Value**)NULL,(llvm::Value**)NULL,
@@ -674,11 +674,11 @@ void FunDecl::encode( EncodeContext& cc, bool, Value& value )
     // function
     llvm::Function::Create(
         ft, llvm::Function::ExternalLinkage,
-        sig->name->s->s,
+        sig->name->source->s,
         cc.m );
 
     //std::cerr << "fundecl bind: " << h.t << std::endl;
-    cc.env.bind( sig->name->s, Reference( NULL, h.t, symmap_t() ) );
+    cc.env.bind( sig->name->source, Reference( NULL, h.t, symmap_t() ) );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -691,7 +691,7 @@ void FunDef::encode( EncodeContext& cc, bool drop_value, Value& value )
         cc,
         drop_value,
         h,
-        sig->name->s,
+        sig->name->source,
         sig->fargs,
         sig->result_type,
         body,
@@ -1187,13 +1187,13 @@ void VarRef::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    Reference r = cc.env.find( name->s );;
+    Reference r = cc.env.find( name->source );
     if( !r.v ) {
         //cc.print( std::cerr );
-        throw no_such_variable( h.beg, name->s->s );
+        throw no_such_variable( h.beg, name->source->s );
     }
     if( !r.t ) {
-        throw ambiguous_type( h.beg, name->s->s );
+        throw ambiguous_type( h.beg, name->source->s );
     }
     value.assign_as_scalor( r.v, r.t );
 }
@@ -1254,7 +1254,7 @@ void MemberRef::encode( EncodeContext& cc, bool, Value& value )
     llvm::Value* expr_value = check_value_1( value );
     value.clear();
 
-	int slot_index = expr->h.t->getSlotIndex( field->s );
+	int slot_index = expr->h.t->getSlotIndex( field->source );
 	assert( 0 <= slot_index );
 
 	char reg[256];
@@ -1297,13 +1297,13 @@ void FunCall::encode( EncodeContext& cc, bool, Value& value )
 {
     check_empty( value );
 
-    Reference r = cc.env.find( func->s );
+    Reference r = cc.env.find( func->source );
     if( !r.t ) {
-        throw no_such_function( h.beg, func->s->s );
+        throw no_such_function( h.beg, func->source->s );
     }
 
 	if( Type::isFunction( r.t ) ) {
-        llvm::Function* f = cc.m->getFunction( func->s->s );
+        llvm::Function* f = cc.m->getFunction( func->source->s );
 
         std::vector< llvm::Value* > args;
         for( symmap_t::const_iterator i = r.c.begin() ;
@@ -1495,7 +1495,7 @@ void Lambda::encode( EncodeContext& cc, bool drop_value, Value& value )
 
     int fargs_index = 0;
     for( llvm::Function::arg_iterator i = ai; i != stub_f->arg_end() ; ++i ) {
-        i->setName( fargs->v[fargs_index++]->name->s->s );
+        i->setName( fargs->v[fargs_index++]->name->source->s );
         args.push_back( i );
     }
 
@@ -1563,7 +1563,7 @@ void LiteralStruct::encode( EncodeContext& cc, bool, Value& value )
     for( size_t i = 0 ; i < members->v.size() ; i++ ) {
         LiteralMember* m = members->v[i];
 
-        int index = h.t->getSlotIndex( m->name->s );
+        int index = h.t->getSlotIndex( m->name->source );
         assert( 0 <= index );
 
         m->encode( cc, false, values[index] );

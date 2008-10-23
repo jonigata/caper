@@ -195,7 +195,8 @@ public:
                 return (*i).second;
             } else {
                 v = h( b, e,
-                       env_.cage.allocate<Identifier>( env_.intern( s ) ) );
+                       env_.cage.allocate<Identifier>(
+						   env_.intern( s ), (Symbol*)NULL ) );
                 return token_Identifier;
             }
         }

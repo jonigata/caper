@@ -189,6 +189,7 @@ struct Header {
     }
 };
 
+struct AlphaContext;
 struct EncodeContext;
 struct EntypeContext;
 class Value;
@@ -200,10 +201,12 @@ struct Node {
 				//   ‚»‚Ì‘¼ => NULL
     
     virtual ~Node(){}
+	virtual void	alpha( AlphaContext& ) {}
     virtual void    encode( EncodeContext&, bool drop_value, Value& ) {}
     virtual void    entype( EntypeContext&, bool drop_value, type_t ) {}
 	virtual void	display( int indent, std::ostream& ) {}
 
+	void alpha( CompileEnv& );
     void encode( CompileEnv&, llvm::Module* );
     void entype( CompileEnv& );
 };

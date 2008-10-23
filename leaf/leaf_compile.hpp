@@ -138,7 +138,7 @@ public:
 
     Require* makeRequire( Identifier* i )
     {
-        std::string filename = "rtl/" + i->s->s + ".lh";
+        std::string filename = "rtl/" + i->source->s + ".lh";
 
         std::ifstream ifs( filename.c_str() );
         if( !ifs ) {
@@ -240,7 +240,7 @@ public:
         return h( i->h, c().allocate<FormalArg>(
                       i, (TypeRef*)NULL ) );
 #else
-        throw formalarg_must_be_typed( i->h.beg, i->s->s );
+        throw formalarg_must_be_typed( i->h.beg, i->source->s );
 #endif
     }
 

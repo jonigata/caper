@@ -88,7 +88,7 @@ void TopElem::display( int indent, std::ostream& os )
 // Require
 void Require::display( int indent, std::ostream& os )
 {
-	os << "<Require " << name->s->s << ">" << hdr( h );
+	os << "<Require " << name->source->s << ">" << hdr( h );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -155,7 +155,7 @@ void FunDef::display( int indent, std::ostream& os )
 // FunSig
 void FunSig::display( int indent, std::ostream& os )
 {
-	os << "<FunSig " << name->s->s << " = ( " << dsp( 0, fargs ) << " ): "
+	os << "<FunSig " << name->source->s << " = ( " << dsp( 0, fargs ) << " ): "
 	   << dsp( 0, result_type ) << ">" << hdr( h );
 }
 
@@ -164,7 +164,7 @@ void FunSig::display( int indent, std::ostream& os )
 void StructDef::display( int indent, std::ostream& os )
 {
 	os << idt(indent) << "<StructDef "
-	   << name->s->s << ">";
+	   << name->source->s << ">";
 	members->display( indent+1, os );
 }
 
@@ -193,7 +193,7 @@ void FormalArgs::display( int indent, std::ostream& os )
 // FormalArg
 void FormalArg::display( int, std::ostream& os )
 {
-	os << name->s->s << ": " << dsp( 0, t );
+	os << name->source->s << ": " << dsp( 0, t );
 }
 
 ////////////////////////////////////////////////////////////////
@@ -224,7 +224,7 @@ void VarDeclElems::display( int indent, std::ostream& os )
 // VarDeclIdentifier
 void VarDeclIdentifier::display( int indent, std::ostream& os )
 {
-	os << name->s->s;
+	os << name->source->s;
 	if( t ) { os << ": " << dsp( 0, t ); }
 }
 
@@ -248,7 +248,7 @@ void TypeExpr::display( int, std::ostream& os )
 // NamedType
 void NamedType::display( int, std::ostream& os )
 {
-	os << "^" << name->s;
+	os << "^" << name->source;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -458,7 +458,7 @@ void LiteralChar::display( int indent, std::ostream& os )
 // VarRef
 void VarRef::display( int indent, std::ostream& os )
 {
-	os << name->s->s;
+	os << name->source->s;
 }
 
 ////////////////////////////////////////////////////////////////
@@ -498,7 +498,7 @@ void MemberRef::display( int indent, std::ostream& os )
 // FunCall
 void FunCall::display( int indent, std::ostream& os )
 {
-	os << func->s->s << "( " << dsp( 0, aargs ) << " )";
+	os << func->source->s << "( " << dsp( 0, aargs ) << " )";
 }
 
 ////////////////////////////////////////////////////////////////

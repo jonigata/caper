@@ -434,10 +434,6 @@ void generate_cpp(
 
             size_t base = rule.right().size();
 
-            size_t nonterminal_index = std::distance(
-                nonterminal_types.begin(),
-                nonterminal_types.find( rule.left().name() ) );
-
             const semantic_action& sa = (*k).second;
 
             // make signature
@@ -473,7 +469,8 @@ void generate_cpp(
             std::string function_name = function_name_header + sa.name;
 
             // generate
-            os << ind1 << "bool " << function_name << "()\n";
+            os << ind1 << "bool " << function_name
+			   << "( int nonterminal_index )\n";
 
             os << ind1 << "{\n";
             // automatic argument conversion
@@ -506,8 +503,7 @@ void generate_cpp(
                << base
                << " );\n";
             os << ind1 << ind1
-               << "return (this->*(stack_top()->gotof))( "
-               << nonterminal_index << ", v );\n";
+               << "return (this->*(stack_top()->gotof))( nonterminal_index, v );\n";
             os << ind1 << "}\n\n";
         }
     }
@@ -576,8 +572,11 @@ void generate_cpp(
         os << ind1 << ind1 << "switch( token ) {\n";
 
         // reduce action cache
-        std::map< std::vector< std::string >, std::vector< std::string > >
-            reduce_action_cache;
+		typedef 
+			std::map< std::pair< std::vector< std::string >, int >, 
+					  std::vector< std::string > >
+			reduce_action_cache_type;
+		reduce_action_cache_type reduce_action_cache;
 
         // action table
         for( tgt::parsing_table::state::action_table_type::const_iterator j =
@@ -626,8 +625,9 @@ void generate_cpp(
                             sa,
                             signature );
 
-                        reduce_action_cache[signature].push_back(
-                            case_tag );
+                        reduce_action_cache[
+							make_pair(signature,nonterminal_index)].push_back(
+								case_tag );
                     } else {
                         os << ind1 << ind1 << "case " << case_tag << ":\n";
                         os << ind1 << ind1 << ind1 << "// reduce\n";
@@ -666,25 +666,26 @@ void generate_cpp(
         }
 
         // flush reduce action cache
-        for( std::map< std::vector< std::string >, std::vector< std::string > >
-                 ::const_iterator i = reduce_action_cache.begin() ;
+        for( reduce_action_cache_type::const_iterator i =
+				 reduce_action_cache.begin() ;
              i != reduce_action_cache.end();
              ++i ) {
-            const std::vector< std::string >& signature = (*i).first;
+            const std::pair< std::vector< std::string >, int >& signature =
+				(*i).first;
             const std::vector< std::string >& cases = (*i).second;
             for( size_t j = 0 ; j < cases.size() ; j++ ) {
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
             }
                 
-            int index = stub_index[signature];
+            int index = stub_index[signature.first];
 
             char function_name_header[256];
             sprintf( function_name_header, "call_%d_", index );
             std::string function_name =
-                function_name_header + signature[0];
+                function_name_header + signature.first[0];
 
             os << ind1 << ind1 << ind1 << "return "
-               << function_name << "();\n";
+               << function_name << "( " << signature.second << " );\n";
         }
 
         // dispatcher footer

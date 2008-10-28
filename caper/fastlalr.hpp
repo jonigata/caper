@@ -141,20 +141,24 @@ make_lalr_table(
     typedef typename state_type::propagate_map_type         propagate_map_type;
     typedef typename state_type::propagate_type             propagate_type;
 
+	//std::cerr << "0\n";
     // 記号の収集
     symbol_set_type terminals;    
     symbol_set_type nonterminals;    
     symbol_set_type all_symbols;
     collect_symbols( terminals, nonterminals, all_symbols, g );
 
+	//std::cerr << "1\n";
     // 接続チェック
     check_reachable( g );
 
+	//std::cerr << "2\n";
     // FIRST, FOLLOWの作成
     first_collection< Token, Traits > first;
     follow_collection< Token, Traits > follow;
     make_first_and_follow( first, follow, terminals, nonterminals, all_symbols, g );
 
+	//std::cerr << "3\n";
     // 表の作成
     // ルールのコピー/インデックスの作成
     std::map< rule_type, int > rule_indices;
@@ -174,6 +178,7 @@ make_lalr_table(
     // items for each set, and compute GOTO for a set of items I
     // by first computing the closure of I.
 
+	//std::cerr << "4\n";
     // simplest wayのほう
     lr0_collection_type I;
     make_lr0_collection( I, g );
@@ -187,6 +192,7 @@ make_lalr_table(
     typedef std::map< core_set_type, int > kernels_type;
     kernels_type kernels;
 
+	//std::cerr << "5\n";
     // state, kernelsを作る
     core_type root_core( 0, g.root_rule(), 0 );
     for( typename lr0_collection_type::iterator i = I.begin() ; i != I.end() ; ++i ) {
@@ -203,6 +209,7 @@ make_lalr_table(
         }
     }
 
+	//std::cerr << "6\n";
     // goto_tableを作る
     for( typename states_type::iterator i = states.begin() ; i != states.end() ; ++i ) {
         state_type& s = *i;
@@ -234,6 +241,7 @@ make_lalr_table(
     // determine lookahead p.296
     terminal_type dummy( "#", Token(-1) );
 
+	//std::cerr << "7\n";
     for( typename states_type::iterator i = states.begin() ; i != states.end() ; ++i ) {
         state_type& s = *i;
 
@@ -292,6 +300,7 @@ make_lalr_table(
 
     int z = 0;
 
+	//std::cerr << "8\n";
     bool iterate = true;
     while( iterate ) {
         iterate = false;
@@ -329,6 +338,7 @@ make_lalr_table(
         }
     }
 
+	//std::cerr << "9\n";
     // kernel lr0 collectionに先読みを与えてclosureを作る
     for( typename states_type::iterator i = states.begin() ; i != states.end() ; ++i ) {
         const core_set_type& K = (*i).kernel;
@@ -350,6 +360,7 @@ make_lalr_table(
     // もし、その動作表に競合があれば、与えられた文法は
     // LALR(1)でなく、正しい構文解析ルーチンを作り出すことはできない。
 
+	//std::cerr << "10\n";
     for( typename parsing_table_type::states_type::iterator i = states.begin() ; i != states.end() ; ++i ) {
         state_type& s = *i;
         
@@ -462,6 +473,7 @@ make_lalr_table(
         }
     }
 
+	//std::cerr << "11\n";
     // 初期状態の決定
     for( typename parsing_table_type::states_type::const_iterator i = table.states().begin() ;
          i != table.states().end() ;

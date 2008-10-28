@@ -61,34 +61,34 @@ HelloWorld&lt;std::string&gt; : [Greet] Hello(0) World(1);
 #include &quot;hello2.hpp&quot;
 
 struct SemanticAction {
-        void syntax_error(){}
-        void stack_overflow(){}
-        void upcast( std::string&amp; x, const std::string&amp; y ) { x = y; }
-        void downcast( std::string&amp; x, const std::string&amp; y ) { x = y; }
+    void syntax_error(){}
+    void stack_overflow(){}
+    void upcast( std::string&amp; x, const std::string&amp; y ) { x = y; }
+    void downcast( std::string&amp; x, const std::string&amp; y ) { x = y; }
 
-        std::string Greet( const std::string&amp; x, const std::string&amp; y )
-        {
-                std::cout &lt;&lt; x &lt;&lt; y &lt;&lt; std::endl; return &quot;&quot;;
-        }
+    std::string Greet( const std::string&amp; x, const std::string&amp; y )
+    {
+        std::cout &lt;&lt; x &lt;&lt; y &lt;&lt; std::endl; return &quot;&quot;;
+    }
 };
 
 int main( int, char** )
 {
-        SemanticAction sa;
-        hello_world::Parser&lt; std::string, SemanticAction &gt; parser( sa );
+    SemanticAction sa;
+    hello_world::Parser&lt; std::string, SemanticAction &gt; parser( sa );
 
-        parser.post( hello_world::token_Hello, &quot;Guten Tag, &quot; );
-        parser.post( hello_world::token_World, &quot;Welt&quot; );
-        parser.post( hello_world::token_eof, &quot;&quot; );
+    parser.post( hello_world::token_Hello, &quot;Guten Tag, &quot; );
+    parser.post( hello_world::token_World, &quot;Welt&quot; );
+    parser.post( hello_world::token_eof, &quot;&quot; );
 
-        return 0;
+    return 0;
 }
 </pre>
 		<p>セマンティックアクションが少し複雑になっています。</p>
 		<p>今回導入された<code>&quot;downcast&quot;</code>は、<code>Parser</code>の<code>Value</code>型から各記号の個別の型への安全な変換を提供する関数です。ちょうど<code>upcast</code>の反対の動作を行うためのものです。今回は「値集合全体を表す型」が<code>std::string</code>であり、「個別な型」も<code>std::string</code>しか使われていない(<code>Hello</code>, <code>World</code>, <code>HelloWorld</code>のいずれも<code>std::string</code>型)ので、<code>&quot;void downcast( std::string&amp; x, const std::string&amp; y ) { x = y; }&quot;</code>の一行で終わりです。</p>
 		<p><code>Greet</code>のシグネチャは以下のようになっています。</p>
 		<pre>
-		  std::string Greet( const std::string&amp; x, const std::string&amp; y );
+std::string Greet( const std::string&amp; x, const std::string&amp; y );
 		</pre>
 		<p>ここでは、文法ファイルで指定したように、<code>x</code>が<code>Hello</code>に関連付けられた値を、<code>y</code>が<code>World</code>に関連付けられた値をそれぞれ表しています。そしてこの関数の戻り値は、パーサによって、<code>HelloWorld</code>に関連付けられることになります。</p>
 		<p>今回の<code>main</code>関数では、トークンを<code>post</code>するときに<code>&quot;Guten Tag, &quot;, &quot;Welt&quot;</code>という値を渡しています。つまり、この値が、<code>HelloWorld</code>受理時に、<code>Hello</code>と<code>World</code>に関連付けられた値として用いられることになるのです。</p>

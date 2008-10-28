@@ -119,15 +119,15 @@ Term&lt;Term*&gt; : [MakeTerm] Number(0)
 
 		<p>文法ファイルは<code>calc0</code>とあまり変わりませんが、以下のように各記号の型が変わっています。</p>
 		<pre>
-		  Number&lt;Number*&gt;
-		  Expr&lt;Expr*&gt;
-		  Term&lt;Term*&gt;
+Number&lt;Number*&gt;
+Expr&lt;Expr*&gt;
+Term&lt;Term*&gt;
 		</pre>
 		<p>※今回、簡単のため、メモリリークについては考えないものとします。</p>
 		<p>この文法から生成されるパーサは内部で<code>&quot;Number&quot; &quot;Expr&quot; &quot;Term&quot;</code>等の型を必要としますので、パーサを<code>include</code>するより先にASTの定義を<code>include</code>する必要があります。そこで、以下のような内容のファイルを作成し、<code>&quot;calc1.hpp&quot;</code>として保存します。</p>
 		<pre>
-		  #include &quot;cacl1_ast.hpp&quot;
-		  #include &quot;cacl1_parser.hpp&quot;
+#include &quot;cacl1_ast.hpp&quot;
+#include &quot;cacl1_parser.hpp&quot;
 		</pre>
 		<p>パーサを一箇所からしか使用しないことがわかっているなら、当然そこで両方includeするようにしても構いませんが、<code>calc1_parser.cpg</code>から作成した<code>calc1_parser.hpp</code>よりも先に<code>calc1_ast.hpp</code>を<code>include</code>する必要があることは覚えておいてください。さもないと、<code>Expr</code>などが未定義であるというコンパイルエラーがでてしまいます。</p>
 
@@ -278,22 +278,22 @@ int main( int, char** )
 		<p>次にセマンティックアクションについて。今回、値集合全体の要素を現す型としては、<code>Node*</code>を用います。そして文法ファイルの項目で示したように、各文法要素の型は<code>Node*</code>とは異なるので、それにあわせて変換を行う必要があります。</p>
 		<p>このケースでは、<code>downcast</code>が<code>Node*</code>→<code>Expr*/Term*/Number*</code>の変換に用いられます。<code>Expr/Term/Number</code>はいずれも<code>Node</code>の派生クラスなので、<code>template</code>メンバ関数を定義すればすべて一緒くたに扱うことが可能です。</p>
 		<pre>
-		  template &lt; class T &gt;
-		  void downcast( T*&amp; x, Node* y ) { x = static_cast&lt;T*&gt;( y ); }
+template &lt; class T &gt;
+void downcast( T*&amp; x, Node* y ) { x = static_cast&lt;T*&gt;( y ); }
 		</pre>
 		<p>逆に<code>Expr*/Term*/Number*</code>→<code>Node*</code>の変換を行う場合、<code>Expr/Term/Number</code>はいずれも<code>Node</code>の派生クラスなので、これも一緒くたにして以下のように扱うことができます。</p>
 		<pre>
-		  template &lt; class T &gt;
-		  void upcast( Node*&amp; x, T* y ) { x = y; }
+template &lt; class T &gt;
+void upcast( Node*&amp; x, T* y ) { x = y; }
 		</pre>
 		<p>以上をふまえて、セマンティックアクションはたとえば以下のようになります。</p>
 		<pre>
-		  Expr* MakeAdd( Expr* x, Term* y )
-		  {
-          std::cerr &lt;&lt; &quot;expr &quot; &lt;&lt; x &lt;&lt; &quot; + &quot; &lt;&lt; y &lt;&lt; std::endl;
-          return new AddExpr( x, new TermExpr( y ) ) ;
-		  }
-		</pre>
+Expr* MakeAdd( Expr* x, Term* y )
+{
+    std::cerr &lt;&lt; &quot;expr &quot; &lt;&lt; x &lt;&lt; &quot; + &quot; &lt;&lt; y &lt;&lt; std::endl;
+    return new AddExpr( x, new TermExpr( y ) ) ;
+}
+</pre>
 		<p>特に難しいことはないと思います。yaccなどでASTを作るときによく必要になる、キャストのコードが必要ないことがわかりますね(といっても、パーサはユーザから見えないようにupcast/downcastを駆使してくれているわけですが)。</p>
 		<p><code>main</code>関数はほとんど変わりありません。<code>accept</code>結果はASTのルートノードになりますので、その<code>calc</code>関数を実行して演算結果を表示しています。</p>
 

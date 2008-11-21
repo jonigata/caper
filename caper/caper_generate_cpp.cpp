@@ -579,8 +579,8 @@ void generate_cpp(
         // reduce action cache
 		typedef boost::tuple<
 			std::vector< std::string >,
-			int,
-			int,
+			size_t,
+			size_t,
 			std::vector< int > >
 			reduce_action_cache_key_type;
 		typedef 
@@ -697,8 +697,8 @@ void generate_cpp(
             const std::vector< std::string >& cases = (*i).second;
 
 			const std::vector< std::string >& signature = key.get<0>();
-			int nonterminal_index = key.get<1>();
-			int base = key.get<2>();
+			size_t nonterminal_index = key.get<1>();
+			size_t base = key.get<2>();
 			const std::vector< int >& arg_indices = key.get<3>();
 
             for( size_t j = 0 ; j < cases.size() ; j++ ) {

@@ -6,6 +6,8 @@
 #include "caper_ast.hpp"
 #include "caper_generate_cpp.hpp"
 #include <algorithm>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
 namespace {
 
@@ -470,7 +472,11 @@ void generate_cpp(
 
             // generate
             os << ind1 << "bool " << function_name
-			   << "( int nonterminal_index )\n";
+			   << "( int nonterminal_index, int base";
+            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+                os << ", int arg_index" << l;
+            }
+			os << " )\n";
 
             os << ind1 << "{\n";
             // automatic argument conversion
@@ -480,8 +486,7 @@ void generate_cpp(
                 os << ind1 << ind1 << arg.type
                    << " arg" << l << "; "
                    << "sa_.downcast( arg" << l
-                   << ", get_arg(" << base
-                   << ", " << arg.src_index << ") );\n";
+                   << ", get_arg( base, arg_index" << l << " ) );\n";
             }
 
             // semantic action
@@ -572,8 +577,14 @@ void generate_cpp(
         os << ind1 << ind1 << "switch( token ) {\n";
 
         // reduce action cache
+		typedef boost::tuple<
+			std::vector< std::string >,
+			int,
+			int,
+			std::vector< int > >
+			reduce_action_cache_key_type;
 		typedef 
-			std::map< std::pair< std::vector< std::string >, int >, 
+			std::map< reduce_action_cache_key_type, 
 					  std::vector< std::string > >
 			reduce_action_cache_type;
 		reduce_action_cache_type reduce_action_cache;
@@ -625,9 +636,21 @@ void generate_cpp(
                             sa,
                             signature );
 
-                        reduce_action_cache[
-							make_pair(signature,nonterminal_index)].push_back(
-								case_tag );
+						std::vector< int > arg_indices;
+						for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+							const semantic_action_argument& arg =
+								(*sa.args.find( l )).second;
+							arg_indices.push_back( arg.src_index );
+						}
+
+						reduce_action_cache_key_type key =
+							boost::make_tuple(
+								signature,
+								nonterminal_index,
+								base,
+								arg_indices );
+
+                        reduce_action_cache[key].push_back( case_tag );
                     } else {
                         os << ind1 << ind1 << "case " << case_tag << ":\n";
                         os << ind1 << ind1 << ind1 << "// reduce\n";
@@ -670,22 +693,34 @@ void generate_cpp(
 				 reduce_action_cache.begin() ;
              i != reduce_action_cache.end();
              ++i ) {
-            const std::pair< std::vector< std::string >, int >& signature =
-				(*i).first;
+            const reduce_action_cache_key_type& key = (*i).first;
             const std::vector< std::string >& cases = (*i).second;
+
+			const std::vector< std::string >& signature = key.get<0>();
+			int nonterminal_index = key.get<1>();
+			int base = key.get<2>();
+			const std::vector< int >& arg_indices = key.get<3>();
+
             for( size_t j = 0 ; j < cases.size() ; j++ ) {
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
             }
-                
-            int index = stub_index[signature.first];
+
+            int index = stub_index[signature];
 
             char function_name_header[256];
             sprintf( function_name_header, "call_%d_", index );
             std::string function_name =
-                function_name_header + signature.first[0];
+                function_name_header + signature[0];
+
 
             os << ind1 << ind1 << ind1 << "return "
-               << function_name << "( " << signature.second << " );\n";
+               << function_name << "( " << nonterminal_index << ", " << base;
+			for( std::vector< int >::const_iterator j = arg_indices.begin() ;
+				 j != arg_indices.end() ;
+				 ++j ) {
+				os  << ", " << (*j);
+			}
+			os << " );\n";
         }
 
         // dispatcher footer

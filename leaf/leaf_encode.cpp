@@ -251,7 +251,7 @@ encode_binary_operator(
     llvm::Value* v1 = check_value_1( value );
     value.clear();
 
-    llvm::Instruction* inst = llvm::BinaryOperator::create(
+    llvm::Instruction* inst = llvm::BinaryOperator::Create(
         op, v0, v1, reg );
     cc.bb->getInstList().push_back(inst);
 
@@ -1228,7 +1228,7 @@ void Cast::encode( EncodeContext& cc, bool, Value& value )
     value.clear();
 
     value.assign_as_scalor( 
-        llvm::CastInst::createIntegerCast(
+        llvm::CastInst::CreateIntegerCast(
             expr_value,
             getLLVMType( this->h.t ),
             true,

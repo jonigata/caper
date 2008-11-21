@@ -504,9 +504,7 @@ void generate_cpp(
             // automatic return value conversion
             os << ind1 << ind1
                << "value_type v; sa_.upcast( v, r );\n";
-            os << ind1 << ind1 << "pop_stack( "
-               << base
-               << " );\n";
+            os << ind1 << ind1 << "pop_stack( base );\n";
             os << ind1 << ind1
                << "return (this->*(stack_top()->gotof))( nonterminal_index, v );\n";
             os << ind1 << "}\n\n";

@@ -225,7 +225,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeAdd( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -235,7 +235,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeSub( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -244,7 +244,7 @@ private:
 		int arg0; sa_.downcast( arg0, get_arg( base, arg_index0 ) );
 		int r = sa_.Identity( arg0 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 1 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -254,7 +254,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeDiv( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -264,7 +264,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeMul( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 

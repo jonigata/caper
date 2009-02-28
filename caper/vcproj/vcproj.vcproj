@@ -202,6 +202,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\caper_generate_java.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\caper_generate_js.cpp"
 				>
 			</File>
@@ -258,6 +262,10 @@
 			</File>
 			<File
 				RelativePath="..\caper_generate_d.hpp"
+				>
+			</File>
+			<File
+				RelativePath="..\caper_generate_java.hpp"
 				>
 			</File>
 			<File

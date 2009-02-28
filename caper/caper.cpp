@@ -20,6 +20,7 @@ using std::exit;
 #include "caper_generate_js.hpp"
 #include "caper_generate_csharp.hpp"
 #include "caper_generate_d.hpp"
+#include "caper_generate_java.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -45,6 +46,11 @@ void get_commandline_options(
 	int state = 0;
 	for( int index = 1 ; index < argc ; index++ ) {
 		if( argv[index][0] == '-' ) {
+			if( strcmp( argv[index], "-java" ) == 0 ||
+				strcmp( argv[index], "-Java" ) == 0 ) {
+				cmdopt.language = "Java";
+				continue;
+			}
 			if( strcmp( argv[index], "-cs" ) == 0 || strcmp( argv[index], "-CS" ) == 0 ||
 				strcmp( argv[index], "-Cs" ) == 0 || strcmp( argv[index], "-C#" ) == 0 ||
 				strcmp( argv[index], "-CSharp" ) == 0 || strcmp( argv[index], "-csharp#" ) == 0 ||
@@ -91,7 +97,7 @@ void get_commandline_options(
 	}
 
 	if( state < 2 ) {
-		std::cerr << "caper: usage: caper [ -c++ | -js | -cs ] input_filename output_filename" << std::endl;;
+		std::cerr << "caper: usage: caper [ -c++ | -js | -cs | -java ] input_filename output_filename" << std::endl;
 		exit(1);
 	}
 		
@@ -113,6 +119,7 @@ int main( int argc, char** argv )
 		const tgt::parsing_table& );
 		
 	std::map< std::string, generator_type > generators;
+	generators["Java"]		= generate_java;
 	generators["C#"]		= generate_csharp;
 	generators["C++"]				= generate_cpp;
 	generators["JavaScript"]		= generate_javascript;

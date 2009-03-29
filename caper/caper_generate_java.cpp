@@ -1,15 +1,10 @@
 // This file is based on 'caper_generate_cs.cpp'.
 // Written by Shinsuke Kishi.
-// (2009/01/24)
+// (2009/03/08)
 
 /* Issues peculiar to Java generator:
  * - '%dont_use_stl' option is merely ignored.
  * - stackOverflow() will never be called in Java parsers. (should remove it?)
- * - Classes (or interfaces) are NOT organized with
- *   one class (or interface) per file
- *   even if 'public' access modifier is specified.
- *   It becomes a problem only in Java.
- *   (The function to divide the file should be added?)
  */
 
 #include "caper_ast.hpp"
@@ -33,8 +28,8 @@ namespace {
 		}
 	};
 
-	// Convert primitive types to wrapper classes.
-	const std::string wrapper_name(const std::string& s)
+	// Convert primitive type name to wrapper class name.
+	const char* const wrapper_name(const std::string& s)
 	{
 		if(s == "boolean") return "Boolean";
 		if(s == "byte"   ) return "Byte";
@@ -44,7 +39,7 @@ namespace {
 		if(s == "float"  ) return "Float";
 		if(s == "double" ) return "Double";
 		if(s == "char"   ) return "Character";
-		return s;
+		return s.c_str();
 	}
 
 }  // anonymous namespace
@@ -67,16 +62,21 @@ void generate_java(
 	os << "package " << options.namespace_name << ";\n\n";
 
 	// using header
-	os << "import java.util.ArrayList;\n\n";
+	os << "import java.util.*;\n\n";
+
+	// wrapper class
+	os << "public class "
+	   << filename.substr(0, filename.find("."))
+	   << " {\n\n";
 
 	// enum Token
 	if(!options.external_token) {
 		// token enumeration
-		os << options.access_modifier << "enum Token {\n";
+		os << options.access_modifier << "	public static enum Token {\n";
 		for(size_t i=0; i<token_id_map.size(); ++i) {
-			os << "	" << options.token_prefix << (*token_id_map.find(i)).second << ",\n";
+			os << "		" << options.token_prefix << (*token_id_map.find(i)).second << ",\n";
 		}
-		os << "}\n\n";
+		os << "	}\n\n";
 	}
 
 	// SemanticAction interface
@@ -124,9 +124,9 @@ void generate_java(
 		}
 	}
 
-	os << options.access_modifier << "interface SemanticAction {\n"
-	   << "	void syntaxError();\n"
-	   << "	void stackOverflow();  // Ignore, never called in Java parsers.\n";
+	os << options.access_modifier << "	public static interface SemanticAction {\n"
+	   << "		void syntaxError();\n"
+	   << "		void stackOverflow();  // Ignore, never called in Java parsers.\n";
 
 	std::set<std::string> methods;
 
@@ -138,7 +138,7 @@ void generate_java(
 		const std::vector<std::string>& args = (*it).args;
 		assert(args.size() > 0);
 		std::stringstream methodstream;
-		methodstream << "	" << args[0] << " " << (*it).name << "(";
+		methodstream << "		" << args[0] << " " << (*it).name << "(";
 		for(size_t l=1; l<args.size(); ++l) {
 			if(l != 1) methodstream << ", ";
 			methodstream << args[l] << " " << "arg" << l;
@@ -155,167 +155,155 @@ void generate_java(
 		os << *it;
 	}
 
-	os << "}\n\n";
+	os << "	}\n\n";
 
 	// Parser class
-	os << options.access_modifier << "class Parser {\n\n"
+	os << options.access_modifier << "	public static class Parser {\n\n";
 
-	   // StackFrame class
-	   << "	private static class StackFrame {\n\n"
+	// StackFrame class
+	os << "		private static class StackFrame {\n\n"
 
-	   << "		public final State state;\n"
-	   << "		public final GoToF gotof;\n"
-	   << "		public final Object value;\n\n"
+	   << "			public final State  state;\n"
+	   << "			public final Object value;\n\n"
 
-	   << "		public StackFrame(State state, GoToF gotof, Object value) {\n"
-	   << "			this.state = state;\n"
-	   << "			this.gotof = gotof;\n"
-	   << "			this.value = value;\n"
-	   << "		}\n"
-	   << "	}\n\n"
+	   << "			public StackFrame(State state, Object value) {\n"
+	   << "				this.state = state;\n"
+	   << "				this.value = value;\n"
+	   << "			}\n"
+	   << "		}\n\n";
 
-	   // Stack class
-	   << "	private static class Stack {\n\n"
+	// Stack class
+	os << "		private static class Stack {\n\n"
 
-	   << "		private final ArrayList<StackFrame> main = new ArrayList<StackFrame>();\n"
-	   << "		private final ArrayList<StackFrame> temp = new ArrayList<StackFrame>();\n"
-	   << "		private int gap;\n\n"
+	   << "			private final ArrayList<StackFrame> main = new ArrayList<StackFrame>();\n"
+	   << "			private final ArrayList<StackFrame> temp = new ArrayList<StackFrame>();\n"
+	   << "			private int gap = 0;\n\n"
 
-	   << "		public Stack() {\n"
-	   << "			gap = 0;\n"
-	   << "		}\n\n"
+	   << "			public Stack() {\n"
+	   << "			}\n\n"
 
-	   << "		public void resetTemp() {\n"
-	   << "			gap = main.size();\n"
-	   << "			temp.clear();\n"
-	   << "		}\n\n"
-
-	   << "		public void commitTemp() {\n"
-	   << "			main.ensureCapacity(gap + temp.size());\n"
-	   << "			main.subList(gap, main.size()).clear();\n"
-	   << "			main.addAll(temp);\n"
-	   << "		}\n\n"
-
-	   << "		public boolean push(StackFrame f) {\n"
-	   << "			temp.add(f);\n"
-	   << "			return true;\n"
-	   << "		}\n\n"
-
-	   << "		public void pop(int n) {\n"
-	   << "			if(temp.size() < n) {\n"
-	   << "				n -= temp.size();\n"
+	   << "			public void resetTemp() {\n"
+	   << "				gap = main.size();\n"
 	   << "				temp.clear();\n"
-	   << "				gap -= n;\n"
-	   << "			} else {\n"
-	   << "				temp.subList(temp.size() - n, temp.size()).clear();\n"
-	   << "			}\n"
-	   << "		}\n\n"
+	   << "			}\n\n"
 
-	   << "		public StackFrame peek() {\n"
-	   << "			if(temp.size() != 0) {\n"
-	   << "				return temp.get(temp.size() - 1);\n"
-	   << "			} else {\n"
-	   << "				return main.get(gap - 1);\n"
-	   << "			}\n"
-	   << "		}\n\n"
+	   << "			public void commitTemp() {\n"
+	   << "				main.ensureCapacity(gap + temp.size());\n"
+	   << "				main.subList(gap, main.size()).clear();\n"
+	   << "				main.addAll(temp);\n"
+	   << "			}\n\n"
 
-	   << "		public StackFrame get(int b, int i) {\n"
-	   << "			int n = temp.size();\n"
-	   << "			if(b - i <= n) {\n"
-	   << "				return temp.get(n - (b - i));\n"
-	   << "			} else {\n"
-	   << "				return main.get(gap - (b - n) + i);\n"
-	   << "			}\n"
-	   << "		}\n\n"
+	   << "			public boolean push(StackFrame f) {\n"
+	   << "				temp.add(f);\n"
+	   << "				return true;\n"
+	   << "			}\n\n"
 
-	   << "		public void clear() {\n"
-	   << "			main.clear();\n"
-	   << "		}\n\n"
+	   << "			public void pop(int n) {\n"
+	   << "				if(temp.size() < n) {\n"
+	   << "					n -= temp.size();\n"
+	   << "					temp.clear();\n"
+	   << "					gap -= n;\n"
+	   << "				} else {\n"
+	   << "					temp.subList(temp.size() - n, temp.size()).clear();\n"
+	   << "				}\n"
+	   << "			}\n\n"
 
-	   << "	}  // class Stack\n\n"
+	   << "			public StackFrame peek() {\n"
+	   << "				if(!temp.isEmpty()) {\n"
+	   << "					return temp.get(temp.size() - 1);\n"
+	   << "				} else {\n"
+	   << "					return main.get(gap - 1);\n"
+	   << "				}\n"
+	   << "			}\n\n"
 
+	   << "			public StackFrame get(int base, int i) {\n"
+	   << "				int n = temp.size();\n"
+	   << "				if(base - i <= n) {\n"
+	   << "					return temp.get(n - (base - i));\n"
+	   << "				} else {\n"
+	   << "					return main.get(gap - (base - n) + i);\n"
+	   << "				}\n"
+	   << "			}\n\n"
 
+	   << "			public void clear() {\n"
+	   << "				main.clear();\n"
+	   << "			}\n\n"
 
-	   // constructor
-	   << "	public Parser(SemanticAction sa) {\n"
-	   << "		this.sa = sa;\n"
-	   << "		reset();\n"
-	   << "	}\n\n"
+	   << "		}  // class Stack\n\n";
 
-	   // public member
-	   << "	public void reset() {\n"
-	   << "		error = false;\n"
-	   << "		accepted = false;\n"
-	   << "		stack.clear();\n"
-	   << "		stack.resetTemp();\n"
-	   << "		if(pushToStack("
+	// constructor
+	os << "		public Parser(SemanticAction sa) {\n"
+	   << "			this.sa = sa;\n"
+	   << "			reset();\n"
+	   << "		}\n\n";
+
+	// public member
+	os << "		public void reset() {\n"
+	   << "			error = false;\n"
+	   << "			accepted = false;\n"
+	   << "			stack.clear();\n"
+	   << "			stack.resetTemp();\n"
+	   << "			if(pushToStack("
 	   << "state" << table.first_state() << ", "
-	   << "gotof" << table.first_state() << ", "
 	   << "null)) {\n"
-	   << "			stack.commitTemp();\n"
-	   << "		} else {\n"
-	   << "			sa.stackOverflow();\n"
+	   << "				stack.commitTemp();\n"
+	   << "			} else {\n"
+	   << "				sa.stackOverflow();\n"
+	   << "				error = true;\n"
+	   << "			}\n"
+	   << "		}\n\n"
+
+	   << "		public boolean post(Token token, Object value) {\n"
+	   << "			assert(!error);\n"
+	   << "			stack.resetTemp();\n"
+	   << "			while(stack.peek().state.state(token, value));\n"
+	   << "			if(!error) {\n"
+	   << "				stack.commitTemp();\n"
+	   << "			}\n"
+	   << "			return accepted || error;\n"
+	   << "		}\n\n"
+
+	   << "		/**\n"
+	   << "		 * The result of isError() is returned together\n"
+	   << "		 * in the C++ version and C# version.\n"
+	   << "		 * Please call isError() to check in the Java version.\n"
+	   << "		 */\n"
+	   << "		public Object accept() {\n"
+	   << "			assert(accepted || error);\n"
+	   << "			if(error)\n"
+	   << "				return null;\n"
+	   << "			return acceptedValue;\n"
+	   << "		}\n\n"
+
+	   << "		public boolean isError() {\n"
+	   << "			return error;\n"
+	   << "		}\n\n";
+
+	// private member
+	os << "		private final Stack stack = new Stack();\n"
+	   << "		private final SemanticAction sa;\n"
+	   << "		private boolean accepted;\n"
+	   << "		private boolean error;\n"
+	   << "		private Object acceptedValue;\n\n"
+
+	   << "		private boolean pushToStack(State s, Object v) {\n"
+	   << "			assert(!error);\n"
+	   << "			if(stack.push(new StackFrame(s, v)))\n"
+	   << "				return true;\n"
 	   << "			error = true;\n"
-	   << "		}\n"
-	   << "	}\n\n"
+	   << "			sa.stackOverflow();\n"
+	   << "			return false;\n"
+	   << "		}\n\n"
 
-	   << "	public boolean post(Token token, Object value) {\n"
-	   << "		assert(!error);\n"
-	   << "		stack.resetTemp();\n"
-	   << "		while(stack.peek().state.invoke(token, value));\n"
-	   << "		if(!error) {\n"
-	   << "			stack.commitTemp();\n"
-	   << "		}\n"
-	   << "		return accepted;\n"
-	   << "	}\n\n"
+	   << "		private Object getFromStack(int base, int i) {\n"
+	   << "			return stack.get(base, i).value;\n"
+	   << "		}\n\n";
 
-	   << "	/**\n"
-	   << "	 * The result of isError() is returned together\n"
-	   << "	 * in the C++ version and C# version.\n"
-	   << "	 * Please call isError() to check in the Java version.\n"
-	   << "	 */\n"
-	   << "	public Object accept() {\n"
-	   << "		assert(accepted);\n"
-	   << "		if(error)\n"
-	   << "			return null;\n"
-	   << "		return acceptedValue;\n"
-	   << "	}\n\n"
-
-	   << "	public boolean isError() {\n"
-	   << "		return error;\n"
-	   << "	}\n\n"
-
-	   // private member
-	   << "	private final Stack stack = new Stack();\n"
-	   << "	private final SemanticAction sa;\n"
-	   << "	private boolean accepted;\n"
-	   << "	private boolean error;\n"
-	   << "	private Object acceptedValue;\n\n"
-
-	   << "	private boolean pushToStack(State s, GoToF g, Object v) {\n"
-	   << "		assert(!error);\n"
-	   << "		if(stack.push(new StackFrame(s, g, v)))\n"
-	   << "			return true;\n"
-	   << "		error = true;\n"
-	   << "		sa.stackOverflow();\n"
-	   << "		return false;\n"
-	   << "	}\n\n"
-
-	   << "	private Object getFromStack(int b, int i) {\n"
-	   << "		return stack.get(b, i).value;\n"
-	   << "	}\n\n"
-
-	   // delegate
-	   << "	private static interface State {\n"
-	   << "		boolean invoke(Token t, Object v);\n"
-	   << "	}\n\n"
-
-	   << "	private static interface GoToF {\n"
-	   << "		boolean invoke(int i, Object v);\n"
-	   << "	}\n\n"
-	;
-
-
+	// delegate
+	os << "		private static interface State {\n"
+	   << "			boolean gotof(int i, Object v);\n"
+	   << "			boolean state(Token t, Object v);\n"
+	   << "		}\n\n";
 
 	// states handler
 	for(tgt::parsing_table::states_type::const_iterator
@@ -325,15 +313,14 @@ void generate_java(
 	{
 		const tgt::parsing_table::state& s = *i;
 
-
+		os << "		private final State state" << s.no << " = new State() {\n";
 
 		// gotof header
-		os << "	private final GoToF gotof" << s.no << " = new GoToF() {\n"
-		   << "		public boolean invoke(int nonterminalIndex, Object v) {\n";
+		os << "			public boolean gotof(int nonterminalIndex, Object v) {\n";
 
 		// gotof dispatcher
 		std::stringstream ss;
-		ss << "			switch(nonterminalIndex) {\n";
+		ss << "				switch(nonterminalIndex) {\n";
 
 		bool output_switch = false;
 		std::set<size_t> generated;
@@ -354,40 +341,35 @@ void generate_java(
 				(*i).goto_table.find((*j).left());
 
 			if(k != (*i).goto_table.end()) {
-				ss << "			case " << nonterminal_index << ":\n"
-				   << "				return pushToStack("
+				ss << "				case " << nonterminal_index << ": "
+				   << "return pushToStack("
 				   << "state" << (*k).second << ", "
-				   << "gotof" << (*k).second << ", "
 				   << "v);\n";
 				output_switch = true;
 				generated.insert(nonterminal_index);
 			}
 		}
 
-		ss << "			default:\n"
-		   << "				assert(false);\n"
-		   << "				return false;\n"
-		   << "			}\n";
+		ss << "				default:\n"
+		   << "					assert(false);\n"
+		   << "					return false;\n"
+		   << "				}\n";
 
 		if(output_switch) {
 			os << ss.str();
 		} else {
-			os << "			assert(false);\n"
-			   << "			return false;\n";
+			os << "				assert(false);\n"
+			   << "				return false;\n";
 		}
 
 		// gotof footer
-		os << "		}\n"
-		   << "	};\n\n";
-
-
+		os << "			}\n";
 
 		// state header
-		os << "	private final State state" << s.no << " = new State() {\n"
-		   << "		public boolean invoke(Token token, Object value) {\n";
+		os << "			public boolean state(Token token, Object value) {\n";
 
 		// dispatcher header
-		os << "			switch(token) {\n";
+		os << "				switch(token) {\n";
 
 		// action table
 		for(tgt::parsing_table::state::action_table_type::const_iterator
@@ -396,19 +378,18 @@ void generate_java(
 			++j)
 		{
 			// action header
-			os << "			case " << options.token_prefix
+			os << "				case " << options.token_prefix
 			   << (*token_id_map.find((*j).first)).second << ":\n";
 
 			// action
 			const tgt::parsing_table::action* a = &(*j).second;
 			switch(a->type) {
 			case zw::gr::action_shift:
-				os << "				// shift\n"
-				   << "				pushToStack("
+				os << "					// shift\n"
+				   << "					pushToStack("
 				   << "state" << a->dest_index << ", "
-				   << "gotof" << a->dest_index << ", "
 				   << "value);\n"
-				   << "				return false;\n";
+				   << "					return false;\n";
 				break;
 			case zw::gr::action_reduce:
 				{
@@ -424,21 +405,23 @@ void generate_java(
 					if(k != actions.end()) {
 						const semantic_action& sa = (*k).second;
 
-						os << "			{\n"
-						   << "				// reduce\n";
+						os << "				{\n"
+						   << "					// reduce\n";
 
 						// automatic argument conversion
 						for(size_t l=0; l<sa.args.size(); ++l) {
 							const semantic_action_argument& arg =
 								(*sa.args.find(l)).second;
-							os << "				" << arg.type << " arg" << l
+							os << "					" << arg.type << " arg" << l
 							   << " = (" << wrapper_name(arg.type) << ")getFromStack(" << base
 							   << ", " << arg.src_index << ");\n";
 						}
 
 						// semantic action
-						os << "				"
-						   << (*nonterminal_types.find(rule.left().name())).second
+						const std::string& rtype =
+							(*nonterminal_types.find(rule.left().name())).second;
+						os << "					"
+						   << rtype
 						   << " r = sa." << sa.name << "(";
 						for(size_t l=0; l<sa.args.size(); ++l) {
 							if(l != 0) os << ", ";
@@ -447,50 +430,51 @@ void generate_java(
 						os << ");\n";
 
 						// automatic return value conversion
-						os << "				stack.pop(" << base << ");\n"
-						   << "				return stack.peek().gotof.invoke("
+						os << "					stack.pop(" << base << ");\n"
+						   << "					return stack.peek().state.gotof("
 						   << nonterminal_index << ", r);\n"
-						   << "			}\n";
+						   << "				}\n";
 					} else {
-						// << "				// run_semantic_action();\n"
-						os << "				stack.pop(" << base << ");\n"
-						   << "				return stack.peek().gotof.invoke("
+						os << "					// reduce\n"
+						// << "					// run_semantic_action();\n"
+						   << "					stack.pop(" << base << ");\n"
+						   << "					return stack.peek().state.gotof("
 						   << nonterminal_index << ", null);\n";
 					}
 				}
 				break;
 			case zw::gr::action_accept:
-				os << "				// accept\n"
-				// << "				// run_semantic_action();\n"
-				   << "				accepted = true;\n"
-				   << "				acceptedValue = getFromStack(1, 0);\n"  // implicit root
-				   << "				return false;\n";
+				os << "					// accept\n"
+				// << "					// run_semantic_action();\n"
+				   << "					accepted = true;\n"
+				   << "					acceptedValue = getFromStack(1, 0);\n"  // implicit root
+				   << "					return false;\n";
 				break;
 			case zw::gr::action_error:
-				os << "				sa.syntaxError();\n"
-				   << "				error = true;\n"
-				   << "				return false;\n";
+				os << "					sa.syntaxError();\n"
+				   << "					error = true;\n"
+				   << "					return false;\n";
 				break;
 			}
 			// action footer
 		}
 
 		// dispatcher footer
-		os << "			default:\n"
-		   << "				sa.syntaxError();\n"
-		   << "				error = true;\n"
-		   << "				return false;\n"
-		   << "			}\n";
+		os << "				default:\n"
+		   << "					sa.syntaxError();\n"
+		   << "					error = true;\n"
+		   << "					return false;\n"
+		   << "				}\n";
 
 		// state footer
-		os << "		}\n"
-		   << "	};\n\n";
+		os << "			}\n";
 
-
-
+		os << "		};\n\n";
 	}
 
-	os << "}  // class Parser\n";
+	os << "	}  // class Parser\n\n";
+
+	os << "}  // wrapper class\n";
 
 	// once footer
 }

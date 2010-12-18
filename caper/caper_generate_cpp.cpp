@@ -107,7 +107,9 @@ void generate_cpp(
         // STL version
         os << "template < class T, int StackSize >\n"
            << "class Stack {\n"
-           << "public:\n"
+		   << "public:\n"
+		   << ind1 << "typedef Stack< T, StackSize > self_type;\n\n"
+		   << "public:\n"
            << ind1 << "Stack(){ gap_ = 0; }\n"
            << ind1 << "~Stack(){}\n"
            << ind1 << "\n"
@@ -175,6 +177,15 @@ void generate_cpp(
            << ind1 << ind1 << "stack_.clear();\n"
            << ind1 << "}\n"
            << "\n"
+           << ind1 << "self_type& operator=(const self_type& other)"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( this != &other ) {\n"
+           << ind1 << ind1 << ind1 << "stack_ = other.stack_;\n"
+           << ind1 << ind1 << ind1 << "tmp_ = other.tmp_;\n"
+           << ind1 << ind1 << ind1 << "gap_ = other.gap_;\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
            << "private:\n"
            << ind1 << "std::vector< T > stack_;\n"
            << ind1 << "std::vector< T > tmp_;\n"
@@ -186,6 +197,8 @@ void generate_cpp(
         // bulkmemory version
         os << "template < class T, int StackSize >\n"
            << "class Stack {\n"
+		   << "public:\n"
+		   << ind1 << "typedef Stack< T, StackSize > self_type;\n\n"
            << "public:\n"
            << ind1 << "Stack(){ top_ = 0; gap_ = 0; tmp_ = 0; }\n"
            << ind1 << "~Stack(){}\n"
@@ -280,6 +293,18 @@ void generate_cpp(
            << ind1 << ind1 << "top_ = gap_ = tmp_ = 0;\n"
            << ind1 << "}\n"
            << "\n"
+           << ind1 << "self_type& operator=(const self_type& other)"
+           << ind1 << "{\n"
+           << ind1 << ind1 << "if( this != &other ) {\n"
+           << ind1 << ind1 << ind1 << "for( size_t i = 0 ; i < other.top_ ; i++ ) {\n"
+           << ind1 << ind1 << ind1 << ind1 << "new (&at(i)) T(other.at(i));\n"
+           << ind1 << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << ind1 << "top_ = other.top_;\n"
+           << ind1 << ind1 << ind1 << "gap_ = other.gap_;\n"
+           << ind1 << ind1 << ind1 << "tmp_ = other.tmp_;\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
            << "private:\n"
            << ind1 << "T& at( size_t n )\n"
            << ind1 << "{\n"
@@ -313,8 +338,15 @@ void generate_cpp(
     os <<  "class Parser {\n";
 
     // public interface
-    os << "public:\n"
-       << ind1 << "typedef Token token_type;\n"
+    os << "public:\n";
+    if( options.external_token ) {
+        os << ind1 << "typedef "
+           << "Parser< Token, Value, SemanticAction, StackSize > self_type;\n";
+    } else {
+        os << ind1 << "typedef "
+           << "Parser< Value, SemanticAction, StackSize > self_type;\n";
+    }
+	os << ind1 << "typedef Token token_type;\n"
        << ind1 << "typedef Value value_type;\n\n"
        << "public:\n"
        << ind1 << "Parser( SemanticAction& sa ) : sa_( sa ) { reset(); }\n\n"
@@ -354,17 +386,19 @@ void generate_cpp(
        << ind1 << ind1 << "return true;\n"
        << ind1 << "}\n\n"
        << ind1 << "bool error() { return error_; }\n\n"
+       << ind1 << "self_type& operator=(const self_type& other)"
+       << ind1 << "{\n"
+       << ind1 << ind1 << "if (this != &other) {\n"
+       << ind1 << ind1 << ind1 << "accepted_ = other.accepted_\n"
+       << ind1 << ind1 << ind1 << "error_ = other.error_\n"
+       << ind1 << ind1 << ind1 << "accepted_value_ = other.accepted_value_\n"
+       << ind1 << ind1 << ind1 << "stack_ = other.stack_\n"
+       << ind1 << ind1 << "}\n"
+       << ind1 << "}\n"
         ;
 
     // implementation
     os << "private:\n";
-    if( options.external_token ) {
-        os << ind1 << "typedef "
-           << "Parser< Token, Value, SemanticAction, StackSize > self_type;\n";
-    } else {
-        os << ind1 << "typedef "
-           << "Parser< Value, SemanticAction, StackSize > self_type;\n";
-    }
     os << ind1 << "typedef bool ( self_type::*state_type )"
        << "( token_type, const value_type& );\n"
        << ind1 << "typedef bool ( self_type::*gotof_type )"

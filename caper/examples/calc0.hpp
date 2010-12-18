@@ -18,6 +18,9 @@ enum Token {
 template < class T, int StackSize >
 class Stack {
 public:
+	typedef Stack< T, StackSize > self_type;
+
+public:
 	Stack(){ top_ = 0; gap_ = 0; tmp_ = 0; }
 	~Stack(){}
 	
@@ -99,6 +102,17 @@ public:
 		top_ = gap_ = tmp_ = 0;
 	}
 
+	self_type& operator=(const self_type& other)	{
+		if( this != &other ) {
+			for( size_t i = 0 ; i < other.top_ ; i++ ) {
+				new (&at(i)) T(other.at(i));
+			}
+			top_ = other.top_;
+			gap_ = other.gap_;
+			tmp_ = other.tmp_;
+		}
+	}
+
 private:
 	T& at( size_t n )
 	{
@@ -116,6 +130,7 @@ private:
 template < class Value, class SemanticAction, int StackSize = 1024 >
 class Parser {
 public:
+	typedef Parser< Value, SemanticAction, StackSize > self_type;
 	typedef Token token_type;
 	typedef Value value_type;
 
@@ -157,8 +172,15 @@ public:
 
 	bool error() { return error_; }
 
+	self_type& operator=(const self_type& other)	{
+		if (this != &other) {
+			accepted_ = other.accepted_
+			error_ = other.error_
+			accepted_value_ = other.accepted_value_
+			stack_ = other.stack_
+		}
+	}
 private:
-	typedef Parser< Value, SemanticAction, StackSize > self_type;
 	typedef bool ( self_type::*state_type )( token_type, const value_type& );
 	typedef bool ( self_type::*gotof_type )( int, const value_type& );
 
@@ -225,7 +247,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeAdd( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -235,7 +257,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeSub( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -244,7 +266,7 @@ private:
 		int arg0; sa_.downcast( arg0, get_arg( base, arg_index0 ) );
 		int r = sa_.Identity( arg0 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 1 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -254,7 +276,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeDiv( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 
@@ -264,7 +286,7 @@ private:
 		int arg1; sa_.downcast( arg1, get_arg( base, arg_index1 ) );
 		int r = sa_.MakeMul( arg0, arg1 );
 		value_type v; sa_.upcast( v, r );
-		pop_stack( 3 );
+		pop_stack( base );
 		return (this->*(stack_top()->gotof))( nonterminal_index, v );
 	}
 

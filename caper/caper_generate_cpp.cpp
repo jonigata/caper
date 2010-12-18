@@ -6,6 +6,7 @@
 #include "caper_ast.hpp"
 #include "caper_generate_cpp.hpp"
 #include <algorithm>
+#include <cstdio>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
@@ -433,8 +434,6 @@ void generate_cpp(
              ++k ) {
 
             const tgt::parsing_table::rule_type& rule = (*k).first;
-
-            size_t base = rule.right().size();
 
             const semantic_action& sa = (*k).second;
 

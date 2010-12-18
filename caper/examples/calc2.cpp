@@ -13,73 +13,77 @@ typedef boost::variant< int, Term, Expr > Value;
 
 template < class It >
 class scanner {
-public:
-    typedef int char_type;
+ public:
+  typedef int char_type;
+  int eof() { return std::char_traits<char_type>::eof(); }
 
-public:
-    scanner( It b, It e ) : b_(b), e_(e), c_(b), unget_(EOF) { }
+ public:
+  scanner( It b, It e ) : b_(b), e_(e), c_(b), unget_(eof()) { }
 
-    calc::Token get( Value& v )
-    {
-        int c;
-        do {
-            c = getc();
-        } while( isspace( c ) );
+  calc::Token get( Value& v )
+  {
+    int c;
+    do {
+      c = getc();
+    } while( isspace( c ) );
 
-        // ãLçÜóﬁ
-        switch( c ) {
+    // ãLçÜóﬁ
+    if (c == eof()) {
+      return calc::token_eof;
+    } else {
+      switch( c ) {
         case '+': return calc::token_Add;
         case '-': return calc::token_Sub;
         case '*': return calc::token_Mul;
         case '/': return calc::token_Div;
-        case EOF: return calc::token_eof;
-        }
-
-        // êÆêî
-        if( isdigit( c ) ) {
-            int n = 0;
-            while( c != EOF && isdigit( c ) ) {
-                n *= 10;
-                n += c - '0';
-                c = getc();
-            }
-            ungetc( c );
-            v = n;
-            return calc::token_Number;
-        }
-
-
-        std::cerr << char(c) << std::endl;
-        throw unexpected_char();
+      }
     }
 
-private:
-    char_type getc()
-    {
-        int c;
-        if( unget_ != EOF ) {
-            c = unget_;
-            unget_ = EOF;
-        } else if( c_ == e_ ) {
-            c = EOF; 
-        } else {
-            c = *c_++;
-        }
-        return c;
+    // êÆêî
+    if( isdigit( c ) ) {
+      int n = 0;
+      while( c != eof() && isdigit( c ) ) {
+        n *= 10;
+        n += c - '0';
+        c = getc();
+      }
+      ungetc( c );
+      v = n;
+      return calc::token_Number;
     }
 
-    void ungetc( char_type c )
-    {
-        if( c != EOF ) {
-            unget_ = c;
-        }
-    }
 
-private:
-    It              b_;
-    It              e_;
-    It              c_;
-    char_type       unget_;
+    std::cerr << char(c) << std::endl;
+    throw unexpected_char();
+  }
+
+ private:
+  char_type getc()
+  {
+    int c;
+    if( unget_ != eof() ) {
+      c = unget_;
+      unget_ = eof();
+    } else if( c_ == e_ ) {
+      c = eof(); 
+    } else {
+      c = *c_++;
+    }
+    return c;
+  }
+
+  void ungetc( char_type c )
+  {
+    if( c != eof() ) {
+      unget_ = c;
+    }
+  }
+
+ private:
+  It              b_;
+  It              e_;
+  It              c_;
+  char_type       unget_;
 
 };
 

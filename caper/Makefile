@@ -37,7 +37,7 @@ all:
 depend: $(OBJS:.o=.d)
 
 $(TARGET): $(OBJS)
-	$(CC) $(CPPFLAGS) -o $@ $^ -lboost_filesystem
+	$(CC) $(CPPFLAGS) -o $@ $^ -lboost_system -lboost_filesystem
 
 clean:
 	rm -f $(TARGET) $(OBJS)

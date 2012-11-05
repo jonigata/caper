@@ -125,6 +125,7 @@ void generate_cpp(
            << ind1 << ind1 << "stack_.reserve( gap_ + tmp_.size() );\n"
            << "\n"
            << ind1 << ind1 << "// expect not to throw\n"
+           << ind1 << ind1
            << "stack_.erase( stack_.begin() + gap_, stack_.end() );\n"
            << ind1 << ind1
            << "stack_.insert( stack_.end(), tmp_.begin(), tmp_.end() );\n"
@@ -389,10 +390,10 @@ void generate_cpp(
        << ind1 << "self_type& operator=(const self_type& other)"
        << ind1 << "{\n"
        << ind1 << ind1 << "if (this != &other) {\n"
-       << ind1 << ind1 << ind1 << "accepted_ = other.accepted_\n"
-       << ind1 << ind1 << ind1 << "error_ = other.error_\n"
-       << ind1 << ind1 << ind1 << "accepted_value_ = other.accepted_value_\n"
-       << ind1 << ind1 << ind1 << "stack_ = other.stack_\n"
+       << ind1 << ind1 << ind1 << "accepted_ = other.accepted_;\n"
+       << ind1 << ind1 << ind1 << "error_ = other.error_;\n"
+       << ind1 << ind1 << ind1 << "accepted_value_ = other.accepted_value_;\n"
+       << ind1 << ind1 << ind1 << "stack_ = other.stack_;\n"
        << ind1 << ind1 << "}\n"
        << ind1 << "}\n"
         ;

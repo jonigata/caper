@@ -38,8 +38,8 @@ void make_target_parser(
         boost::shared_ptr< Document > doc = get_node< Document >( ast );
 
         // 各種データ
-        std::map< std::string, tgt::terminal >        terminals;      // 終端記号表   ( 名前→terminal )
-        std::map< std::string, tgt::nonterminal >     nonterminals;   // 非終端記号表 ( 名前→nonterminal )
+        std::unordered_map< std::string, tgt::terminal >        terminals;      // 終端記号表   ( 名前→terminal )
+        std::unordered_map< std::string, tgt::nonterminal >     nonterminals;   // 非終端記号表 ( 名前→nonterminal )
 
         // terminalsの作成
         token_id_map["eof"] = 0;
@@ -129,14 +129,14 @@ void make_target_parser(
                                 index++;
 
                                 {
-                                        std::map< std::string, tgt::terminal >::const_iterator l =
+                                        std::unordered_map< std::string, tgt::terminal >::const_iterator l =
                                                 terminals.find( term->name );
                                         if( l != terminals.end() ) {
                                                 r << (*l).second;
                                         }
                                 }
                                 {
-                                        std::map< std::string, tgt::nonterminal >::const_iterator l =
+                                        std::unordered_map< std::string, tgt::nonterminal >::const_iterator l =
                                                 nonterminals.find( term->name );
                                         if( l != nonterminals.end() ) {
                                                 r << (*l).second;

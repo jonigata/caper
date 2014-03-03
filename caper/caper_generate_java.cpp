@@ -65,26 +65,9 @@ void generate_java(
 	os << "import java.util.*;\n\n";
 
 	// wrapper class
-	os << "public class ";
-
-	// write class name
-	{
-		std::string::size_type l = filename.find_last_of("/");
-		if(l == std::string::npos) {
-			l = 0;
-		} else {
-			++l;
-		}
-
-		std::string::size_type r = filename.find_last_of(".");
-		if(r == std::string::npos || l >= r) {
-			r = filename.length();
-		}
-
-		os << filename.substr(l, r-l);
-	}
-
-	os << " {\n\n";
+	os << "public class "
+	   << filename.substr(0, filename.find("."))
+	   << " {\n\n";
 
 	// enum Token
 	if(!options.external_token) {
@@ -120,7 +103,7 @@ void generate_java(
 		ss.insert(sae);
 	}
 
-	std::set<std::string> types;
+	std::unordered_set<std::string> types;
 	for(symbol_map_type::const_iterator
 		i = terminal_types.begin();
 		i != terminal_types.end();
@@ -143,9 +126,9 @@ void generate_java(
 
 	os << options.access_modifier << "	public static interface SemanticAction {\n"
 	   << "		void syntaxError();\n"
-	   << "		// void stackOverflow();  // Ignored (never called in Java parsers) .\n";
+	   << "		void stackOverflow();  // Ignore, never called in Java parsers.\n";
 
-	std::set<std::string> methods;
+	std::unordered_set<std::string> methods;
 
 	for(std::set<semantic_action_entry>::const_iterator
 		it = ss.begin();
@@ -164,7 +147,7 @@ void generate_java(
 		methods.insert(methodstream.str());
 	}
 
-	for(std::set<std::string>::const_iterator
+	for(std::unordered_set<std::string>::const_iterator
 		it = methods.begin();
 		it != methods.end();
 		++it)
@@ -265,7 +248,7 @@ void generate_java(
 	   << "null)) {\n"
 	   << "				stack.commitTemp();\n"
 	   << "			} else {\n"
-	   << "				// sa.stackOverflow();\n"
+	   << "				sa.stackOverflow();\n"
 	   << "				error = true;\n"
 	   << "			}\n"
 	   << "		}\n\n"
@@ -308,7 +291,7 @@ void generate_java(
 	   << "			if(stack.push(new StackFrame(s, v)))\n"
 	   << "				return true;\n"
 	   << "			error = true;\n"
-	   << "			// sa.stackOverflow();\n"
+	   << "			sa.stackOverflow();\n"
 	   << "			return false;\n"
 	   << "		}\n\n"
 

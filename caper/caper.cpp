@@ -118,7 +118,7 @@ int main( int argc, char** argv )
 		const action_map_type&,
 		const tgt::parsing_table& );
 		
-	std::map< std::string, generator_type > generators;
+	std::unordered_map< std::string, generator_type > generators;
 	generators["Java"]		= generate_java;
 	generators["C#"]		= generate_csharp;
 	generators["C++"]				= generate_cpp;

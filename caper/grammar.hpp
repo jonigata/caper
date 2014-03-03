@@ -227,7 +227,10 @@ bool operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >&
 template < class Token, class Traits >
 std::ostream& operator<<( std::ostream& os, const symbol< Token, Traits >& r );
 
-template <class Token,class Traits >
+template <class Token, class Traits >
+struct symbol_hash;
+
+template <class Token, class Traits >
 class symbol {
 private:
         enum category_type {
@@ -287,10 +290,28 @@ private:
         friend bool operator< <>( const symbol< Token, Traits >& x, 
                                   const symbol< Token, Traits >& y );
         friend std::ostream& operator<< <>( std::ostream& os, const symbol< Token, Traits >& r );
+        friend struct symbol_hash< Token, Traits >;
+};
+
+template <class Token, class Traits >
+struct symbol_hash
+{
+        std::size_t operator()(const symbol< Token, Traits >& s) const
+        {
+                typedef symbol< Token, Traits > symbol_type;
+
+                std::hash< std::string > str_hash;
+                switch( s.type_ ) {
+                case symbol_type::type_epsilon:      return 0x11111111;
+                case symbol_type::type_terminal:     return std::size_t(s.token_);
+                case symbol_type::type_nonterminal:  return str_hash(s.name_);
+                default: assert(0);     return false;
+                }
+        }
 };
 
 template < class Token, class Traits >
-bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
+bool __fastcall operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;
 
@@ -304,7 +325,7 @@ bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >
 }
 
 template < class Token, class Traits >
-bool operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
+bool __fastcall operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;
 

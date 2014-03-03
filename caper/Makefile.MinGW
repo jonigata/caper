@@ -1,0 +1,60 @@
+CXX = g++
+CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -IC:\local\boost_1_55_0
+#CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -IC:\local\boost_1_55_0 -pg
+TARGET = caper
+OBJS = \
+	caper.o \
+	caper_cpg.o \
+	caper_tgt.o \
+	caper_generate_cpp.o \
+	caper_generate_d.o \
+	caper_generate_csharp.o \
+	caper_generate_js.o \
+	caper_generate_java.o
+
+HEADERS = \
+	lr.hpp \
+	fastlalr.hpp \
+	caper_ast.hpp
+
+TOP_HEADERS = \
+	$(HEADERS) \
+	caper_error.hpp \
+	caper_scanner.hpp \
+	caper_cpg.hpp \
+	caper_tgt.hpp \
+	caper_generate_cpp.hpp \
+	caper_generate_js.hpp \
+	caper_generate_csharp.hpp \
+	caper_generate_d.hpp \
+	caper_generate_java.hpp
+
+$(TARGET): $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lboost_filesystem -lboost_system
+
+caper.o: $(TOP_HEADERS) caper.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper.cpp
+caper_cpg.o: $(HEADERS) caper_cpg.hpp caper_error.hpp caper_cpg.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_cpg.cpp
+caper_tgt.o: caper_tgt.hpp caper_error.hpp lr.hpp honalee.hpp caper_tgt.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_tgt.cpp
+caper_generate_cpp.o: $(HEADERS) caper_generate_cpp.hpp caper_generate_cpp.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_cpp.cpp
+caper_generate_d.o: $(HEADERS) caper_generate_d.hpp caper_generate_d.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_d.cpp
+caper_generate_csharp.o: $(HEADERS) caper_generate_csharp.hpp caper_generate_csharp.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_csharp.cpp
+caper_generate_js.o: $(HEADERS) caper_generate_js.hpp caper_generate_js.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_js.cpp
+caper_generate_java.o: $(HEADERS) caper_generate_java.hpp caper_generate_java.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_java.cpp
+
+clean:
+	rm -f *.o gmon.out gmon.log
+
+caper_ast.hpp: fastlalr.hpp
+caper_cpg.hpp: fastlalr.hpp caper_ast.hpp
+fastlalr.hpp: lr.hpp
+honalee.hpp: lr.hpp
+lalr.hpp: lr.hpp
+lr.hpp: grammar.hpp

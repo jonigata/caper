@@ -34,7 +34,7 @@ make_honalee_closure(
     typedef grammar< Token, Traits >                grammar_type;
     typedef item< Token, Traits >                   item_type;
     typedef symbol_set< Token, Traits >             symbol_set_type;
-    typedef item_set< Token, Traits >               item_set_type;
+    //typedef item_set< Token, Traits >               item_set_type;
     typedef std::vector< symbol< Token, Traits >  > symbol_vector_type;
 
     Set I = J;
@@ -211,7 +211,7 @@ template < class Token, class Traits  >
 bool rrconflict( const state< Token, Traits >& x,
                  const state< Token, Traits >& y )
 {
-    typedef core_set< Token, Traits >       core_set_type;
+    //typedef core_set< Token, Traits >       core_set_type;
     typedef mark< Token, Traits >           mark_type;
     typedef state< Token, Traits >          state_type;
 
@@ -240,8 +240,8 @@ void merge( bool&                               added_items,
             state< Token, Traits >&             x,
             const state< Token, Traits >&       y )
 {
-    typedef core_set< Token, Traits >       core_set_type;
-    typedef mark< Token, Traits >           mark_type;
+    //typedef core_set< Token, Traits >       core_set_type;
+    //typedef mark< Token, Traits >           mark_type;
     typedef state< Token, Traits >          state_type;
 
     added_items = false;

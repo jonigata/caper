@@ -7,7 +7,9 @@
 #define LR_HPP
 
 #include <set>
+#include <unordered_set>
 #include <map>
+#include <unordered_map>
 #include <vector>
 #include <sstream>
 #include <stdexcept>
@@ -176,7 +178,7 @@ bool operator==( const item< Token, Traits >& x, const item< Token, Traits >& y 
 template < class Token, class Traits >
 std::ostream& operator<<( std::ostream& os, const item< Token, Traits >& y )
 {
-        typedef core< Token, Traits > core_type;
+        //typedef core< Token, Traits > core_type;
         os << y.core() << " / " << y.lookahead();
         return os;
 }
@@ -190,7 +192,7 @@ std::ostream& operator<<( std::ostream& os, const item< Token, Traits >& y )
  *==========================================================================*/
 
 template < class Token, class Traits >
-class symbol_set : public std::set< symbol< Token, Traits > > {
+class symbol_set : public std::unordered_set< symbol< Token, Traits >, symbol_hash< Token, Traits > > {
 public:
         symbol_set() {}
         ~symbol_set() {}
@@ -268,7 +270,7 @@ std::ostream& operator<<( std::ostream& os, const item_set< Token, Traits>& s )
  *==========================================================================*/
 
 template <class Token,class Traits >
-class first_collection : public std::map< symbol< Token, Traits >, symbol_set< Token, Traits > > {
+class first_collection : public std::unordered_map< symbol< Token, Traits >, symbol_set< Token, Traits >, symbol_hash< Token, Traits > > {
 public:
         first_collection() {}
         ~first_collection() {}
@@ -294,7 +296,7 @@ std::ostream& operator<<( std::ostream& os, const first_collection< Token, Trait
  *==========================================================================*/
 
 template <class Token,class Traits >
-class follow_collection : public std::map< symbol< Token, Traits >, symbol_set< Token, Traits > > {
+class follow_collection : public std::unordered_map< symbol< Token, Traits >, symbol_set< Token, Traits >, symbol_hash< Token, Traits > > {
 public:
         follow_collection() {}
         ~follow_collection() {}
@@ -400,17 +402,17 @@ void collect_symbols(
 
 template < class Token, class Traits >
 bool all_nullable(
-        const std::map< symbol< Token, Traits >, bool >&        nullable,
-        const std::vector< symbol< Token, Traits > > &          rule_right,
+        const std::unordered_set< symbol< Token, Traits >, symbol_hash< Token, Traits > >& nullable,
+        const std::vector< symbol< Token, Traits > > &    rule_right,
         int b, int e )
 {
         bool flag = true;
         for( int j = b ; j < e ; j++ ) {
                 if( rule_right[j].is_epsilon() ) { continue; }
 
-                typename std::map< symbol< Token, Traits >, bool >::const_iterator i = 
+                typename std::unordered_set< symbol< Token, Traits >, symbol_hash< Token, Traits > >::const_iterator i = 
                         nullable.find( rule_right[j] );
-                if( i == nullable.end() || !( *i ).second ) {
+                if( i == nullable.end() ) {
                         flag = false;
                         break;
                 }
@@ -432,8 +434,8 @@ void make_first_and_follow(
         typedef rule< Token, Traits >           rule_type;
 
         // nullable
-        std::map< symbol< Token, Traits >, bool > nullable;
-        
+        std::unordered_set< symbol< Token, Traits >, symbol_hash< Token, Traits > > nullable;
+
         // For each terminal symbol Z, FIRST[Z] = {Z}.
         for( typename symbol_set_type::const_iterator i = terminals.begin() ;
              i != terminals.end() ;
@@ -455,9 +457,9 @@ void make_first_and_follow(
                         int k = int( rule.right().size() );
                         if( all_nullable( nullable, rule.right(), 0, k ) ) {
                                 // nullable[X] = true
-                                if( !nullable[rule.left()] ) {
+                                if( !nullable.count(rule.left()) ) {
                                         repeat = true; 
-                                        nullable[ rule.left() ] = true;
+                                    nullable.insert( rule.left() );
                                 }
                         } 
 
@@ -504,10 +506,10 @@ void make_first_and_follow(
                 }
         }
 
-        for( typename std::map< symbol< Token, Traits >, bool >::const_iterator i = nullable.begin() ;
+        for( typename std::unordered_set< symbol< Token, Traits >, symbol_hash< Token, Traits > >::const_iterator i = nullable.begin() ;
              i != nullable.end() ;
              ++i ) {
-                first[(*i).first].insert( epsilon< Token, Traits >() );
+                first[*i].insert( epsilon< Token, Traits >() );
         }
 }
 
@@ -570,12 +572,15 @@ make_lr0_closure(
 
         symbol_set_type added;
 
+        added.reserve(J.size() * g.size() * 2);
+
         bool repeat;
         do {
                 core_set_type new_cores;
 
                 repeat = false;
-                for( typename core_set_type::const_iterator i = J.begin() ; i != J.end() ; ++i ) {
+                typename core_set_type::const_iterator end1 = J.end();
+                for( typename core_set_type::const_iterator i = J.begin() ; i != end1 ; ++i ) {
                         const core_type& x = (*i);
                         if( int( x.rule().right().size() ) <= x.cursor() ) { continue; }
 
@@ -583,11 +588,13 @@ make_lr0_closure(
                         if( !y.is_nonterminal() ) { continue; }
 
                         int n = 0;
-                        for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j, ++n ) {
+                        typename grammar_type::const_iterator end2 = g.end();
+                        for( typename grammar_type::const_iterator j = g.begin() ; j != end2 ; ++j, ++n ) {
                                 const rule_type& z = (*j);
+                                const typename rule_type::nonterminal_type& left = z.left();
 
-                                if( added.find( z.left() ) != added.end() ) { continue; }
-                                if( !( y == symbol_type( z.left() ) ) ) { continue; }
+                                if( added.find( left ) != added.end() ) { continue; }
+                                if( !( y == symbol_type( left ) ) ) { continue; }
 
                                 new_cores.insert( core_type( n, z, 0 ) ) ; 
                                 repeat = true ; 
@@ -659,8 +666,9 @@ make_lr1_closure(
                 item_set_type new_items;  // ‘}“ü‚·‚é€
         
                 J_size = J.size();
-        
-                for( typename item_set_type::const_iterator i = J.begin() ; i != J.end() ; ++i ) {
+
+                typename item_set_type::const_iterator end1 = J.end();
+                for( typename item_set_type::const_iterator i = J.begin() ; i != end1 ; ++i ) {
                         // x is [item(A¨ƒ¿EBƒÀ,a)]
                         const item_type& x = (*i);
                         if( x.over() ) { continue; }
@@ -681,7 +689,8 @@ make_lr1_closure(
                         make_vector_first( f, first, v ); 
 
                         int n = 0;
-                        for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j, ++n ) {
+                        typename grammar_type::const_iterator end2 = g.end();
+                        for( typename grammar_type::const_iterator j = g.begin() ; j != end2 ; ++j, ++n ) {
                                 // z is [rule(B¨ƒÁ)]
                                 const rule_type& z = (*j);
 
@@ -746,10 +755,10 @@ make_lr0_collection(
         const grammar< Token, Traits >&         g )
 {
         typedef symbol< Token, Traits >         symbol_type;
-        typedef rule< Token, Traits >           rule_type;
+        //typedef rule< Token, Traits >           rule_type;
         typedef grammar< Token, Traits >        grammar_type ; 
         typedef core< Token, Traits >           core_type ; 
-        typedef item< Token, Traits >           item_type ; 
+        //typedef item< Token, Traits >           item_type ; 
         typedef lr0_collection< Token, Traits > lr0_collection_type ; 
         typedef symbol_set< Token, Traits > symbol_set_type ; 
         typedef core_set< Token, Traits >   core_set_type ; 
@@ -800,8 +809,8 @@ make_lr1_collection(
          const grammar< Token, Traits >&                g) 
 { 
          typedef terminal< Token, Traits >              terminal_type; 
-         typedef rule< Token, Traits >                  rule_type; 
-         typedef grammar< Token, Traits >               grammar_type; 
+         //typedef rule< Token, Traits >                  rule_type; 
+         //typedef grammar< Token, Traits >               grammar_type; 
          typedef lr1_collection< Token, Traits >        lr1_collection_type; 
          typedef symbol_set< Token, Traits >            symbol_set_type; 
          typedef item< Token, Traits >                  item_type; 
@@ -1019,7 +1028,7 @@ std::ostream& operator<<( std::ostream& os, const parsing_table< Token, Traits >
 {
         typedef typename parsing_table< Token, Traits >::states_type    states_type;
         typedef typename parsing_table< Token, Traits >::state          state;
-        typedef typename parsing_table< Token, Traits >::action         action;
+        //typedef typename parsing_table< Token, Traits >::action         action;
 
 	os << "<toplevel=state" << x.first_state() << ">\n";
         for( typename states_type::const_iterator i = x.states().begin() ; i != x.states().end() ; ++i ) {

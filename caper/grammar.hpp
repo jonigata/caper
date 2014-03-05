@@ -311,7 +311,7 @@ struct symbol_hash
 };
 
 template < class Token, class Traits >
-bool __fastcall operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
+bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;
 
@@ -325,7 +325,7 @@ bool __fastcall operator==( const symbol< Token, Traits >& x, const symbol< Toke
 }
 
 template < class Token, class Traits >
-bool __fastcall operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
+bool operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;
 

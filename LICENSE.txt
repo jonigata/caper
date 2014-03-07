@@ -1,0 +1,6 @@
+Copyright (C) 2006-2014 Naoyuki HIRAYAMA.  
+Copyright (C) 2014 Katayama Hirofumi MZ.
+Copyright (C) 2013 Yasuhiro Fujii
+Copyright (C) 2009-2011 Shinsuke Kishi
+
+This software is distributed under the Modified BSD License.

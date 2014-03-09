@@ -492,82 +492,98 @@ public:
  *
  *==========================================================================*/
 
-template <class Token,class Traits >
+template <class Token,class Traits>
 class grammar {
 public:
-        typedef zw::gr::rule< Token, Traits >           rule_type;
-        typedef typename std::vector< rule_type >       elements_type;
-        typedef typename elements_type::iterator        iterator;
-        typedef typename elements_type::const_iterator  const_iterator;
-        typedef typename elements_type::reference       reference;
-        typedef typename elements_type::const_reference const_reference;
+    typedef zw::gr::rule< Token, Traits >           rule_type;
+    typedef typename std::vector< rule_type >       elements_type;
+    typedef typename elements_type::iterator        iterator;
+    typedef typename elements_type::const_iterator  const_iterator;
+    typedef typename elements_type::reference       reference;
+    typedef typename elements_type::const_reference const_reference;
+
+    typedef std::unordered_map<std::string, std::vector<rule_type> > dictionary_type;
+    typedef std::map<rule_type, int>                                 indices_type;
 
 private:
-        struct grammar_imp {
-                rule_type       root;
-                elements_type   elements;
+    struct grammar_imp {
+        rule_type       root;
+        elements_type   elements;
+        dictionary_type dictionary;
+        indices_type    indices;
 
-                grammar_imp() { rc_count_ = 0; }
-                grammar_imp( const rule_type& x ) : root( x ) { rc_count_ = 0; elements.push_back( x ); }
-                grammar_imp( const rule_type& x, const elements_type& y )
-                        : root( x ), elements( y ) { rc_count_ = 0; }
+        grammar_imp() { rc_count_ = 0; }
+        grammar_imp( const rule_type& x ) : root( x ) { rc_count_ = 0; elements.push_back( x ); }
+        grammar_imp( const grammar_imp& x )
+        : root(x.root), elements(x.elements), dictionary(x.dictionary), indices(x.indices) {
+            rc_count_ = 0;
+        }
 
-                void addref() { rc_count_++; }
-                void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
-                int rccount() { return rc_count_; }
-                int rc_count_;
-        };
+        void add(const rule_type& x) {
+            elements.push_back(x);
+            dictionary[x.left().name()].push_back(x);
+            indices[x] = elements.size() - 1;
+        }
 
-        typedef intrusive_rc_ptr< grammar_imp > imp_ptr;
+        void addref() { rc_count_++; }
+        void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
+        int rccount() { return rc_count_; }
+        int rc_count_;
+    };
+
+    typedef intrusive_rc_ptr< grammar_imp > imp_ptr;
 
 public:
-        explicit grammar( const rule<Token,Traits>& r ) : imp( new grammar_imp( r ) ) {}
-        grammar( const grammar& x ) : imp( x.imp ) {}
-        ~grammar(){}
+    explicit grammar( const rule<Token,Traits>& r ) : imp( new grammar_imp( r ) ) {}
+    grammar( const grammar& x ) : imp( x.imp ) {}
+    ~grammar(){}
 
-        grammar& operator=( const grammar& x )
-        {
-                imp = x.imp;
-                return *this;
+    grammar& operator=( const grammar& x )
+    {
+        imp = x.imp;
+        return *this;
+    }
+
+    grammar& operator<<( const opgroup<Token,Traits>& )
+    {
+        enunique();
+        return *this;
+    }
+    grammar& operator<<( const rule_type& r )
+    {
+        enunique();
+        assert( std::find( imp->elements.begin(), imp->elements.end(), r ) == imp->elements.end() );
+        imp->add( r );
+        return *this;
+    }
+
+    const_iterator begin()const { return imp->elements.begin(); }
+    const_iterator end()  const { return imp->elements.end(); }
+    size_t size() const { return imp->elements.size(); }
+
+    rule_type root_rule() const { return imp->root; }
+
+    int rule_index( const rule<Token,Traits>& r ) const
+    {
+        typename elements_type::const_iterator i =
+            std::find( imp->elements.begin(), imp->elements.end(), r );
+        if( i == imp->elements.end() ) {
+            return -1;
         }
+        return int( i - imp->elements.begin() );
+    }
 
-        grammar& operator<<( const opgroup<Token,Traits>& )
-        {
-                enunique();
-                return *this;
-        }
-        grammar& operator<<( const rule_type& r )
-        {
-                enunique();
-                assert( std::find( imp->elements.begin(), imp->elements.end(), r ) == imp->elements.end() );
-                imp->elements.push_back( r );
-                return *this;
-        }
-
-        const_iterator begin()const { return imp->elements.begin(); }
-        const_iterator end()  const { return imp->elements.end(); }
-        size_t size() const { return imp->elements.size(); }
-
-        rule_type root_rule() const { return imp->root; }
-
-        int rule_index( const rule<Token,Traits>& r ) const
-        {
-                typename elements_type::const_iterator i =
-                        std::find( imp->elements.begin(), imp->elements.end(), r );
-                if( i == imp->elements.end() ) {
-                        return -1;
-                }
-                return int( i - imp->elements.begin() );
-        }
+    const dictionary_type& dictionary() const { return imp->dictionary; }
+    const indices_type& indices() const { return imp->indices; }
 
 private:
-        void enunique()
-        {
-                if( !imp.unique() ) { imp.reset( new grammar_imp( imp->root, imp->elements ) ); }
-        }
+    void enunique()
+    {
+        if( !imp.unique() ) { imp.reset( new grammar_imp( *imp ) ); }
+    }
 
 private:
-        imp_ptr imp;
+    imp_ptr imp;
 
 };
 

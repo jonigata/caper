@@ -565,7 +565,6 @@ make_lr0_closure(
 {
         typedef symbol< Token, Traits >         symbol_type;
         typedef rule< Token, Traits >           rule_type;
-        typedef grammar< Token, Traits >        grammar_type;
         typedef core< Token, Traits >           core_type;
         typedef core_set< Token, Traits >       core_set_type;
 
@@ -587,16 +586,9 @@ make_lr0_closure(
                         if( !y.is_nonterminal() ) { continue; }
                         if( added.find( y.name() ) != added.end() ) { continue; }
 
-                        int n = 0;
-                        typename grammar_type::const_iterator end2 = g.end();
-                        for( typename grammar_type::const_iterator j = g.begin() ; j != end2 ; ++j, ++n ) {
-                                const rule_type& z = (*j);
-                                const typename rule_type::nonterminal_type& left = z.left();
-
-                                if( y.name() != left.name() ) { continue; }
-
-                                new_cores.insert( core_type( n, z, 0 ) ) ; 
-                                repeat = true ; 
+                        for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
+                            new_cores.insert(core_type((*g.indices().find(z)).second, z, 0)); 
+                            repeat = true;
                         }
                         added.insert( y.name() );
                 }

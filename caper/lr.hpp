@@ -593,7 +593,7 @@ make_lr0_closure(
                                 const typename rule_type::nonterminal_type& left = z.left();
 
                                 if( added.find( left.name() ) != added.end() ) { continue; }
-                                if( !( y == symbol_type( left ) ) ) { continue; }
+                                if( y.name() != left.name() ) { continue; }
 
                                 new_cores.insert( core_type( n, z, 0 ) ) ; 
                                 repeat = true ; 

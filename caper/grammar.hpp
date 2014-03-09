@@ -79,21 +79,21 @@ private:
 template <class Token,class Traits >
 class epsilon {
 public:
-        epsilon(){}
-        epsilon( const epsilon< Token, Traits >& x ){}
-        ~epsilon(){}
+    epsilon(){}
+    epsilon( const epsilon< Token, Traits >& x ){}
+    ~epsilon(){}
 
-        epsilon<Token,Traits>& operator=(const epsilon<Token,Traits>& x) { return *this; }
+    epsilon<Token,Traits>& operator=(const epsilon<Token,Traits>& x) { return *this; }
     
 private:
-        friend class symbol< Token, Traits >;
+    friend class symbol< Token, Traits >;
 };
 
 template <class Token,class Traits>
 std::ostream& operator<<( std::ostream& os, const epsilon< Token, Traits >& r )
 {
-        os << "{}";
-        return os;
+    os << "{}";
+    return os;
 }
 
 /*============================================================================
@@ -112,32 +112,32 @@ std::ostream& operator<<( std::ostream&, const terminal< Token, Traits >& );
 template <class Token,class Traits >
 class terminal {
 public:
-        terminal() : token_( Traits::eof() ) {}
-        terminal( const std::string& d, const Token& t ) : display_(d), token_(t) {}
-        terminal( const terminal< Token, Traits >& x ) : display_( x.display_ ), token_( x.token_ ) {}
-        ~terminal() {}
+    terminal() : token_( Traits::eof() ) {}
+    terminal( const std::string& d, const Token& t ) : display_(d), token_(t) {}
+    terminal( const terminal< Token, Traits >& x ) : display_( x.display_ ), token_( x.token_ ) {}
+    ~terminal() {}
 
-        terminal< Token, Traits >& operator=( const terminal< Token, Traits >& x )
-        {
-                display_ = x.display_;
-                token_ = x.token_;
-                return *this;
-        }
+    terminal< Token, Traits >& operator=( const terminal< Token, Traits >& x )
+    {
+        display_ = x.display_;
+        token_ = x.token_;
+        return *this;
+    }
 
 private:
-        std::string     display_;
-        Token           token_;
+    std::string     display_;
+    Token           token_;
 
-        friend std::ostream& operator<< <>( std::ostream& os, const terminal< Token, Traits >& r );
+    friend std::ostream& operator<< <>( std::ostream& os, const terminal< Token, Traits >& r );
         
-        friend class symbol< Token, Traits >;
+    friend class symbol< Token, Traits >;
 };
 
 template <class Token,class Traits>
 std::ostream& operator<<( std::ostream& os, const terminal< Token, Traits >& r )
 {
-        os << r.display_;
-        return os;
+    os << r.display_;
+    return os;
 }
 
 /*============================================================================
@@ -166,48 +166,48 @@ std::ostream& operator<<( std::ostream& os, const nonterminal< Token, Traits >& 
 template < class Token, class Traits >
 class nonterminal {
 public:
-        nonterminal() {}
-        nonterminal( const std::string& x ) : name_( x ) {}
-        nonterminal( const nonterminal< Token, Traits >& x ) : name_( x.name_ ) {}
-        ~nonterminal() {}
+    nonterminal() {}
+    nonterminal( const std::string& x ) : name_( x ) {}
+    nonterminal( const nonterminal< Token, Traits >& x ) : name_( x.name_ ) {}
+    ~nonterminal() {}
 
-        const std::string& name() const { return name_; }
+    const std::string& name() const { return name_; }
 
-        nonterminal<Token,Traits>& operator=(const nonterminal<Token,Traits>& x)
-        {
-                name_ = x.name_;
-                return *this;
-        }
+    nonterminal<Token,Traits>& operator=(const nonterminal<Token,Traits>& x)
+    {
+        name_ = x.name_;
+        return *this;
+    }
 
 private:
-        std::string name_;
+    std::string name_;
         
-        friend bool operator== <>( const nonterminal< Token, Traits >& x,
-                                   const nonterminal< Token, Traits >& y );
-        friend bool operator< <>( const nonterminal< Token, Traits >& x,
-                                  const nonterminal< Token, Traits >& y );
-        friend std::ostream& operator<< <>( std::ostream&, const nonterminal< Token, Traits >& y );
+    friend bool operator== <>( const nonterminal< Token, Traits >& x,
+                               const nonterminal< Token, Traits >& y );
+    friend bool operator< <>( const nonterminal< Token, Traits >& x,
+                              const nonterminal< Token, Traits >& y );
+    friend std::ostream& operator<< <>( std::ostream&, const nonterminal< Token, Traits >& y );
 
-        friend class symbol< Token, Traits >;
+    friend class symbol< Token, Traits >;
 };
 
 template < class Token, class Traits >
 bool operator==( const nonterminal< Token, Traits >& x, const nonterminal< Token, Traits >& y )
 {
-        return x.name_ == y.name_;
+    return x.name_ == y.name_;
 }
 
 template < class Token, class Traits >
 bool operator<( const nonterminal< Token, Traits >& x, const nonterminal< Token, Traits >& y )
 {
-        return x.name_ < y.name_;
+    return x.name_ < y.name_;
 }
 
 template < class Token, class Traits >
 std::ostream& operator<<( std::ostream& os, const nonterminal< Token, Traits >& r )
 {
-        os << r.name_;
-        return os;
+    os << r.name_;
+    return os;
 }
 
 /*============================================================================
@@ -235,123 +235,123 @@ struct symbol_hash;
 template <class Token, class Traits >
 class symbol {
 private:
-        enum category_type {
-                type_epsilon,
-                type_terminal,
-                type_nonterminal,
-        };
+    enum category_type {
+        type_epsilon,
+        type_terminal,
+        type_nonterminal,
+    };
 
 public:
-        symbol() : type_( type_epsilon ) {}
-        symbol( const symbol< Token, Traits >& x ) : type_( x.type_ ), token_( x.token_ ), name_( x.name_ ) {}
-        symbol( const epsilon< Token, Traits >& x ) : type_( type_epsilon ) {}
-        symbol( const terminal< Token, Traits>& x ) : type_( type_terminal ), token_( x.token_ ), name_( x.display_ ){}
-        symbol( const nonterminal< Token, Traits >& x ) : type_( type_nonterminal ), name_( x.name_ ) {}
-        ~symbol(){}
+    symbol() : type_( type_epsilon ) {}
+    symbol( const symbol< Token, Traits >& x ) : type_( x.type_ ), token_( x.token_ ), name_( x.name_ ) {}
+    symbol( const epsilon< Token, Traits >& x ) : type_( type_epsilon ) {}
+    symbol( const terminal< Token, Traits>& x ) : type_( type_terminal ), token_( x.token_ ), name_( x.display_ ){}
+    symbol( const nonterminal< Token, Traits >& x ) : type_( type_nonterminal ), name_( x.name_ ) {}
+    ~symbol(){}
 
-        symbol< Token, Traits >& operator=( const symbol< Token, Traits >& x )
-        {
-                type_  = x.type_;
-                token_ = x.token_;
-                name_  = x.name_;
-                return *this;
-        }
-        symbol< Token, Traits >& operator=( const epsilon< Token, Traits >& x )
-        {
-                type_  = type_epsilon;
-                return *this;
-        }
-        symbol< Token, Traits >& operator=( const terminal< Token, Traits >& x )
-        {
-                type_  = type_terminal;
-                token_ = x.token_;
-                name_  = x.name_;
-                return *this;
-        }
-        symbol< Token, Traits >& operator=( const nonterminal< Token, Traits >& x )
-        {
-                type_  = type_nonterminal;
-                name_  = x.name_;
-                return *this;
-        }
+    symbol< Token, Traits >& operator=( const symbol< Token, Traits >& x )
+    {
+        type_  = x.type_;
+        token_ = x.token_;
+        name_  = x.name_;
+        return *this;
+    }
+    symbol< Token, Traits >& operator=( const epsilon< Token, Traits >& x )
+    {
+        type_  = type_epsilon;
+        return *this;
+    }
+    symbol< Token, Traits >& operator=( const terminal< Token, Traits >& x )
+    {
+        type_  = type_terminal;
+        token_ = x.token_;
+        name_  = x.name_;
+        return *this;
+    }
+    symbol< Token, Traits >& operator=( const nonterminal< Token, Traits >& x )
+    {
+        type_  = type_nonterminal;
+        name_  = x.name_;
+        return *this;
+    }
         
-        bool is_epsilon() const         { return type_ == type_epsilon; }
-        bool is_terminal() const        { return type_ == type_terminal; }
-        bool is_nonterminal() const     { return type_ == type_nonterminal; }
-        Token token() const             { assert( is_terminal() ); return token_; }
-        std::string name() const        { assert( is_nonterminal() ); return name_; }
+    bool is_epsilon() const         { return type_ == type_epsilon; }
+    bool is_terminal() const        { return type_ == type_terminal; }
+    bool is_nonterminal() const     { return type_ == type_nonterminal; }
+    Token token() const             { assert( is_terminal() ); return token_; }
+    std::string name() const        { assert( is_nonterminal() ); return name_; }
 
 private:
-        category_type   type_;
-        Token           token_;
-        std::string     name_;
+    category_type   type_;
+    Token           token_;
+    std::string     name_;
 
-        friend class rule< Token, Traits >;
-        friend bool operator== <>( const symbol< Token, Traits >& x, 
-                                   const symbol< Token, Traits >& y );
-        friend bool operator< <>( const symbol< Token, Traits >& x, 
-                                  const symbol< Token, Traits >& y );
-        friend std::ostream& operator<< <>( std::ostream& os, const symbol< Token, Traits >& r );
-        friend struct symbol_hash< Token, Traits >;
+    friend class rule< Token, Traits >;
+    friend bool operator== <>( const symbol< Token, Traits >& x, 
+                               const symbol< Token, Traits >& y );
+    friend bool operator< <>( const symbol< Token, Traits >& x, 
+                              const symbol< Token, Traits >& y );
+    friend std::ostream& operator<< <>( std::ostream& os, const symbol< Token, Traits >& r );
+    friend struct symbol_hash< Token, Traits >;
 };
 
 template <class Token, class Traits >
 struct symbol_hash
 {
-        std::size_t operator()(const symbol< Token, Traits >& s) const
-        {
-                typedef symbol< Token, Traits > symbol_type;
+    std::size_t operator()(const symbol< Token, Traits >& s) const
+    {
+        typedef symbol< Token, Traits > symbol_type;
 
-                std::hash< std::string > str_hash;
-                switch( s.type_ ) {
-                case symbol_type::type_epsilon:      return 0x11111111;
-                case symbol_type::type_terminal:     return std::size_t(s.token_);
-                case symbol_type::type_nonterminal:  return str_hash(s.name_);
-                default: assert(0);     return false;
-                }
+        std::hash< std::string > str_hash;
+        switch( s.type_ ) {
+            case symbol_type::type_epsilon:      return 0x11111111;
+            case symbol_type::type_terminal:     return std::size_t(s.token_);
+            case symbol_type::type_nonterminal:  return str_hash(s.name_);
+            default: assert(0);     return false;
         }
+    }
 };
 
 template < class Token, class Traits > inline
 bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
-        typedef symbol< Token, Traits > symbol_type;
+    typedef symbol< Token, Traits > symbol_type;
 
-        if( x.type_ != y.type_ ) { return false; }
-        switch( x.type_ ) {
+    if( x.type_ != y.type_ ) { return false; }
+    switch( x.type_ ) {
         case symbol_type::type_epsilon:      return true;
         case symbol_type::type_terminal:     return x.token_ == y.token_;
         case symbol_type::type_nonterminal:  return x.name_ == y.name_;
         default: assert(0);     return false;
-        }
+    }
 }
 
 template < class Token, class Traits > inline
 bool operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
-        typedef symbol< Token, Traits > symbol_type;
+    typedef symbol< Token, Traits > symbol_type;
 
-        if( x.type_ < y.type_ ) { return true; }
-        if( y.type_ < x.type_ ) { return false; }
-        switch( x.type_ ) {
+    if( x.type_ < y.type_ ) { return true; }
+    if( y.type_ < x.type_ ) { return false; }
+    switch( x.type_ ) {
         case symbol_type::type_epsilon:      return false;
         case symbol_type::type_terminal:     return x.token_ < y.token_;
         case symbol_type::type_nonterminal:  return x.name_ < y.name_;
         default: assert(0);     return false;
-        }
+    }
 }
 
 template < class Token, class Traits >
 std::ostream& operator<<( std::ostream& os, const symbol< Token, Traits >& r )
 {
-        typedef symbol< Token, Traits > symbol_type;
+    typedef symbol< Token, Traits > symbol_type;
 
-        switch( r.type_ ) {
+    switch( r.type_ ) {
         case symbol_type::type_epsilon:         return os << "{e}";
         case symbol_type::type_terminal:        return os << r.name_;
         case symbol_type::type_nonterminal:     return os << r.name_;
         default: assert(0);                     return os;
-        }
+    }
 }
 
 /*============================================================================
@@ -490,10 +490,10 @@ struct rule_hash {
 template <class Token,class Traits >
 class opgroup {
 public:
-        opgroup(){}
-        ~opgroup(){}
+    opgroup(){}
+    ~opgroup(){}
 
-        opgroup& operator<<(symbol<Token,Traits>&);
+    opgroup& operator<<(symbol<Token,Traits>&);
 };
 
 /*============================================================================

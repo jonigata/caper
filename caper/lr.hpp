@@ -644,7 +644,6 @@ make_lr1_closure(
 {
     typedef symbol< Token, Traits >                 symbol_type;
     typedef rule< Token, Traits >                   rule_type;
-    typedef grammar< Token, Traits >                grammar_type;
     typedef item< Token, Traits >                   item_type;
     typedef symbol_set< Token, Traits >             symbol_set_type;
     typedef item_set< Token, Traits >               item_set_type;

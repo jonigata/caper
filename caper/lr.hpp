@@ -585,6 +585,7 @@ make_lr0_closure(
 
                         const symbol_type& y = x.rule().right()[ x.cursor() ];
                         if( !y.is_nonterminal() ) { continue; }
+                        if( added.find( y.name() ) != added.end() ) { continue; }
 
                         int n = 0;
                         typename grammar_type::const_iterator end2 = g.end();
@@ -592,7 +593,6 @@ make_lr0_closure(
                                 const rule_type& z = (*j);
                                 const typename rule_type::nonterminal_type& left = z.left();
 
-                                if( added.find( left.name() ) != added.end() ) { continue; }
                                 if( y.name() != left.name() ) { continue; }
 
                                 new_cores.insert( core_type( n, z, 0 ) ) ; 

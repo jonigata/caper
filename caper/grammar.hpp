@@ -35,34 +35,36 @@ template < class Token, class Traits > class symbol;
 template < class T >
 class intrusive_rc_ptr {
 public:
-        intrusive_rc_ptr() : p_(NULL) {}
-        intrusive_rc_ptr( T* p ) : p_( p ) { if( p_ ) { p_->addref(); } }
-        intrusive_rc_ptr( const intrusive_rc_ptr& x ) : p_( x.p_ ) { if( p_ ) { p_->addref(); } }
-        ~intrusive_rc_ptr() { if( p_ ) { p_->release(); } }
+    intrusive_rc_ptr() : p_(NULL) {}
+    intrusive_rc_ptr( T* p ) : p_( p ) { if( p_ ) { p_->addref(); } }
+    intrusive_rc_ptr( const intrusive_rc_ptr& x ) : p_( x.p_ ) { if( p_ ) { p_->addref(); } }
+    ~intrusive_rc_ptr() { if( p_ ) { p_->release(); } }
 
-        void reset( T* p )
-        {
-                if( p_ ) { p_->release(); }
-                p_ = p;
-                if( p_ ) { p_->addref(); }
-        }                
+    void reset( T* p )
+    {
+        if( p_ ) { p_->release(); }
+        p_ = p;
+        if( p_ ) { p_->addref(); }
+    }                
 
-        intrusive_rc_ptr& operator=( const intrusive_rc_ptr& x )
-        {
-                reset( x.p_ );
-                return *this;
-        }
+    intrusive_rc_ptr& operator=( const intrusive_rc_ptr& x )
+    {
+        reset( x.p_ );
+        return *this;
+    }
 
-        bool operator==( const intrusive_rc_ptr& x ) const { return p_ == x.p_; }
+    bool operator==( const intrusive_rc_ptr& x ) const { return p_ == x.p_; }
 
-        T* operator->() const { return p_; }
-        T& operator*() const { return *p_; }
+    T* operator->() const { return p_; }
+    T& operator*() const { return *p_; }
 
-        bool empty() const { return !p_; }
-        bool unique() const { if( !p_ ) { return false; } return p_->rccount() == 1; }
+    bool empty() const { return !p_; }
+    bool unique() const { if( !p_ ) { return false; } return p_->rccount() == 1; }
+
+    T* get() const { return p_; }
         
 private:
-        T* p_;
+    T* p_;
 
 };
 
@@ -364,6 +366,8 @@ template < class Token, class Traits > class grammar;
 
 template < class Token, class Traits > class rule;
 
+template <class Token, class Traits > struct rule_hash;
+
 template < class Token, class Traits >
 bool operator==( const rule< Token, Traits >& x, 
                  const rule< Token, Traits >& y );
@@ -376,96 +380,104 @@ bool operator<( const rule< Token, Traits >& x,
 template < class Token, class Traits >
 class rule {
 public:
-        typedef nonterminal< Token, Traits >            nonterminal_type;
-        typedef std::vector< symbol< Token, Traits > >  elements_type;
+    typedef nonterminal< Token, Traits >            nonterminal_type;
+    typedef std::vector< symbol< Token, Traits > >  elements_type;
 
 private:
-        struct rule_imp {
-                nonterminal_type        left;
-                elements_type           elements;
+    struct rule_imp {
+        nonterminal_type        left;
+        elements_type           elements;
 
-                rule_imp() { rc_count_ = 0; }
-                rule_imp( const nonterminal_type& n ) : left(n) { rc_count_  = 0; }
-                rule_imp( const nonterminal_type& n, const elements_type& e )
-                        : left(n), elements(e) { rc_count_ = 0; }
+        rule_imp() { rc_count_ = 0; }
+        rule_imp( const nonterminal_type& n ) : left(n) { rc_count_  = 0; }
+        rule_imp( const nonterminal_type& n, const elements_type& e )
+            : left(n), elements(e) { rc_count_ = 0; }
 
-                int rc_count_;                
-                void addref() { rc_count_++; }
-                void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
-                int rccount() { return rc_count_; }
-        };
+        int rc_count_;                
+        void addref() { rc_count_++; }
+        void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
+        int rccount() { return rc_count_; }
+    };
 
-        typedef intrusive_rc_ptr<rule_imp> imp_ptr;
+    typedef intrusive_rc_ptr<rule_imp> imp_ptr;
 
 public:
-        rule(){}
-        explicit rule( const nonterminal_type& x ) : imp( new rule_imp( x ) ) {}
-        rule( const rule< Token, Traits >& x ) : imp( x.imp ) {}
-        ~rule(){}
+    rule(){}
+    explicit rule( const nonterminal_type& x ) : imp( new rule_imp( x ) ) {}
+    rule( const rule< Token, Traits >& x ) : imp( x.imp ) {}
+    ~rule(){}
 
-        rule< Token, Traits >& operator=( const rule< Token, Traits >& x )
-        {
-                imp = x.imp;
-                return *this;
-        }
+    rule< Token, Traits >& operator=( const rule< Token, Traits >& x )
+    {
+        imp = x.imp;
+        return *this;
+    }
 
-        rule<Token,Traits>& operator<<( const symbol<Token,Traits>& s )
-        {
-                enunique();
-                imp->elements.push_back( s );
-                return *this;
-        }
+    rule<Token,Traits>& operator<<( const symbol<Token,Traits>& s )
+    {
+        enunique();
+        imp->elements.push_back( s );
+        return *this;
+    }
     
-        const nonterminal< Token, Traits >&     left() const  { return imp->left; }
-        const elements_type&                    right() const { return imp->elements; }
+    const nonterminal< Token, Traits >&     left() const  { return imp->left; }
+    const elements_type&                    right() const { return imp->elements; }
 
 private:
-        void enunique()
-        {
-                if( !imp.unique() ) { imp.reset( new rule_imp( imp->left, imp->elements ) ); }
-        }
+    void enunique()
+    {
+        if( !imp.unique() ) { imp.reset( new rule_imp( imp->left, imp->elements ) ); }
+    }
 
 private:
-        imp_ptr imp;
+    imp_ptr imp;
     
-        friend bool operator== <>( const rule<Token,Traits>& x,
-                                   const rule<Token,Traits>& y );
-        friend bool operator< <>( const rule<Token,Traits>& x,
-                                  const rule<Token,Traits>& y );
+    friend struct rule_hash< Token, Traits >;
+    friend bool operator== <>( const rule<Token,Traits>& x,
+                               const rule<Token,Traits>& y );
+    friend bool operator< <>( const rule<Token,Traits>& x,
+                              const rule<Token,Traits>& y );
 
 };
 
-template <class Token,class Traits>
+template <class Token,class Traits> inline
 bool operator==( const rule<Token,Traits>& x, const rule<Token,Traits>& y )
 {
-        if( x.imp == y.imp ) { return true; }
-        if( !( x.left() == y.left() ) ) { return false; }
-        return x.right() == y.right();
+    if( x.imp == y.imp ) { return true; }
+    if( !( x.left() == y.left() ) ) { return false; }
+    return x.right() == y.right();
 } 
 
-template <class Token,class Traits>
+template <class Token,class Traits> inline
 bool operator<( const rule<Token,Traits>& x, const rule<Token,Traits>& y )
 {
-        if( x.imp == y.imp ) { return false; }
-        if( x.left() == y.left() ) {
-                return x.right() < y.right();
-        } else {
-                return x.left() < y.left();
-        }
+    if( x.imp == y.imp ) { return false; }
+    if( x.left() == y.left() ) {
+        return x.right() < y.right();
+    } else {
+        return x.left() < y.left();
+    }
 }
 
 template <class Token,class Traits>
 std::ostream& operator<<(std::ostream& os,const rule<Token,Traits>& r)
 {
-	typedef rule< Token, Traits > rule_type;
-        os << r.left() << " ::= ";
-        for( typename rule_type::elements_type::const_iterator i = r.right().begin() ;
-             i != r.right().end() ;
-             ++i ) {
-                os << (*i) << " ";
-        }
-        return os;
+    typedef rule< Token, Traits > rule_type;
+    os << r.left() << " ::= ";
+    for( typename rule_type::elements_type::const_iterator i = r.right().begin() ;
+         i != r.right().end() ;
+         ++i ) {
+        os << (*i) << " ";
+    }
+    return os;
 }
+
+template <class Token, class Traits >
+struct rule_hash {
+    std::size_t operator()(const rule< Token, Traits >& s) const {
+        return reinterpret_cast<std::size_t>(s.imp.get());
+    }
+};
 
 /*============================================================================
  *
@@ -502,8 +514,8 @@ public:
     typedef typename elements_type::reference       reference;
     typedef typename elements_type::const_reference const_reference;
 
-    typedef std::unordered_map<std::string, std::vector<rule_type> > dictionary_type;
-    typedef std::map<rule_type, int>                                 indices_type;
+    typedef std::unordered_map<std::string, std::vector<rule_type> >        dictionary_type;
+    typedef std::unordered_map<rule_type, int, rule_hash<Token, Traits> >   indices_type;
 
 private:
     struct grammar_imp {

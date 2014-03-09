@@ -343,6 +343,7 @@ std::ostream& operator<<( std::ostream& os, const lr0_collection< Token, Traits 
  *
  *==========================================================================*/
 
+/*
 template < class Token, class Traits >
 class lr1_collection : public std::set< item_set< Token, Traits > > {
 public:
@@ -358,6 +359,7 @@ std::ostream& operator<<( std::ostream& os, const lr1_collection< Token, Traits 
     }
     return os;
 }
+*/
 
 /*============================================================================
  *

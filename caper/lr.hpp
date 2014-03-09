@@ -68,8 +68,8 @@ private:
     int             cursor_;
     
 };
-    
-template < class Token, class Traits >
+
+template < class Token, class Traits > inline
 bool operator<( const core< Token, Traits >& x,
                 const core< Token, Traits >& y )
 {
@@ -78,7 +78,7 @@ bool operator<( const core< Token, Traits >& x,
     return x.cursor() < y.cursor();
 }
 
-template < class Token, class Traits >
+template < class Token, class Traits > inline
 bool operator==( const core< Token, Traits >& x,
                  const core< Token, Traits >& y )
 {
@@ -161,13 +161,13 @@ private:
     
 };
 
-template < class Token, class Traits >
+template < class Token, class Traits > inline
 bool operator<( const item< Token, Traits >& x, const item< Token, Traits >& y )
 {
     return x.less_than( y );
 }
 
-template < class Token, class Traits >
+template < class Token, class Traits > inline
 bool operator==( const item< Token, Traits >& x, const item< Token, Traits >& y )
 {
     return x.equal( y );
@@ -570,29 +570,27 @@ make_lr0_closure(
 
     std::unordered_set<std::string> added;
 
-    bool repeat;
+    std::size_t J_size;
     do {
         core_set_type new_cores;
 
-        repeat = false;
-        typename core_set_type::const_iterator end1 = J.end();
-        for( typename core_set_type::const_iterator i = J.begin() ; i != end1 ; ++i ) {
-            const core_type& x = (*i);
-            if( int( x.rule().right().size() ) <= x.cursor() ) { continue; }
+        J_size = J.size();
 
-            const symbol_type& y = x.rule().right()[ x.cursor() ];
+        for(const core_type& x: J) {
+            if (x.over()) { continue; }
+
+            const symbol_type& y = x.curr();
             if( !y.is_nonterminal() ) { continue; }
             if( added.find( y.name() ) != added.end() ) { continue; }
 
             for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
                 new_cores.insert(core_type(z, 0)); 
-                repeat = true;
             }
             added.insert( y.name() );
         }
 
         J.insert( new_cores.begin(), new_cores.end() );
-    } while(repeat);
+    } while(J_size != J.size());
 }
 
 /*============================================================================
@@ -756,28 +754,27 @@ make_lr0_collection(
     make_lr0_closure( s, g );
     C.insert( s );
         
-    bool repeat;
+    std::size_t C_size;
     do {
         lr0_collection_type new_collection; // ‘}“ü‚·‚é€W‡
 
-        repeat=false;
-        for( typename lr0_collection_type::const_iterator i = C.begin() ; i != C.end() ; ++i ) {
-            const core_set_type& I = *i;
-            
-            for( typename symbol_set_type::const_iterator j = syms.begin() ; j != syms.end() ; ++j ) {
-                const symbol_type& X = *j;
+        C_size = C.size();
+
+        for (const core_set_type& I: C) {
+            for (const symbol_type& X: syms) {
                 core_set_type I_dash;
                 make_lr0_goto( I_dash, I, X, g );
 
-                if( !I_dash.empty() && C.find( I_dash ) == C.end() ) {
-                    new_collection.insert( I_dash );
-                    repeat=true;
+                if( !I_dash.empty() ) {
+                    new_collection.insert( std::move(I_dash) );
                 }
             }
         }
 
-        C.insert( new_collection.begin(), new_collection.end() );
-    } while(repeat);
+        for (const core_set_type& c: new_collection) {
+            C.insert(std::move(c));
+        }
+    } while(C_size != C.size());
 }
 
 /*

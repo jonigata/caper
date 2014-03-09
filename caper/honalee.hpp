@@ -72,15 +72,14 @@ make_honalee_closure(
             symbol_set_type f;
             make_vector_first( f, first, v ); 
 
-            int n = 0;
-            for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j, ++n ) {
+            for( typename grammar_type::const_iterator j = g.begin() ; j != g.end() ; ++j ) {
                 // z is [rule(B¨ƒÁ)]
                 const rule_type& z = (*j);
                 if( !(  symbol_type( z.left() ) == y ) ) { continue; }
 
                 // Šelookahead
                 for( typename symbol_set_type::const_iterator k = f.begin() ; k != f.end() ; ++k ) {
-                    item_type item( n, z, 0, *k );
+                    item_type item( z, 0, *k );
                     if( J.find( item ) == J.end() ) {
                         new_items.insert( item );
                     }
@@ -309,7 +308,7 @@ make_lr1_table(
     int setCount = 0;
 
     state_ptr i0( new state_type );
-    i0->items[item_type( 0, g.root_rule(), 0, eof )] = mark_type( true );
+    i0->items[item_type( g.root_rule(), 0, eof )] = mark_type( true );
     i0->number = -1;
     i0->complete = false;
     toDoList.push_back( i0 );
@@ -356,7 +355,6 @@ make_lr1_table(
                                         
                     newSet->items[
                         item_type(
-                            shItem.id(),
                             shItem.rule(),
                             shItem.cursor()+1,
                             shItem.lookahead() ) ] =

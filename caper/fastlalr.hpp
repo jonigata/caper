@@ -196,7 +196,7 @@ make_lalr_table(
 
 	//std::cerr << "5\n";
     // state, kernels‚ðì‚é
-    core_type root_core( 0, g.root_rule(), 0 );
+    core_type root_core( g.root_rule(), 0 );
     for( typename lr0_collection_type::iterator i = I.begin() ; i != I.end() ; ++i ) {
         // V‚µ‚¢ó‘Ô
         state_type& s = table.add_state();

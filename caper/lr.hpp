@@ -45,19 +45,18 @@ public:
     typedef zw::gr::symbol< Token, Traits >        symbol_type;
     
 public:
-    core( int id, const rule_type&  r, int i ) : id_( id ), rule_( r ), cursor_( i ) {}
-    core( int id, const self_type& x ) : id_( x.id ), rule_( x.rule_ ), cursor_( x.cursor_ ) {}
+    core(const rule_type&  r, int i ) : rule_( r ), cursor_( i ) {}
+    core(const self_type& x ) : rule_( x.rule_ ), cursor_( x.cursor_ ) {}
     ~core(){}
 
     self_type& operator=( const self_type& x )
     {
-        id_     = x.id_;
         rule_   = x.rule_;
         cursor_ = x.cursor_;
         return *this;
     }
 
-    int                     id() const      { return id_; }
+    int                     id() const      { return rule_.id(); }
     const rule_type&        rule() const    { return rule_; }
     int                     cursor() const  { return cursor_; }
 
@@ -65,7 +64,6 @@ public:
     bool                    over() const    { return int( rule_.right().size() ) <= cursor_; }
 
 private:
-    int             id_;
     rule_type       rule_;
     int             cursor_;
     
@@ -123,7 +121,7 @@ public:
     typedef zw::gr::rule< Token, Traits >   rule_type;
     
 public:
-    item( int id, const rule_type& r, int c, const symbol_type& s ) : core_( id, r, c ), lookahead_( s ) {}
+    item( const rule_type& r, int c, const symbol_type& s ) : core_( r, c ), lookahead_( s ) {}
     item( const core_type& x, const symbol_type& y ) : core_( x ), lookahead_( y ) {}
     item( const self_type& x ) : core_( x.core_ ), lookahead_( x.lookahead_ ) {}
     ~item(){}
@@ -585,7 +583,7 @@ make_lr0_closure(
             if( added.find( y.name() ) != added.end() ) { continue; }
 
             for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
-                new_cores.insert(core_type(z.id(), z, 0)); 
+                new_cores.insert(core_type(z, 0)); 
                 repeat = true;
             }
             added.insert( y.name() );
@@ -621,7 +619,7 @@ void make_lr0_goto(
         const symbol_type& y = x.curr(); 
         if( !( y == X ) ) { continue; }
 
-        J.insert( core_type( x.id(), x.rule(), x.cursor() + 1 ) ) ; 
+        J.insert( core_type( x.rule(), x.cursor() + 1 ) ) ; 
     }
 
     make_lr0_closure( J, g );
@@ -678,7 +676,7 @@ make_lr1_closure(
 
                 // äelookahead
                 for(const symbol_type& s: f) {
-                    new_items.insert(item_type(z.id(), z, 0, s));
+                    new_items.insert(item_type(z, 0, s));
                 }
             }
         }
@@ -714,7 +712,7 @@ make_lr1_goto(
 
         const symbol_type& y = x.curr();
         if( !( y == X ) ) { continue; }
-        J.insert( item_type( x.id(), x.rule(), x.cursor()+1, x.lookahead() ) );
+        J.insert( item_type( x.rule(), x.cursor()+1, x.lookahead() ) );
     }
 
     make_lr1_closure( J, first, g );
@@ -752,7 +750,7 @@ make_lr0_collection(
 
     // ê≥èÄèWÇÃçÏê¨
     core_set_type s;
-    s.insert( core_type( 0, g.root_rule(), 0 ) );
+    s.insert( core_type( g.root_rule(), 0 ) );
     make_lr0_closure( s, g );
     C.insert( s );
         
@@ -871,7 +869,7 @@ items_to_cores(
     typedef item_set< Token, Traits >       item_set_type;
 
     for( typename item_set_type::const_iterator i = x.begin() ; i != x.end() ; ++i ) {
-        xx.insert( core_type( (*i).id(), (*i).rule(), (*i).cursor() ) );
+        xx.insert( core_type( (*i).rule(), (*i).cursor() ) );
     }
 }
 

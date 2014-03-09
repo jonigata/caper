@@ -563,10 +563,10 @@ make_lr0_closure(
     core_set< Token, Traits >&      J,
     const grammar< Token, Traits >& g )
 {
-    typedef symbol< Token, Traits >         symbol_type;
-    typedef rule< Token, Traits >           rule_type;
-    typedef core< Token, Traits >           core_type;
-    typedef core_set< Token, Traits >       core_set_type;
+    typedef symbol<Token, Traits>         symbol_type;
+    typedef rule<Token, Traits>           rule_type;
+    typedef core<Token, Traits>           core_type;
+    typedef core_set<Token, Traits>       core_set_type;
 
     std::unordered_set<std::string> added;
 
@@ -576,21 +576,21 @@ make_lr0_closure(
 
         J_size = J.size();
 
-        for(const core_type& x: J) {
+        for (const core_type& x: J) {
             if (x.over()) { continue; }
 
             const symbol_type& y = x.curr();
-            if( !y.is_nonterminal() ) { continue; }
-            if( added.find( y.name() ) != added.end() ) { continue; }
+            if (!y.is_nonterminal()) { continue; }
+            if (added.find(y.name()) != added.end()) { continue; }
 
-            for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
+            for (const rule_type& z:(*g.dictionary().find(y.name())).second) {
                 new_cores.insert(core_type(z, 0)); 
             }
-            added.insert( y.name() );
+            added.insert(y.name());
         }
 
-        J.insert( new_cores.begin(), new_cores.end() );
-    } while(J_size != J.size());
+        J.insert(new_cores.begin(), new_cores.end());
+    } while (J_size != J.size());
 }
 
 /*============================================================================
@@ -608,21 +608,19 @@ void make_lr0_goto(
     const symbol< Token, Traits >&          X,
     const grammar< Token, Traits >&         g )
 {
-    typedef symbol< Token, Traits >         symbol_type;
-    typedef core< Token, Traits >           core_type;
-    typedef core_set< Token, Traits >       core_set_type;
+    typedef symbol<Token, Traits> symbol_type;
+    typedef core<Token, Traits>   core_type;
 
-    for( typename core_set_type::const_iterator i = I.begin() ; i != I.end() ; ++i ) {
-        const core_type& x=(*i);
-        if( x.over() ) { continue; }
+    for (const core_type& x: I) {
+        if (x.over()) { continue; }
 
         const symbol_type& y = x.curr(); 
-        if( !( y == X ) ) { continue; }
+        if (!(y == X)) { continue; }
 
-        J.insert( core_type( x.rule(), x.cursor() + 1 ) ) ; 
+        J.insert(core_type(x.rule(), x.cursor()+ 1)); 
     }
 
-    make_lr0_closure( J, g );
+    make_lr0_closure(J, g);
 }
 
 /*============================================================================
@@ -704,18 +702,17 @@ make_lr1_goto(
 {
     typedef symbol< Token, Traits >         symbol_type;
     typedef item< Token, Traits >           item_type;
-    typedef item_set< Token, Traits >       item_set_type;
 
-    for( typename item_set_type::const_iterator i = I.begin() ; i != I.end() ; ++i ) {
-        const item_type& x = (*i);
-        if( x.over() ) { continue; }
+    for (const item_type& x: I) {
+        if (x.over()) { continue; }
 
         const symbol_type& y = x.curr();
-        if( !( y == X ) ) { continue; }
-        J.insert( item_type( x.rule(), x.cursor()+1, x.lookahead() ) );
+        if (!(y == X)) { continue; }
+
+        J.insert(item_type(x.rule(), x.cursor()+1, x.lookahead()));
     }
 
-    make_lr1_closure( J, first, g );
+    make_lr1_closure(J, first, g);
 }
 
 /*============================================================================
@@ -732,27 +729,24 @@ make_lr0_collection(
     lr0_collection< Token, Traits >&        C,
     const grammar< Token, Traits >&         g )
 {
-    typedef symbol< Token, Traits >         symbol_type;
-    //typedef rule< Token, Traits >           rule_type;
-    typedef grammar< Token, Traits >        grammar_type ; 
-    typedef core< Token, Traits >           core_type ; 
-    //typedef item< Token, Traits >           item_type ; 
-    typedef lr0_collection< Token, Traits > lr0_collection_type ; 
-    typedef symbol_set< Token, Traits > symbol_set_type ; 
-    typedef core_set< Token, Traits >   core_set_type ; 
+    typedef symbol<Token, Traits>           symbol_type;
+    typedef core<Token, Traits>             core_type; 
+    typedef lr0_collection<Token, Traits>   lr0_collection_type; 
+    typedef symbol_set<Token, Traits>       symbol_set_type; 
+    typedef core_set<Token, Traits>         core_set_type; 
 
     // ãLçÜÇÃé˚èW
     symbol_set_type syms;
-    for( typename grammar_type::const_iterator i = g.begin(); i != g.end() ; ++i ) {
-        syms.insert( (*i).left() );
-        syms.insert( (*i).right().begin(), (*i).right().end() );
+    for (const auto& r: g) {
+        syms.insert(r.left());
+        syms.insert(r.right().begin(),r.right().end());
     }
 
     // ê≥èÄèWÇÃçÏê¨
     core_set_type s;
-    s.insert( core_type( g.root_rule(), 0 ) );
-    make_lr0_closure( s, g );
-    C.insert( s );
+    s.insert(core_type(g.root_rule(), 0));
+    make_lr0_closure(s, g);
+    C.insert(s);
         
     std::size_t C_size;
     do {
@@ -763,10 +757,10 @@ make_lr0_collection(
         for (const core_set_type& I: C) {
             for (const symbol_type& X: syms) {
                 core_set_type I_dash;
-                make_lr0_goto( I_dash, I, X, g );
+                make_lr0_goto(I_dash, I, X, g);
 
-                if( !I_dash.empty() ) {
-                    new_collection.insert( std::move(I_dash) );
+                if (!I_dash.empty()) {
+                    new_collection.insert(std::move(I_dash));
                 }
             }
         }

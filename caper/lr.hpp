@@ -567,10 +567,9 @@ make_lr0_closure(
         typedef rule< Token, Traits >           rule_type;
         typedef grammar< Token, Traits >        grammar_type;
         typedef core< Token, Traits >           core_type;
-        typedef symbol_set< Token, Traits >     symbol_set_type;
         typedef core_set< Token, Traits >       core_set_type;
 
-        symbol_set_type added;
+        std::unordered_set<std::string> added;
 
         added.reserve(J.size() * g.size() * 2);
 
@@ -593,13 +592,13 @@ make_lr0_closure(
                                 const rule_type& z = (*j);
                                 const typename rule_type::nonterminal_type& left = z.left();
 
-                                if( added.find( left ) != added.end() ) { continue; }
+                                if( added.find( left.name() ) != added.end() ) { continue; }
                                 if( !( y == symbol_type( left ) ) ) { continue; }
 
                                 new_cores.insert( core_type( n, z, 0 ) ) ; 
                                 repeat = true ; 
                         }
-                        added.insert( y );
+                        added.insert( y.name() );
                 }
 
                 J.insert( new_cores.begin(), new_cores.end() );

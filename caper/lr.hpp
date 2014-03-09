@@ -585,7 +585,7 @@ make_lr0_closure(
             if( added.find( y.name() ) != added.end() ) { continue; }
 
             for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
-                new_cores.insert(core_type((*g.indices().find(z)).second, z, 0)); 
+                new_cores.insert(core_type(z.id(), z, 0)); 
                 repeat = true;
             }
             added.insert( y.name() );
@@ -678,7 +678,7 @@ make_lr1_closure(
 
                 // Šelookahead
                 for(const symbol_type& s: f) {
-                    new_items.insert(item_type((*g.indices().find(z)).second, z, 0, s));
+                    new_items.insert(item_type(z.id(), z, 0, s));
                 }
             }
         }

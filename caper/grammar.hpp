@@ -385,13 +385,14 @@ public:
 
 private:
     struct rule_imp {
-        nonterminal_type        left;
-        elements_type           elements;
+        nonterminal_type    left;
+        elements_type       elements;
+        std::size_t         id;
 
-        rule_imp() { rc_count_ = 0; }
-        rule_imp( const nonterminal_type& n ) : left(n) { rc_count_  = 0; }
-        rule_imp( const nonterminal_type& n, const elements_type& e )
-            : left(n), elements(e) { rc_count_ = 0; }
+        rule_imp() { rc_count_ = 0; id = std::size_t(-1); }
+        rule_imp( const nonterminal_type& n ) : left(n) { rc_count_  = 0; id = std::size_t(-1); }
+        rule_imp( const rule_imp& r )
+            : left(r.left), elements(r.elements), id(r.id) { rc_count_ = 0; }
 
         int rc_count_;                
         void addref() { rc_count_++; }
@@ -420,13 +421,20 @@ public:
         return *this;
     }
     
+    void stamp(std::size_t id) {
+        enunique();
+        imp->id = id;
+    }
+
+    std::size_t id() const { return imp->id; }
+
     const nonterminal< Token, Traits >&     left() const  { return imp->left; }
     const elements_type&                    right() const { return imp->elements; }
 
 private:
     void enunique()
     {
-        if( !imp.unique() ) { imp.reset( new rule_imp( imp->left, imp->elements ) ); }
+        if( !imp.unique() ) { imp.reset( new rule_imp( *imp ) ); }
     }
 
 private:
@@ -515,26 +523,25 @@ public:
     typedef typename elements_type::const_reference const_reference;
 
     typedef std::unordered_map<std::string, std::vector<rule_type> >        dictionary_type;
-    typedef std::unordered_map<rule_type, int, rule_hash<Token, Traits> >   indices_type;
 
 private:
     struct grammar_imp {
         rule_type       root;
         elements_type   elements;
         dictionary_type dictionary;
-        indices_type    indices;
 
         grammar_imp() { rc_count_ = 0; }
         grammar_imp( const rule_type& x ) : root( x ) { rc_count_ = 0; elements.push_back( x ); }
         grammar_imp( const grammar_imp& x )
-        : root(x.root), elements(x.elements), dictionary(x.dictionary), indices(x.indices) {
+        : root(x.root), elements(x.elements), dictionary(x.dictionary) {
             rc_count_ = 0;
         }
 
         void add(const rule_type& x) {
-            elements.push_back(x);
-            dictionary[x.left().name()].push_back(x);
-            indices[x] = elements.size() - 1;
+            rule_type y(x);
+            y.stamp(elements.size());
+            elements.push_back(y);
+            dictionary[x.left().name()].push_back(y);
         }
 
         void addref() { rc_count_++; }
@@ -586,7 +593,6 @@ public:
     }
 
     const dictionary_type& dictionary() const { return imp->dictionary; }
-    const indices_type& indices() const { return imp->indices; }
 
 private:
     void enunique()

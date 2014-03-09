@@ -212,7 +212,7 @@ std::ostream& operator<<( std::ostream& os, const nonterminal< Token, Traits >& 
  *
  * class symbol
  *
- * terminal | nontermina | epsilon
+ * terminal | nonterminal | epsilon
  *
  *==========================================================================*/
 
@@ -310,7 +310,7 @@ struct symbol_hash
         }
 };
 
-template < class Token, class Traits >
+template < class Token, class Traits > inline
 bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;
@@ -324,7 +324,7 @@ bool operator==( const symbol< Token, Traits >& x, const symbol< Token, Traits >
         }
 }
 
-template < class Token, class Traits >
+template < class Token, class Traits > inline
 bool operator<( const symbol< Token, Traits >& x, const symbol< Token, Traits >& y )
 {
         typedef symbol< Token, Traits > symbol_type;

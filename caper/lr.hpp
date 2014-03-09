@@ -665,10 +665,9 @@ make_lr1_closure(
 
             // v is [symbol_vector_type(É¿a)]
             symbol_vector_type v;
-            for( int j = x.cursor() + 1 ; j < int( x.rule().right().size() ) ; j++ ) {
-                v.push_back( x.rule().right()[j] );
-            }
-            v.push_back( x.lookahead() );
+            const auto& right = x.rule().right();
+            v.assign(right.begin() + x.cursor() + 1, right.end());
+            v.push_back(x.lookahead());
 
             // f is FIRST(É¿a)
             symbol_set_type f;
@@ -781,6 +780,7 @@ make_lr0_collection(
     } while(repeat);
 }
 
+/*
 template < class Token, class Traits > 
 void 
 make_lr1_collection( 
@@ -827,6 +827,7 @@ make_lr1_collection(
         merge_sets( C, new_items ); 
     } while( repeat ); 
 } 
+*/
  
 /*============================================================================
  *

@@ -207,7 +207,7 @@ private:
 
 public:
     symbol() : type_( type_epsilon ) {}
-    symbol( const symbol< Token, Traits >& x ) : type_( x.type_ ), token_( x.token_ ), name_( x.name_ ) {}
+    symbol( const symbol< Token, Traits >& x ) : type_( x.type_ ), token_( x.token_ ), display_(x.display_), name_( x.name_ ) {}
     symbol( const epsilon< Token, Traits >& x ) : type_( type_epsilon ) {}
     symbol( const terminal< Token, Traits>& x ) : type_( type_terminal ), token_( x.token_ ), display_( x.display_ ){}
     symbol( const nonterminal< Token, Traits >& x ) : type_( type_nonterminal ), name_( x.name_ ) {}
@@ -217,8 +217,8 @@ public:
     {
         type_  = x.type_;
         token_ = x.token_;
-        name_  = x.name_;
         display_ = x.display_;
+        name_  = x.name_;
         return *this;
     }
     symbol< Token, Traits >& operator=( const epsilon< Token, Traits >& x )

@@ -165,13 +165,20 @@ std::ostream& operator<<( std::ostream& os, const nonterminal< Token, Traits >& 
 
 template < class Token, class Traits >
 class nonterminal {
+private:
+    static const std::string* intern(const std::string& s) {
+        static std::set<std::string> env;
+        return &(*(env.insert(s).first));
+    }
+
 public:
     nonterminal() {}
-    nonterminal( const std::string& x ) : name_( x ) {}
+    nonterminal( const std::string& x ) : name_( intern(x) ) {}
     nonterminal( const nonterminal< Token, Traits >& x ) : name_( x.name_ ) {}
     ~nonterminal() {}
 
-    const std::string& name() const { return name_; }
+    const std::string& name() const { return *name_; }
+    const std::string* identity() const { return name_; }
 
     nonterminal<Token,Traits>& operator=(const nonterminal<Token,Traits>& x)
     {
@@ -180,7 +187,7 @@ public:
     }
 
 private:
-    std::string name_;
+    const std::string* name_;
         
     friend bool operator== <>( const nonterminal< Token, Traits >& x,
                                const nonterminal< Token, Traits >& y );
@@ -206,7 +213,7 @@ bool operator<( const nonterminal< Token, Traits >& x, const nonterminal< Token,
 template < class Token, class Traits >
 std::ostream& operator<<( std::ostream& os, const nonterminal< Token, Traits >& r )
 {
-    os << r.name_;
+    os << r.name();
     return os;
 }
 
@@ -245,7 +252,7 @@ public:
     symbol() : type_( type_epsilon ) {}
     symbol( const symbol< Token, Traits >& x ) : type_( x.type_ ), token_( x.token_ ), name_( x.name_ ) {}
     symbol( const epsilon< Token, Traits >& x ) : type_( type_epsilon ) {}
-    symbol( const terminal< Token, Traits>& x ) : type_( type_terminal ), token_( x.token_ ), name_( x.display_ ){}
+    symbol( const terminal< Token, Traits>& x ) : type_( type_terminal ), token_( x.token_ ), display_( x.display_ ){}
     symbol( const nonterminal< Token, Traits >& x ) : type_( type_nonterminal ), name_( x.name_ ) {}
     ~symbol(){}
 
@@ -254,6 +261,7 @@ public:
         type_  = x.type_;
         token_ = x.token_;
         name_  = x.name_;
+        display_ = x.display_;
         return *this;
     }
     symbol< Token, Traits >& operator=( const epsilon< Token, Traits >& x )
@@ -265,7 +273,7 @@ public:
     {
         type_  = type_terminal;
         token_ = x.token_;
-        name_  = x.name_;
+        display_ = x.display_;
         return *this;
     }
     symbol< Token, Traits >& operator=( const nonterminal< Token, Traits >& x )
@@ -279,12 +287,15 @@ public:
     bool is_terminal() const        { return type_ == type_terminal; }
     bool is_nonterminal() const     { return type_ == type_nonterminal; }
     Token token() const             { assert( is_terminal() ); return token_; }
-    std::string name() const        { assert( is_nonterminal() ); return name_; }
+    const std::string& display() const { assert( is_terminal() ); return display_; }
+    const std::string& name() const { assert( is_nonterminal() ); return *name_; }
+    const std::string* identity() const { assert( is_nonterminal() ); return name_; }
 
 private:
-    category_type   type_;
-    Token           token_;
-    std::string     name_;
+    category_type       type_;
+    Token               token_;
+    std::string         display_;
+    const std::string*  name_;
 
     friend class rule< Token, Traits >;
     friend bool operator== <>( const symbol< Token, Traits >& x, 
@@ -302,11 +313,10 @@ struct symbol_hash
     {
         typedef symbol< Token, Traits > symbol_type;
 
-        std::hash< std::string > str_hash;
         switch( s.type_ ) {
             case symbol_type::type_epsilon:      return 0x11111111;
             case symbol_type::type_terminal:     return std::size_t(s.token_);
-            case symbol_type::type_nonterminal:  return str_hash(s.name_);
+            case symbol_type::type_nonterminal:  return reinterpret_cast<std::size_t>(s.name_);
             default: assert(0);     return false;
         }
     }
@@ -348,8 +358,8 @@ std::ostream& operator<<( std::ostream& os, const symbol< Token, Traits >& r )
 
     switch( r.type_ ) {
         case symbol_type::type_epsilon:         return os << "{e}";
-        case symbol_type::type_terminal:        return os << r.name_;
-        case symbol_type::type_nonterminal:     return os << r.name_;
+        case symbol_type::type_terminal:        return os << r.display();
+        case symbol_type::type_nonterminal:     return os << r.name();
         default: assert(0);                     return os;
     }
 }
@@ -522,7 +532,7 @@ public:
     typedef typename elements_type::reference       reference;
     typedef typename elements_type::const_reference const_reference;
 
-    typedef std::unordered_map<std::string, std::vector<rule_type> >        dictionary_type;
+    typedef std::unordered_map<const std::string*, std::vector<rule_type> > dictionary_type;
 
 private:
     struct grammar_imp {
@@ -541,7 +551,7 @@ private:
             rule_type y(x);
             y.stamp(elements.size());
             elements.push_back(y);
-            dictionary[x.left().name()].push_back(y);
+            dictionary[x.left().identity()].push_back(y);
         }
 
         void addref() { rc_count_++; }

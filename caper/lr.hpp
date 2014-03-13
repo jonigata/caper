@@ -568,7 +568,7 @@ make_lr0_closure(
     typedef core<Token, Traits>           core_type;
     typedef core_set<Token, Traits>       core_set_type;
 
-    std::unordered_set<std::string> added;
+    std::unordered_set<const std::string*> added;
 
     std::size_t J_size;
     do {
@@ -581,12 +581,12 @@ make_lr0_closure(
 
             const symbol_type& y = x.curr();
             if (!y.is_nonterminal()) { continue; }
-            if (added.find(y.name()) != added.end()) { continue; }
+            if (added.find(y.identity()) != added.end()) { continue; }
 
-            for (const rule_type& z:(*g.dictionary().find(y.name())).second) {
+            for (const rule_type& z:(*g.dictionary().find(y.identity())).second) {
                 new_cores.insert(core_type(z, 0)); 
             }
-            added.insert(y.name());
+            added.insert(y.identity());
         }
 
         J.insert(new_cores.begin(), new_cores.end());
@@ -669,7 +669,7 @@ make_lr1_closure(
             symbol_set_type f;
             make_vector_first( f, first, v ); 
 
-            for (const rule_type& z: (*g.dictionary().find(y.name())).second) {
+            for (const rule_type& z: (*g.dictionary().find(y.identity())).second) {
                 // z is [rule(BÅ®É¡)]
 
                 // äelookahead
@@ -772,52 +772,52 @@ make_lr0_collection(
 }
 
 /*
-template < class Token, class Traits > 
-void 
-make_lr1_collection( 
-    lr1_collection< Token, Traits >&               C, 
-    const first_collection< Token, Traits>&        first, 
-    const symbol_set< Token, Traits >&             symbols, 
-    const grammar< Token, Traits >&                g) 
-{ 
-    typedef terminal< Token, Traits >              terminal_type; 
-    //typedef rule< Token, Traits >                  rule_type; 
-    //typedef grammar< Token, Traits >               grammar_type; 
-    typedef lr1_collection< Token, Traits >        lr1_collection_type; 
-    typedef symbol_set< Token, Traits >            symbol_set_type; 
-    typedef item< Token, Traits >                  item_type; 
-    typedef item_set< Token, Traits >              item_set_type; 
+  template < class Token, class Traits > 
+  void 
+  make_lr1_collection( 
+  lr1_collection< Token, Traits >&               C, 
+  const first_collection< Token, Traits>&        first, 
+  const symbol_set< Token, Traits >&             symbols, 
+  const grammar< Token, Traits >&                g) 
+  { 
+  typedef terminal< Token, Traits >              terminal_type; 
+  //typedef rule< Token, Traits >                  rule_type; 
+  //typedef grammar< Token, Traits >               grammar_type; 
+  typedef lr1_collection< Token, Traits >        lr1_collection_type; 
+  typedef symbol_set< Token, Traits >            symbol_set_type; 
+  typedef item< Token, Traits >                  item_type; 
+  typedef item_set< Token, Traits >              item_set_type; 
   
-    item_set_type s; 
-    s.insert( item_type( 0, g.root_rule(), 0, terminal_type( "$", Traits::eof() ) ) ); 
+  item_set_type s; 
+  s.insert( item_type( 0, g.root_rule(), 0, terminal_type( "$", Traits::eof() ) ) ); 
   
-    make_lr1_closure( s, first, g ); 
-    C.insert( s ); 
+  make_lr1_closure( s, first, g ); 
+  C.insert( s ); 
   
-    bool repeat; 
-    do { 
-        std::set<item_set_type > new_items;
+  bool repeat; 
+  do { 
+  std::set<item_set_type > new_items;
                   
-        repeat = false; 
-        for( typename lr1_collection_type::const_iterator c = C.begin() ; c != C.end() ; ++c ) { 
-            const item_set_type& I = *c; 
+  repeat = false; 
+  for( typename lr1_collection_type::const_iterator c = C.begin() ; c != C.end() ; ++c ) { 
+  const item_set_type& I = *c; 
               
-            for( typename symbol_set_type::const_iterator i = symbols.begin() ; 
-                 i != symbols.end() ; 
-                 ++i ) { 
-                item_set_type I_dash; 
-                make_lr1_goto( I_dash, I, *i, first, g ); 
+  for( typename symbol_set_type::const_iterator i = symbols.begin() ; 
+  i != symbols.end() ; 
+  ++i ) { 
+  item_set_type I_dash; 
+  make_lr1_goto( I_dash, I, *i, first, g ); 
   
-                if( !I_dash.empty() && C.find(I_dash) == C.end() ){ 
-                    new_items.insert( I_dash ); 
-                    repeat = true; 
-                } 
-            } 
-        } 
+  if( !I_dash.empty() && C.find(I_dash) == C.end() ){ 
+  new_items.insert( I_dash ); 
+  repeat = true; 
+  } 
+  } 
+  } 
           
-        merge_sets( C, new_items ); 
-    } while( repeat ); 
-} 
+  merge_sets( C, new_items ); 
+  } while( repeat ); 
+  } 
 */
  
 /*============================================================================

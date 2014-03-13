@@ -513,16 +513,10 @@ class semantic_action {
 private:
     class semantic_action_imp {
     public:
-        semantic_action_imp() : rc_count_( 0 ) {}
+        semantic_action_imp() {}
         virtual ~semantic_action_imp() {}
 
         virtual void invoke( Value& v, const Arguments& ) = 0;
-
-        void addref() { rc_count_++; }
-        void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
-        int rccount() { return rc_count_; }
-    private:
-        int rc_count_;
     };
 
     template < class F >
@@ -530,34 +524,35 @@ private:
     public:
         concrete_semantic_action_imp( F f ) : f_( f ) {}
         ~concrete_semantic_action_imp(){}
+
         void invoke( Value& v, const Arguments& a ) { v = f_( a ); }
     private:
         F f_;
     };
+    
 public:
     semantic_action() {}
-    semantic_action( const semantic_action& x ) : imp(x.imp) {}
+    semantic_action(const semantic_action& x): imp(x.imp) { }
 
     template < class F >
-    semantic_action( F f ) : imp( new concrete_semantic_action_imp<F>( f ) ) {}
+    semantic_action(F f)
+    : imp(std::make_shared<concrete_semantic_action_imp<F>>(f)) { }
 
     ~semantic_action() {}
 
-    void operator()( Value& v, const Arguments& args ) const
-    {
-        imp->invoke( v, args );
+    void operator()(Value& v, const Arguments& args) const {
+        imp->invoke(v, args);
     }
 
-    semantic_action& operator=( const semantic_action& x )
-    {
+    semantic_action& operator =(const semantic_action& x) {
         imp = x.imp;
         return *this;
     }
 
-    bool empty() const { return imp.empty(); }
+    bool empty() const { return !imp; }
 
 private:
-    intrusive_rc_ptr<semantic_action_imp> imp;
+    std::shared_ptr<semantic_action_imp> imp;
         
 };
 

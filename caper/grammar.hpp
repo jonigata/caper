@@ -14,6 +14,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <memory>
 
 namespace zw {
 
@@ -23,50 +24,6 @@ namespace gr {
 // ëOï˚éQè∆
 
 template < class Token, class Traits > class symbol;
-
-/*============================================================================
- *
- * class intrusive_rc_ptr
- *
- * boost::instrusive_ptrÇ∆ìØÇ∂ÇÊÇ§Ç»Ç‡ÇÃ
- *
- *==========================================================================*/
-
-template < class T >
-class intrusive_rc_ptr {
-public:
-    intrusive_rc_ptr() : p_(NULL) {}
-    intrusive_rc_ptr( T* p ) : p_( p ) { if( p_ ) { p_->addref(); } }
-    intrusive_rc_ptr( const intrusive_rc_ptr& x ) : p_( x.p_ ) { if( p_ ) { p_->addref(); } }
-    ~intrusive_rc_ptr() { if( p_ ) { p_->release(); } }
-
-    void reset( T* p )
-    {
-        if( p_ ) { p_->release(); }
-        p_ = p;
-        if( p_ ) { p_->addref(); }
-    }                
-
-    intrusive_rc_ptr& operator=( const intrusive_rc_ptr& x )
-    {
-        reset( x.p_ );
-        return *this;
-    }
-
-    bool operator==( const intrusive_rc_ptr& x ) const { return p_ == x.p_; }
-
-    T* operator->() const { return p_; }
-    T& operator*() const { return *p_; }
-
-    bool empty() const { return !p_; }
-    bool unique() const { if( !p_ ) { return false; } return p_->rccount() == 1; }
-
-    T* get() const { return p_; }
-        
-private:
-    T* p_;
-
-};
 
 /*============================================================================
  *
@@ -399,22 +356,17 @@ private:
         elements_type       elements;
         std::size_t         id;
 
-        rule_imp() { rc_count_ = 0; id = std::size_t(-1); }
-        rule_imp( const nonterminal_type& n ) : left(n) { rc_count_  = 0; id = std::size_t(-1); }
+        rule_imp() { id = std::size_t(-1); }
+        rule_imp( const nonterminal_type& n ) : left(n) { id = std::size_t(-1); }
         rule_imp( const rule_imp& r )
-            : left(r.left), elements(r.elements), id(r.id) { rc_count_ = 0; }
-
-        int rc_count_;                
-        void addref() { rc_count_++; }
-        void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
-        int rccount() { return rc_count_; }
+            : left(r.left), elements(r.elements), id(r.id) { }
     };
 
-    typedef intrusive_rc_ptr<rule_imp> imp_ptr;
+    typedef std::shared_ptr<rule_imp> imp_ptr;
 
 public:
     rule(){}
-    explicit rule( const nonterminal_type& x ) : imp( new rule_imp( x ) ) {}
+    explicit rule( const nonterminal_type& x ) : imp( std::make_shared<rule_imp>( x ) ) {}
     rule( const rule< Token, Traits >& x ) : imp( x.imp ) {}
     ~rule(){}
 
@@ -444,7 +396,7 @@ public:
 private:
     void enunique()
     {
-        if( !imp.unique() ) { imp.reset( new rule_imp( *imp ) ); }
+        if( !imp.unique() ) { imp = std::make_shared<rule_imp>( *imp ); }
     }
 
 private:
@@ -540,12 +492,10 @@ private:
         elements_type   elements;
         dictionary_type dictionary;
 
-        grammar_imp() { rc_count_ = 0; }
-        grammar_imp( const rule_type& x ) : root( x ) { rc_count_ = 0; elements.push_back( x ); }
+        grammar_imp() { }
+        grammar_imp( const rule_type& x ) : root( x ) { elements.push_back( x ); }
         grammar_imp( const grammar_imp& x )
-        : root(x.root), elements(x.elements), dictionary(x.dictionary) {
-            rc_count_ = 0;
-        }
+        : root(x.root), elements(x.elements), dictionary(x.dictionary) {}
 
         void add(const rule_type& x) {
             rule_type y(x);
@@ -553,17 +503,12 @@ private:
             elements.push_back(y);
             dictionary[x.left().identity()].push_back(y);
         }
-
-        void addref() { rc_count_++; }
-        void release() { rc_count_--; if( !rc_count_ ) { delete this; } }
-        int rccount() { return rc_count_; }
-        int rc_count_;
     };
 
-    typedef intrusive_rc_ptr< grammar_imp > imp_ptr;
+    typedef std::shared_ptr< grammar_imp > imp_ptr;
 
 public:
-    explicit grammar( const rule<Token,Traits>& r ) : imp( new grammar_imp( r ) ) {}
+    explicit grammar( const rule<Token,Traits>& r ) : imp( std::make_shared<grammar_imp>( r ) ) {}
     grammar( const grammar& x ) : imp( x.imp ) {}
     ~grammar(){}
 
@@ -607,7 +552,7 @@ public:
 private:
     void enunique()
     {
-        if( !imp.unique() ) { imp.reset( new grammar_imp( *imp ) ); }
+        if( !imp.unique() ) { imp = std::make_shared<grammar_imp>( *imp ); }
     }
 
 private:

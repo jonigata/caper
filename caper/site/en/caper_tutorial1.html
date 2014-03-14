@@ -86,20 +86,19 @@ int main( int, char** )
 		given as a template parameter when <code>Parser</code> is instantiated.
 		If there is one or more semantic action functions, then you must define this function for safe type conversion.</p>
 		<p>This <code>upcast</code> function defines y-to-x conversion.
-		This time, accepted result of <code>Greet</code> defined in the grammar file  
-		
-		The type of <code>&quot;HelloWorld&quot;</code> that means the acceptance result is int.
+		This time, the acceptance result type of <code>&quot;HelloWorld&quot;</code> of <code>Greet</code> defined 
+		in the grammar file, is int.
 		The type of whole semantic values given as the 1st template paramter of the parser, is also int.
 		So <code>&quot;void upcast( int&amp; x, int y ) { x = y; }&quot;</code> is OK.</p>
 		<p>Line 9 is the semantic action of this tutorial main theme.
-		Each type of the parameters and return value of semantic action function is defined by grammar rule.
+		Each type of the parameters and return value of semantic action function are defined by the grammar rule.
 		Let's see <code>HelloWorld</code> again.</p>
 <pre>
 HelloWorld&lt;int&gt; : [Greet] Hello World;
 </pre>
 		<p>This definition determines:
 		  <ul>
-			<li>The type of this rule (== the return value of the semantic action) is the int type specified at <code>HelloWorld&lt;int&gt;</code>.</li>
+			<li>The type of this rule (== the return value of the semantic action) is the int type, specified by <code>HelloWorld&lt;int&gt;</code>.</li>
 			<li>There is no parameter.</li>
 		  </ul>
 		  (We will explain about parameters at later tutorials).</p>

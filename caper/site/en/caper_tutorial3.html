@@ -55,8 +55,8 @@ Term&lt;int&gt; : [Identity] Number(0)
           | [MakeDiv] Term(0) Div Number(1)
           ;
 </pre>
-		  <p>If you experienced BNF usage, you can easily understand almost all.
-		  As described above, the element not following "(digit)" is not used in the semantic action.</p>
+		  <p>If you experienced usage of BNF, you can easily understand almost all.
+		  As described above, the element not followed by "(digit)" is not used in the semantic action.</p>
 
 		  <h2><a name="i2"> </a> The Handling File</h2>
 <pre>
@@ -195,17 +195,17 @@ int main( int, char** )
 }
 </pre>
 
-		<p>This time, a scanner was necessary, so I prepared a handwritten scanner.
-		There is no difficult stuff. Read the source carefully.
+		<p>This time, for a scanner was necessary, so I prepared a handwritten scanner.
+		There is no difficult stuffs. Read the source carefully.
 		If handwriting is troublesome for you, you can use <code>boost::regex</code> etc.</p>
-		<p>At semantic action, there is no new type item.</p>
+		<p>At semantic actions, there is no new type items.</p>
 		<p>The <code>main</code> function introduced new item as below:</p>
 
 		<h4><a name="i3"> </a> The return value of <code>parser.post</code></h4>
-		<p>Returns <code>true</code> when the whole was accepted, or error was detected, otherwise returns <code>false</code>.</p>
+		<p>Returns <code>true</code> when the whole was accepted or error was detected; otherwise returns <code>false</code>.</p>
 		<h4><a name="i4"> </a> The return value of <code>parser.accept</code></h4>
 		<p><code>parser.accept</code> is valid only after <code>parser.post</code> returned <code>true</code>.
-		If error occurs, <code>v</code> becomes indefinite value and the function returns <code>false</code>.
+		If error occurs, <code>v</code> becomes an indefinite value and the function returns <code>false</code>.
 		Otherwise it is successful, <code>v</code> is assigned the value of the left side of the root grammar, and
 		the function returns <code>true</code>.</p>
 		<p>If you experienced yacc etc., there is no difficult thing.</p>

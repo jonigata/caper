@@ -86,7 +86,7 @@ struct BinOpExpr {
 };
 </pre>
         <p>(The output function is omitted)</p>
-        <p><code>calc1</code>Ç∆ìôâøÇÃÇ‡ÇÃÇ…ÇµÇÊÇ§Ç∆Ç∑ÇÈÇ∆ÅAëÂëÃÇ±ÇÃÇÊÇ§Ç…Ç»ÇËÇ‹Ç∑ÅB</p>
+        <p>If we let it equivalent to <code>calc1</code>, it become like it.</p>
 
         <h2><a name="i2"> </a> The Grammar File</h2>
 <pre>
@@ -110,7 +110,7 @@ Number&lt;int&gt;
 Term&lt;Term&gt;
 Expr&lt;Expr&gt;
 </pre>
-        <p>This time program doesn't leak memory.</p>
+        <p>This time program doesn't leak any memory.</p>
 
         <h2><a name="i3"> </a> The Handling File</h2>
 <pre>
@@ -295,17 +295,17 @@ int main( int, char** )
         return 0;
 }
 </pre>
-        <p>At first, as follows, define the type that can store all the semantic values.</p>
+        <p>At first, as follows, define the almighty type that stores all the semantic values.</p>
 <pre>
 boost::variant&lt; int, Term, Expr &gt; Value;
 </pre>
-        <p>We use this for the return values of scanner or template parameter.
-        This time, there was only tree kinds of semantic items, so we used <code>variant</code>.
+        <p>We use this for the return values of scanner or template parameters.
+        This time, there was only three kinds of semantic items, so we used <code>variant</code>.
         If you want to define larger grammar, you may want <code>boost::any</code>
         to avoid the upper limit of <code>variant</code>.</p>
         <p>(It's different matter from <code>variant</code> used in <code>calc2_ast.hpp</code>. I warned!)</p>
-        <p>At second, semantic action.
-        Almost trivial, but you have to be careful about <code>downcast</code> and <code>upcast</code>.
+        <p>At second, semantic actions.
+        It's almost trivial, but you have to be a bit careful about <code>downcast</code> and <code>upcast</code>.
         You should write them like following code in order to adapt to <code>boost::variant</code> specification.</p>
 <pre>
 template &lt; class T &gt;

@@ -113,29 +113,31 @@ typedef Value value_type;
 
 ////////////////////////////////////////////////////////////////
 // concrete Node
-struct Term : public Node {
+struct TermOrRecovery : public Node {
+    TermOrRecovery(const Range& r) : Node(r) {}
+};
+
+struct Term : public TermOrRecovery {
     std::string     name;
     int             index;
 
     Term(const Range& r, const std::string& as, int ai)
-        : Node(r), name(as), index(ai) {}
+        : TermOrRecovery(r), name(as), index(ai) {}
 };
 
-struct Recovery : public Node {
-    std::shared_ptr<Term> term;
-    
-    Recovery(const Range& r, const std::shared_ptr<Term>& p)
-        : Node(r), term(p) {}
+struct Recovery : public TermOrRecovery {
+    Recovery(const Range& r) : TermOrRecovery(r) {}
 };
 
 struct Choise : public Node {
-    typedef std::vector<std::shared_ptr<Term>> terms_type;
+    typedef std::vector<std::shared_ptr<TermOrRecovery>>
+        elements_type;
 
-    std::string name;
-    terms_type  terms;
+    std::string     name;
+    elements_type   elements;
 
-    Choise(const Range& r, const std::string& as, const terms_type& at)
-        : Node(r), name(as), terms(at) {}
+    Choise(const Range& r, const std::string& as, const elements_type& ae)
+        : Node(r), name(as), elements(ae) {}
 };
 
 struct Choises : public Node {
@@ -257,12 +259,19 @@ struct GenerateOptions {
 };
 
 struct semantic_action_argument {
-    int             src_index;
+    int             src_index = -1;
     std::string     type;
+
+    semantic_action_argument(){}
+    semantic_action_argument(int ai, const std::string& at)
+        : src_index(ai), type(at) {}
 };
 struct semantic_action {
     std::string                                 name;
     std::map<size_t, semantic_action_argument>  args;
+
+    semantic_action() {}
+    semantic_action(const std::string& n) : name(n) {}
 };
 
 typedef std::map<tgt::rule, semantic_action>    action_map_type;
@@ -279,6 +288,11 @@ std::shared_ptr<T> get_node(const value_type& v) {
 template <class T>
 const std::string& get_symbol(const value_type& v) {
     return boost::get<T>(v.data).s;
+}
+
+template <class T, class U>
+std::shared_ptr<T> downcast(U p) {
+    return std::dynamic_pointer_cast<T>(p);
 }
 
 template <class T>

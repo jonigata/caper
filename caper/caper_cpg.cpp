@@ -209,7 +209,7 @@ struct derivation0_action { // lbracket  << rbracket;
         auto p = std::make_shared<Choise>(
             range(args),
             "",
-            std::vector<std::shared_ptr<Term>>());
+            std::vector<std::shared_ptr<TermOrRecovery>>());
         return Value(p);
     }
 };
@@ -218,14 +218,14 @@ struct derivation1_action { // lbracket << identifier << rbracket;
         auto p = std::make_shared<Choise>(
             range(args),
             get_symbol<Identifier>(args[1]),
-            std::vector<std::shared_ptr<Term>>());
+            std::vector<std::shared_ptr<TermOrRecovery>>());
         return Value(p);
     }
 };
 struct derivation2_action { // derivation << term;
     value_type operator()(const arguments_type args) const {
         std::shared_ptr<Choise> q = get_node<Choise>(args[0]);
-        q->terms.push_back(get_node<Term>(args[1]));
+        q->elements.push_back(get_node<TermOrRecovery>(args[1]));
 
         return Value(q);
     }
@@ -246,10 +246,9 @@ struct term1_action { // identifier << lparen << integer << rparen;
         return Value(p);
     }
 };
-struct term2_action { // recovery << identifier;
+struct term2_action { // recovery;
     value_type operator()(const arguments_type args) const {
-        auto p = std::make_shared<Recovery>(
-            range(args), get_node<Term>(args[1]));
+        auto p = std::make_shared<Recovery>(range(args));
         return Value(p);
     }
 };
@@ -351,7 +350,7 @@ void make_cpg_parser(cpg::parser& p) {
     // ...右辺の項目
     cpg::rule r_term0(term);                   r_term0 << identifier;
     cpg::rule r_term1(term);                   r_term1 << identifier << lparen << integer << rparen;
-    cpg::rule r_term2(term);                   r_term2 << recovery << identifier;
+    cpg::rule r_term2(term);                   r_term2 << recovery;
 
     // 入力ファイルの文法作成
     cpg::grammar g(r_document);
@@ -441,11 +440,6 @@ void make_cpg_parser(cpg::parser& p) {
 
 ////////////////////////////////////////////////////////////////
 // collect_informations
-template <class T, class U>
-std::shared_ptr<T> downcast(U p) {
-    return std::dynamic_pointer_cast<T>(p);
-}
-
 void collect_informations(
     GenerateOptions&    options,
     symbol_map_type&    terminal_types,
@@ -509,8 +503,10 @@ void collect_informations(
             }
             methods.insert(choise->name);
 
-            for(const auto& term: choise->terms) {
-                unknown.insert(term->name);
+            for(const auto& term_or_recovery: choise->elements) {
+                if (auto p = downcast<Term>(term_or_recovery)) {
+                    unknown.insert(p->name);
+                }
             }
         }
     }

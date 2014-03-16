@@ -1,6 +1,8 @@
 .SUFFIXES: .o .c .cpp .d
-CC		= g++
-CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11
+#CC		= g++
+#CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11
+CC		= clang++
+CPPFLAGS	= -O3 -std=c++11
 TARGET		= caper
 OBJS		= $(TARGET).o caper_cpg.o caper_tgt.o caper_generate_cpp.o caper_generate_d.o caper_generate_csharp.o caper_generate_js.o caper_generate_java.o
 #TARGET		= grammar_test

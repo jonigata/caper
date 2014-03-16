@@ -52,12 +52,12 @@
 		  <dl>Similar to yacc.</dl>
 		</dl>
 		<p>By introducing reusability raised by modern programming,
-		it makes parser generator used widely,
+		it can make parser generators used widely,
 		but the existing parser generaters didn't escape from old design,
 		and they are difficult to use.
 		So I did reinvent wheels.
-		I removed inconvenience points as possible.</p>
-		<p>Basically based on the algorithm of the dragon book (partially &quot;Modern Compiler Implementation in Ml&quot;).
+		I removed inconvenient points as possible.</p>
+		<p>Caper is basically and simply based on the algorithm of the dragon book (partially &quot;Modern Compiler Implementation in Ml&quot;).
 		Don't expect academical freshness.</p>
 
 		<h2><a name="i6"> </a> The Description of Source Files</h2>
@@ -90,7 +90,7 @@
 		then the call of <code>post</code> that started the <code>SemanticAction</code> up, will be stopped,
 		the internal status (stack) of parser will be also rollbacked to the moment just before the call of <code>post</code>.
 		So to say, it's a "strong guarantee".</p>
-		<p>On other hand, I have no good plan to realize "strong guarantee" without high cost about treatment of stack including process of <code>Value</code>
+		<p>On other hand, I have no good idea to realize "strong guarantee" without high cost about treatment of stack including process of <code>Value</code>
 		(I have imagined backup of the whole stack only).
 		<p>In practical use, problems will be occured if template parameter <code>&quot;Value&quot;</code> causes</p>
 		<ul  class="list1">
@@ -99,10 +99,10 @@
 		  <li> the exception in <code>operator=</code></li>
 		  <li> or the exception in the destructor.</li>
 		</ul>
-		<p>There is no problem if you don't them.
+		<p>There is no problem if your application doesn't throw these exceptions.
 		For example, no problem if <code>Value</code> was <code>int</code> or just a pointer.</p>
-		<p>If <code>Value</code> was generated exceptions in above member function, the status of parser may be indefinite,
-		and the result of the followed <code>post</code> will be indefinite (acceess exception may be caused).
+		<p>If <code>Value</code> was generated exceptions in above member function, the status of parser will be indefinite,
+		and the result of the followed <code>post</code> will be also indefinite (acceess exception may be caused).
 		If it became indefinite,
 		you can resume by doing <code>reset</code>, but 
 		the status of parser will return to the initial status.
@@ -111,7 +111,7 @@
 		You can destroy even if indefinite.</p>
 		<p>If you want to save the status of parser (it may take time),
 		you may create another parser instance by using copy constructor.
-		Above "stack copy is high burden" was mensioned about the popular worst condition,
+		Above "stack copy is high burden" was mensioned about the general worst conditions,
 		I don't think the stack of LALR parser will be deep practically (depends on grammar and data).</p>
 		<p>In addition, if caper uses <code>std::vector</code> for stack,
 		<code>std::vector</code> can cause exceptions in memory allocation.

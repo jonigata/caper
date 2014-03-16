@@ -49,11 +49,11 @@
           <li> There are only 4 public member functions ( <code>reset</code>, <code>post</code>, <code>accept</code>, <code>error</code> ).</li>
         </ul>
         
-        <h3>Push type parser similar to <a href="http://www.chibutsu.org/faf/translated/LemonPG/LemonParserGenerator.html">Lemon</a></h3>
+        <h3>Push-type parser similar to <a href="http://www.chibutsu.org/faf/translated/LemonPG/LemonParserGenerator.html">Lemon</a></h3>
         <ul  class="list1">
           <li> Does nothing until a token is <code>post</code> to the parser instance.</li>
           <li> So, there is no concept of scanner (nor scanner cooperation).</li>
-          <li> Cancellable halfway. There is no side effect on destruction it became unnecessary.</li>
+          <li> Cancellable halfway. There is no side effect on destruction when it became unnecessary.</li>
           <li> The allocation of parser instance can be on heap or on stack.</li>
           <li> Suspending/Resuming is unrestrained (it doesn't move if you don't post).</li>
         </ul>
@@ -149,13 +149,13 @@
         <p>
           This version is still beta.
           We didn't verify its stability yet.
-          The specification may be changed (especially by demands)ÅB
+          The specification may be changed (especially by demands).
           Treat as a toy.
           </p>
         <p>
-          The implementation of Stack&lt;T&gt; is very anxious when STL is off (especially T is complicated type)ÅB
-          Remove <code>%dont_use_stl;</code> if it didn't work well when you specified it
-          We want fix of C++ experts</p>
+          The implementation of Stack&lt;T&gt; is very anxious when STL is off (especially T is complicated type).
+          Remove <code>%dont_use_stl;</code> if it didn't work well when you specified it.
+          We want fix by C++ experts.</p>
 
       </div>
       <div id="footer">Content &copy; 2006-2008 Naoyuki HIRAYAMA</div>

@@ -46,22 +46,20 @@
 
 HelloWorld&lt;std::string&gt; : [Greet] Hello(0) World(1);
 </pre>
-		<p>The difference from <code>hello1</code> is,
-		  two points of
+		<p>The difference from <code>hello1</code> are two points:
 		  <ul  class="list1">
-			<li> there is a type with token.</li>
-			<li> there is parameter with <code>Greet</code>.</li>
+			<li> There is a type with token.</li>
+			<li> There is one parameter with <code>Greet</code>.</li>
 		  </ul>
 		  </p>
-		<p>At Line 1, 
-		capar will be recognize the types of 
+		<p>At Line 1, capar will be recognize the types of 
 		<code>Hello</code> =&gt; <code>std::string</code>, <code>World</code> =&gt; <code>std::string</code>
 		by type specification for token.
-		By this, if token was given at later grammar, then the parser regards the type of the value is same type as associated one.</p>
-		<p>At Line 5, it specifies the parameter on <code>Greet</code> call. The part of "(digit)" is it. 
+		By this, if token was given at later grammar, then the parser regards the type of the semantic value is the same type as associated one.</p>
+		<p>At Line 5, it specifies the parameter on <code>Greet</code> call. The part of "(digit)" is just it. 
 		This digit indicates n of n-th parameter (base is zero).
-		The symbols without "(digit)" won't be used on call of semantic action.
-		At this definition,
+		The symbols without "(digit)" won't be used on the call of its semantic action.
+		By this definition,
 		the 0-th parameter of <code>Greet</code> is the value of <code>Hello</code>, 
 		the 1-th parameter is the value of <code>World</code>, correspondingly.</p>
 		<h2><a name="i2"> </a> The Calling File</h2>
@@ -96,13 +94,13 @@ int main( int, char** )
 </pre>
 		<p>The semantic actions became a bit compilicated.</p>
 		<p>This time introduced <code>&quot;downcast&quot;</code> is a function to provide conversion
-		from type <code>Value</code> of <code>Parser</code>, to each type of each symbol.
+		from type <code>Value</code> of <code>Parser</code>, to each type of symbol.
 		It's just a inverse of <code>upcast</code>.
-		This time, "the type of the whole set of values" is <code>std::string</code>, 
+		This time, "the type of the whole set of semantic values" is <code>std::string</code>, 
 		the "individual type" is also <code>std::string</code>
 		(Either of <code>Hello</code>, <code>World</code>, <code>HelloWorld</code> is <code>std::string</code> type).
 		Thus it's just one line of <code>&quot;void downcast( std::string&amp; x, const std::string&amp; y ) { x = y; }&quot;</code>.</p>
-		<p>The signature of <code>Greet</code> is given as below</p>
+		<p>The signature of <code>Greet</code> is given as below:</p>
 		<pre>
 std::string Greet( const std::string&amp; x, const std::string&amp; y );
 		</pre>

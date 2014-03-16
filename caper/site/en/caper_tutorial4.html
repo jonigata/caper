@@ -117,23 +117,23 @@ Term&lt;Term*&gt; : [MakeTerm] Number(0)
             ;
 </pre>
 
-		<p>The grammar file is not very changed from <code>calc0</code>, but the type of each symbol was changed as below:</p>
+		<p>The grammar file was not very changed from <code>calc0</code>, but the types of symbol were changed as below:</p>
 		<pre>
 Number&lt;Number*&gt;
 Expr&lt;Expr*&gt;
 Term&lt;Term*&gt;
 		</pre>
-		<p>*** We don't think about memory leaks for easiness! ***</p>
-		<p>The parser this grammar generates needs the types of <code>&quot;Number&quot; &quot;Expr&quot; &quot;Term&quot;</code> etc., 
-		so you must <code>include</code> the AST definition before parser is <code>include</code>'d.
+		<p>*** We don't think about memory leaks for simplicity! ***</p>
+		<p>The parser this grammar generates, needs the types of <code>&quot;Number&quot; &quot;Expr&quot; &quot;Term&quot;</code> etc., 
+		so you must <code>#include</code> the AST definition before parser is <code>#include</code>'d.
 		So, please create the following file and save it as <code>&quot;calc1.hpp&quot;</code>.</p>
 		<pre>
 #include &quot;cacl1_ast.hpp&quot;
 #include &quot;cacl1_parser.hpp&quot;
 		</pre>
 		<p>
-		You must <code>include</code> <code>calc1_ast.hpp</code> before <code>includ</code>'ing
-		<code>calc1_parser.hpp</code>, generated from <code>calc1_parser.cpg</code>.
+		You must <code>#include</code> <code>calc1_ast.hpp</code> before <code>#includ</code>'ing
+		<code>calc1_parser.hpp</code>, that is generated from <code>calc1_parser.cpg</code>.
 		Otherwise compilation error occurs.</p>
 
 		<h2><a name="i3"> </a> The Handling File</h2>
@@ -278,29 +278,29 @@ int main( int, char** )
         return 0;
 }
 </pre>
-		<p>A little bit long.</p>
-		<p>At first, <code>scanner</code> returns token value in the type of <code>Node*</code> (not <code>int</code>).
+		<p>Oh, it's a little bit long.</p>
+		<p>At first, the <code>scanner</code> returns the token value as the type of <code>Node*</code> (not <code>int</code>).
 		Concretely, it returns the value of <code>new Number(n)</code> on returning <code>token_Number</code>.</p>
-		<p>At second, we will explain about semantic action.
+		<p>At second, we will explain semantic actions.
 		This time, we use <code>Node*</code> for the type of the whole set of semantic values.
-		And then, as described at the items of the grammar file,
+		And then, as shown at the items of the grammar file,
 		each type of grammar items is different from <code>Node*</code>, so we must convert to adjust them.</p>
-		<p>This case, <code>downcast</code>
+		<p>This case, the <code>downcast</code> function
 		does convert <code>Node*</code> to <code>Expr*/Term*/Number*</code>.
 		All of <code>Expr/Term/Number</code> are <code>Node</code> classes, 
-		so we can handle them by the definition of <code>template</code> member function.</p>
+		so we can handle them by the definition of the following <code>template</code> member function.</p>
 		<pre>
 template &lt; class T &gt;
 void downcast( T*&amp; x, Node* y ) { x = static_cast&lt;T*&gt;( y ); }
 		</pre>
 		<p>Inversely, to convert <code>Expr*/Term*/Number*</code> to <code>Node*</code>,
 		all of <code>Expr/Term/Number</code> are <code>Node</code>-derived classes,
-		so we can handle them by the following way:</p>
+		so we can also handle them by the following way:</p>
 		<pre>
 template &lt; class T &gt;
 void upcast( Node*&amp; x, T* y ) { x = y; }
 		</pre>
-		<p>Considering the facts mentioned above,  the semantic action will become as below.</p>
+		<p>Considering the facts mentioned above, the semantic action will become as below.</p>
 		<pre>
 Expr* MakeAdd( Expr* x, Term* y )
 {
@@ -310,7 +310,7 @@ Expr* MakeAdd( Expr* x, Term* y )
 </pre>
 		<p>No difficult things.
 		There is no casting code seemingly.</p>
-		<p>The <code>main</code> function is almost not changed. 
+		<p>The <code>main</code> function is not very changed. 
 		The result of <code>accept</code> is the root node of AST.
 		The <code>calc</code> function is executed to display the calcucation result.</p>
 

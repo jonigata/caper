@@ -63,19 +63,17 @@ public:
  * 接続チェック
  *
  *==========================================================================*/
-template < class Token, class Traits >
-void check_reachable( const grammar< Token, Traits >& g )
-{
-    typedef symbol< Token, Traits >         symbol_type; 
-    typedef rule< Token, Traits >           rule_type; 
-    typedef grammar< Token, Traits >        grammar_type; 
-    typedef symbol_set< Token, Traits >     symbol_set_type;
-        
+template <class Token, class Traits>
+void check_reachable(const grammar<Token, Traits>& g) {
+    typedef symbol<Token, Traits>         symbol_type; 
+    typedef rule<Token, Traits>           rule_type; 
+    typedef symbol_set<Token, Traits>     symbol_set_type;
+
     symbol_set_type symbols;
 
     typedef std::set<rule_type> remains_type;
     remains_type remains;
-    for(const rule_type& rule: g) {
+    for (const rule_type& rule: g) {
         remains.insert(rule);
     }
     symbols.insert(symbol_type(g.root_rule().left()));
@@ -117,29 +115,24 @@ void check_reachable( const grammar< Token, Traits >& g )
 template <class Token, class Traits, class SRReporter, class RRReporter>
 void 
 make_lalr_table(
-    parsing_table< Token, Traits >& table,
-    const grammar< Token, Traits >& g,
+    parsing_table<Token, Traits>&   table,
+    const grammar<Token, Traits>&   g,
     SRReporter                      srr,
-    RRReporter                      rrr )
-{
-    typedef symbol< Token, Traits >                         symbol_type; 
-    typedef terminal< Token, Traits >                       terminal_type; 
-    typedef rule< Token, Traits >                           rule_type; 
-    typedef grammar< Token, Traits >                        grammar_type; 
-    typedef lr0_collection< Token, Traits >                 lr0_collection_type; 
-    typedef symbol_set< Token, Traits >                     symbol_set_type; 
-    typedef core< Token, Traits >                           core_type; 
-    typedef item< Token, Traits >                           item_type; 
-    typedef item_set< Token, Traits >                       item_set_type; 
-    typedef core_set< Token, Traits >                       core_set_type; 
-    typedef parsing_table< Token, Traits >                  parsing_table_type;
-    typedef typename parsing_table_type::state              state_type;
-    typedef typename parsing_table_type::states_type        states_type;
-    typedef typename parsing_table_type::action             action_type;
-    typedef typename state_type::goto_table_type            goto_table_type;
-    typedef typename state_type::generate_map_type          generate_map_type;
-    typedef typename state_type::propagate_map_type         propagate_map_type;
-    typedef typename state_type::propagate_type             propagate_type;
+    RRReporter                      rrr) {
+    typedef symbol<Token, Traits>                       symbol_type; 
+    typedef terminal<Token, Traits>                     terminal_type; 
+    typedef rule<Token, Traits>                         rule_type; 
+    typedef lr0_collection<Token, Traits>               lr0_collection_type; 
+    typedef symbol_set<Token, Traits>                   symbol_set_type; 
+    typedef core<Token, Traits>                         core_type; 
+    typedef item<Token, Traits>                         item_type; 
+    typedef item_set<Token, Traits>                     item_set_type; 
+    typedef core_set<Token, Traits>                     core_set_type; 
+    typedef parsing_table<Token, Traits>                parsing_table_type;
+    typedef typename parsing_table_type::state          state_type;
+    typedef typename parsing_table_type::states_type    states_type;
+    typedef typename parsing_table_type::action         action_type;
+    typedef typename state_type::propagate_type         propagate_type;
 
     // 記号の収集
     symbol_set_type terminals;    
@@ -271,7 +264,6 @@ make_lalr_table(
     while (iterate) {
         iterate = false;
 
-        // iterationの境があいまいだが単調増加なので問題ない
         for (const auto& s: states) {
             for (const auto& j: s.kernel) {
                 auto f0 = s.generate_map.find(j);
@@ -285,6 +277,7 @@ make_lalr_table(
                 for (const auto& k: propagate) {
                     symbol_set_type& dg =
                         states[k.first].generate_map[k.second];
+
                     size_t n = dg.size();
                     dg.insert(sg.begin(), sg.end());
                     if (dg.size() != n) { iterate = true; }

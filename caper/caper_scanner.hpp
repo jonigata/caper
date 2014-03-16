@@ -86,25 +86,6 @@ public:
             return token_identifier;
         }
 
-        // “Áê¯•Êq
-        if (c == '@') {
-            std::stringstream ss;
-            ss << (char)c;
-            c = sgetc();
-            while (c != eof &&
-                   (isalpha(c) || isdigit(c) || c == '_' || c == '.')) {
-                ss << (char)c;
-                c = sgetc();
-            }
-            sungetc(c);
-            if (ss.str() == "@error") {
-                v = value(b, RecoveryTag());
-                return token_recovery;
-            } else {
-                throw unknown_special_identifier(addr_, ss.str());
-            }
-        }
-
         // ®”
         if (isdigit(c)) {
             int n = 0;

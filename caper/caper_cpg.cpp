@@ -147,8 +147,17 @@ struct namespace_decl_action { // directive_namespace << identifier;
     }
 };
 
+// ..%recover宣言
+struct recover_decl_action { // directive_recover << identifier;
+    value_type operator()(const arguments_type args) const {
+        auto p = std::make_shared<RecoverDecl>(
+            range(args), get_symbol<Identifier>(args[1]));
+        return Value(p);
+    }
+};
+
 // ..%dont_use_stl宣言
-struct dont_use_stl_decl_action { // directive_namespace << identifier;
+struct dont_use_stl_decl_action { // directive_dont_use_stl;
     value_type operator()(const arguments_type args) const {
         auto p = std::make_shared<DontUseSTLDecl>(range(args));
         return Value(p);
@@ -209,7 +218,7 @@ struct derivation0_action { // lbracket  << rbracket;
         auto p = std::make_shared<Choise>(
             range(args),
             "",
-            std::vector<std::shared_ptr<TermOrRecovery>>());
+            std::vector<std::shared_ptr<Term>>());
         return Value(p);
     }
 };
@@ -218,14 +227,14 @@ struct derivation1_action { // lbracket << identifier << rbracket;
         auto p = std::make_shared<Choise>(
             range(args),
             get_symbol<Identifier>(args[1]),
-            std::vector<std::shared_ptr<TermOrRecovery>>());
+            std::vector<std::shared_ptr<Term>>());
         return Value(p);
     }
 };
 struct derivation2_action { // derivation << term;
     value_type operator()(const arguments_type args) const {
         std::shared_ptr<Choise> q = get_node<Choise>(args[0]);
-        q->elements.push_back(get_node<TermOrRecovery>(args[1]));
+        q->elements.push_back(get_node<Term>(args[1]));
 
         return Value(q);
     }
@@ -243,12 +252,6 @@ struct term1_action { // identifier << lparen << integer << rparen;
             range(args),
             get_symbol<Identifier>(args[0]),
             boost::get<Integer>(args[2].data).n);
-        return Value(p);
-    }
-};
-struct term2_action { // recovery;
-    value_type operator()(const arguments_type args) const {
-        auto p = std::make_shared<Recovery>(range(args));
         return Value(p);
     }
 };
@@ -350,7 +353,6 @@ void make_cpg_parser(cpg::parser& p) {
     // ...右辺の項目
     cpg::rule r_term0(term);                   r_term0 << identifier;
     cpg::rule r_term1(term);                   r_term1 << identifier << lparen << integer << rparen;
-    cpg::rule r_term2(term);                   r_term2 << recovery;
 
     // 入力ファイルの文法作成
     cpg::grammar g(r_document);
@@ -384,7 +386,6 @@ void make_cpg_parser(cpg::parser& p) {
       << r_derivation2
       << r_term0
       << r_term1
-      << r_term2
         ;
 
     // parsing tableの作成
@@ -435,7 +436,6 @@ void make_cpg_parser(cpg::parser& p) {
 
     p.set_semantic_action(r_term0, term0_action());
     p.set_semantic_action(r_term1, term1_action());
-    p.set_semantic_action(r_term2, term2_action());
 }
 
 ////////////////////////////////////////////////////////////////
@@ -449,16 +449,26 @@ void collect_informations(
     symbol_set_type known;          // 確定識別子名
     symbol_set_type unknown;        // 未確定識別子名
 
-    std::shared_ptr<Document> doc = get_node<Document>(ast);
+    auto doc = get_node<Document>(ast);
+
+    std::string recover_token = "";
 
     // 宣言
     std::shared_ptr<Declarations> declarations = doc->declarations;
     for(const auto& x: declarations->declarations) {
+        if (auto recoverdecl = downcast<RecoverDecl>(x)) {
+            if (0 < known.count(recoverdecl->name)) {
+                throw duplicated_symbol(
+                    recoverdecl->range.beg, recoverdecl->name);
+            }
+            known.insert(recoverdecl->name);
+            terminal_types[recoverdecl->name] = "$recover";
+        }
         if (auto tokendecl = downcast<TokenDecl>(x)) {
             // %token宣言
             for (const auto& y: tokendecl->elements) {
                 //std::cerr << "token: " <<y->name << std::endl;
-                if (known.find(y->name) != known.end()) {
+                if (0 < known.count(y->name)) {
                     throw duplicated_symbol(tokendecl->range.beg,y->name);
                 }
                 known.insert(y->name);
@@ -503,17 +513,15 @@ void collect_informations(
             }
             methods.insert(choise->name);
 
-            for(const auto& term_or_recovery: choise->elements) {
-                if (auto p = downcast<Term>(term_or_recovery)) {
-                    unknown.insert(p->name);
-                }
+            for(const auto& term: choise->elements) {
+                unknown.insert(term->name);
             }
         }
     }
 
     // 未確定識別子が残っていたらエラー
     for (const auto& x: unknown) {
-        if (known.find(x) == known.end()) {
+        if (known.count(x) == 0) {
             throw undefined_symbol(-1, x);
         }
     }

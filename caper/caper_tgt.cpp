@@ -29,7 +29,8 @@ void make_target_parser(
     const value_type&               ast,
     const symbol_map_type&          terminal_types,
     const symbol_map_type&          nonterminal_types) {
-    std::shared_ptr<Document> doc = get_node<Document>(ast);
+
+    auto doc = get_node<Document>(ast);
 
     // 各種データ
     // ...終端記号表(名前→terminal)
@@ -41,6 +42,12 @@ void make_target_parser(
     token_id_map["eof"] = 0;
     int id_seed = 1;
     for (const auto& x: terminal_types) {
+        if (x.second != "$error") { continue; }
+        token_id_map[x.first] = id_seed;
+        terminals[x.first] = tgt::terminal(x.first, id_seed++);
+    }
+    for (const auto& x: terminal_types) {
+        if (x.second == "$error") { continue; }
         token_id_map[x.first] = id_seed;
         terminals[x.first] = tgt::terminal(x.first, id_seed++);
     }

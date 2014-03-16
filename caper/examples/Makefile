@@ -8,7 +8,12 @@ CPPFLAGS = -g -Wall -DLINUX
 .cpp.o:
 	g++ $(CPPFLAGS) -c -o $@ $<
 
-all: hello0 hello1 hello2 calc0 calc1 calc2
+all: recovery hello0 hello1 hello2 calc0 calc1 calc2
+
+recovery: recovery.o 
+	g++ $(CPPFLAGS) -o $@ $^
+
+recovery.o : recovery.cpp recovery.hpp 
 
 calc0: calc0.o
 	g++ $(CPPFLAGS) -o $@ $^

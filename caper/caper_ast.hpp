@@ -47,12 +47,6 @@ struct Identifier {
 };
 
 ////////////////////////////////////////////////////////////////
-// RecoveryTag
-struct RecoveryTag {
-    RecoveryTag() {}
-};
-
-////////////////////////////////////////////////////////////////
 // Directive
 struct Directive {
     std::string s;
@@ -94,7 +88,7 @@ typedef std::shared_ptr<Node> node_ptr;
 ////////////////////////////////////////////////////////////////
 // value_type
 struct Value {
-    typedef boost::variant<Nil, Operator, Identifier, RecoveryTag, Directive, TypeTag, Integer, node_ptr> data_type;
+    typedef boost::variant<Nil, Operator, Identifier, Directive, TypeTag, Integer, node_ptr> data_type;
 
     Range       range;
     data_type   data;
@@ -113,24 +107,16 @@ typedef Value value_type;
 
 ////////////////////////////////////////////////////////////////
 // concrete Node
-struct TermOrRecovery : public Node {
-    TermOrRecovery(const Range& r) : Node(r) {}
-};
-
-struct Term : public TermOrRecovery {
+struct Term : public Node {
     std::string     name;
     int             index;
 
     Term(const Range& r, const std::string& as, int ai)
-        : TermOrRecovery(r), name(as), index(ai) {}
-};
-
-struct Recovery : public TermOrRecovery {
-    Recovery(const Range& r) : TermOrRecovery(r) {}
+        : Node(r), name(as), index(ai) {}
 };
 
 struct Choise : public Node {
-    typedef std::vector<std::shared_ptr<TermOrRecovery>>
+    typedef std::vector<std::shared_ptr<Term>>
         elements_type;
 
     std::string     name;
@@ -215,6 +201,13 @@ struct NamespaceDecl : public Declaration {
     std::string     name;
 
     NamespaceDecl(const Range& r, const std::string& as)
+        : Declaration(r), name(as) {}
+};
+
+struct RecoverDecl : public Declaration {
+    std::string     name;
+
+    RecoverDecl(const Range& r, const std::string& as)
         : Declaration(r), name(as) {}
 };
 

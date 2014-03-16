@@ -49,10 +49,14 @@ public:
     core(const self_type& x) : rule_(x.rule_), cursor_(x.cursor_) {}
     ~core() {}
 
-    self_type& operator =(const self_type& x) {
+    self_type& operator=(const self_type& x) {
         rule_ = x.rule_;
         cursor_ = x.cursor_;
         return *this;
+    }
+
+    int cmp(const core<Token, Traits>& y) const {
+        return id() != y.id() ? (id() - y.id()) : (cursor() - y.cursor());
     }
 
     int                     id() const      { return rule_.id(); }
@@ -73,15 +77,13 @@ private:
 template <class Token, class Traits>
 bool operator<(const core<Token, Traits>& x,
                const core<Token, Traits>& y) {
-    if (x.id() < y.id()) { return true; }
-    if (y.id() < x.id()) { return false; }
-    return x.cursor() < y.cursor();
+    return x.cmp(y) < 0;
 }
 
 template <class Token, class Traits>
-bool operator ==(const core<Token, Traits>& x,
-                 const core<Token, Traits>& y) {
-    return x.id() == y.id() && x.cursor() == y.cursor();
+bool operator==(const core<Token, Traits>& x,
+                const core<Token, Traits>& y) {
+    return x.cmp(y) == 0;
 }
 
 template <class Token, class Traits>
@@ -139,14 +141,10 @@ public:
     const symbol_type&      curr() const    { return core_.curr(); }
     bool                    over() const    { return core_.over(); }
 
-    bool less_than(const self_type& y) const {
-        if (core_ < y.core_) { return true; }
-        if (y.core_ < core_) { return false; }
-        return lookahead_ < y.lookahead_;
-    }
-
-    bool equal(const self_type& y) const {
-        return core_ == y.core_ && lookahead_ == y.lookahead_;
+    int cmp(const self_type& y) const {
+        int x = core_.cmp(y.core_);
+        if (x != 0) { return x; }
+        return lookahead_.cmp(y.lookahead_);
     }
 
 private:
@@ -157,12 +155,12 @@ private:
 
 template <class Token, class Traits>
 bool operator<(const item<Token, Traits>& x, const item<Token, Traits>& y) {
-    return x.less_than(y);
+    return x.cmp(y) < 0;
 }
 
 template <class Token, class Traits>
 bool operator ==(const item<Token, Traits>& x, const item<Token, Traits>& y) {
-    return x.equal(y);
+    return x.cmp(y) == 0;
 }
 
 template <class Token, class Traits>
@@ -183,9 +181,6 @@ template <class Token, class Traits>
 class symbol_set :
         public std::unordered_set<symbol<Token, Traits>,
                                   symbol_hash<Token, Traits>> {
-  public:
-    symbol_set() {}
-    ~symbol_set() {}
 };
 
 template <class Token, class Traits>
@@ -208,9 +203,6 @@ std::ostream& operator<<(std::ostream& os, const symbol_set<Token, Traits>& y) {
 
 template <class Token,class Traits >
 class core_set : public std::set<core<Token, Traits>> {
-  public:
-    core_set() {}
-    ~core_set() {}
 };
 
 template <class Token, class Traits>
@@ -233,9 +225,6 @@ std::ostream& operator<<(std::ostream& os, const core_set<Token, Traits>& s) {
 
 template <class Token, class Traits>
 class item_set : public std::set<item<Token, Traits>> {
-  public:
-    item_set() {}
-    ~item_set() {}
 };
 
 template <class Token, class Traits>
@@ -261,9 +250,6 @@ class first_collection :
         public std::unordered_map<symbol<Token, Traits>,
                                   symbol_set<Token, Traits>,
                                   symbol_hash<Token, Traits>> {
-  public:
-    first_collection() {}
-    ~first_collection() {}
 };
 
 template <class Token, class Traits>
@@ -290,9 +276,6 @@ class follow_collection :
         public std::unordered_map<symbol<Token, Traits>,
                                   symbol_set<Token, Traits>,
                                   symbol_hash<Token, Traits>> {
-  public:
-    follow_collection() {}
-    ~follow_collection() {}
 };
 
 template <class Token, class Traits>
@@ -316,9 +299,6 @@ std::ostream& operator<<(
 
 template <class Token, class Traits>
 class lr0_collection : public std::set<core_set<Token, Traits>> {
-  public:
-    lr0_collection() {}
-    ~lr0_collection() {}
 };
 
 template <class Token, class Traits>
@@ -339,21 +319,21 @@ std::ostream& operator<<(
  *==========================================================================*/
 
 /*
-template < class Token, class Traits >
-class lr1_collection : public std::set< item_set< Token, Traits > > {
-public:
-    lr1_collection() {}
-    ~lr1_collection() {}
-};
+  template < class Token, class Traits >
+  class lr1_collection : public std::set< item_set< Token, Traits > > {
+  public:
+  lr1_collection() {}
+  ~lr1_collection() {}
+  };
 
-template < class Token, class Traits >
-std::ostream& operator<<( std::ostream& os, const lr1_collection< Token, Traits >& C )
-{
-    for( typename lr1_collection< Token, Traits >::const_iterator i = C.begin() ; i != C.end() ; ++i ) {
-        os << (*i) << std::endl;
-    }
-    return os;
-}
+  template < class Token, class Traits >
+  std::ostream& operator<<( std::ostream& os, const lr1_collection< Token, Traits >& C )
+  {
+  for( typename lr1_collection< Token, Traits >::const_iterator i = C.begin() ; i != C.end() ; ++i ) {
+  os << (*i) << std::endl;
+  }
+  return os;
+  }
 */
 
 /*============================================================================
@@ -366,10 +346,10 @@ std::ostream& operator<<( std::ostream& os, const lr1_collection< Token, Traits 
 
 template <class Token, class Traits>
 void collect_symbols(
-    symbol_set<Token, Traits>&    terminals,
-    symbol_set<Token, Traits>&    nonterminals,
-    symbol_set<Token, Traits>&    all_symbols,
-    const grammar<Token, Traits>& g) {
+    symbol_set<Token, Traits>&      terminals,
+    symbol_set<Token, Traits>&      nonterminals,
+    symbol_set<Token, Traits>&      all_symbols,
+    const grammar<Token, Traits>&   g) {
 
     for (const auto& rule: g) {
         nonterminals.insert(rule.left());
@@ -410,19 +390,16 @@ bool all_nullable(
 
 template <class Token, class Traits>
 void make_first_and_follow(
-    first_collection<Token, Traits>&      first,
-    follow_collection<Token, Traits>&     follow,
-    const symbol_set<Token, Traits>&      terminals,
-    const symbol_set<Token, Traits>&      nonterminals,
-    const symbol_set<Token, Traits>&      all_symbols,
-    const grammar<Token, Traits>&         g) {
+    first_collection<Token, Traits>&    first,
+    follow_collection<Token, Traits>&   follow,
+    const symbol_set<Token, Traits>&    terminals,
+    const symbol_set<Token, Traits>&    nonterminals,
+    const symbol_set<Token, Traits>&    all_symbols,
+    const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
-    typedef grammar<Token, Traits>        grammar_type;
-    typedef rule<Token, Traits>           rule_type;
 
     // nullable
-    std::unordered_set<symbol<Token, Traits>, symbol_hash<Token, Traits>>
-        nullable;
+    symbol_set_type nullable;
 
     // For each terminal symbol Z, FIRST[Z] = { Z }.
     for (const auto& x: terminals) {
@@ -431,7 +408,6 @@ void make_first_and_follow(
 
     // repeat until FIRST, FOLLOW,
     // and nullable did not change in this iteration.
-    // TODO: prbŽg‚Á‚½‚Ù‚¤‚ª‘¬‚¢‚©‚à
     bool repeat = true;
     while (repeat) {
         repeat = false;
@@ -498,10 +474,9 @@ void make_first_and_follow(
 
 template <class Token, class Traits>
 void make_vector_first(
-    symbol_set<Token, Traits>&                    s,
-    const first_collection<Token, Traits>&        first,
-    const std::vector<symbol<Token, Traits>> &  v) {
-    typedef symbol_set<Token, Traits> symbol_set_type;
+    symbol_set<Token, Traits>&                  s,
+    const first_collection<Token, Traits>&      first,
+    const std::vector<symbol<Token, Traits>>&   v) {
 
     bool next = false;
     for (const auto& x: v) {
@@ -743,8 +718,8 @@ make_lr0_collection(
             }
         }
 
-        for (const core_set_type& c: new_collection) {
-            C.insert(std::move(c));
+        for (auto&& c: new_collection) {
+            C.insert(c);
         }
     } while (C_size != C.size());
 }
@@ -763,10 +738,9 @@ choose_kernel(
     core_set<Token, Traits>&       K,
     const core_set<Token, Traits>& I,
     const grammar<Token, Traits>& g) {
-    typedef core_set<Token, Traits>   core_set_type;
 
     for (const auto& x: I) {
-        if (x.rule() == g.root_rule() || 0 <x.cursor()) {
+        if (x.rule() == g.root_rule() || 0 < x.cursor()) {
             K.insert(x);
         }
     }
@@ -785,8 +759,6 @@ void
 items_to_cores(
     core_set<Token, Traits> &        xx,
     const item_set<Token, Traits>&   x) {
-    typedef core<Token, Traits>           core_type;
-    typedef item_set<Token, Traits>       item_set_type;
 
     for (const auto& y: x) {
         xx.insert(y.core());
@@ -923,9 +895,6 @@ private:
 template <class Token, class Traits>
 std::ostream& operator<<(
     std::ostream& os, const parsing_table<Token, Traits>& x) {
-    typedef typename parsing_table<Token, Traits>::states_type    states_type;
-    typedef typename parsing_table<Token, Traits>::state          state;
-    //typedef typename parsing_table<Token, Traits>::action         action;
 
     os << "<toplevel = state" << x.first_state() << ">\n";
     for (const auto& state: x.states()) {

@@ -390,7 +390,7 @@ void make_cpg_parser(cpg::parser& p) {
 
     // parsing table�̍쐬
     cpg::parsing_table table;
-    cpg::make_lalr_table(table, g);
+    cpg::make_lalr_table(table, g, token_error);
     //std::cerr << "\n[LALR parsing table]\n";
     //std::cerr << table;
 

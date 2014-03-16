@@ -7,6 +7,7 @@
 // Token
 enum Token {
     token_empty,
+    token_error,
     token_identifier,
     token_recovery,
     token_integer,

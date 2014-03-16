@@ -47,7 +47,6 @@ public:
 public:
     core(const rule_type& r, int i) : rule_(r), cursor_(i) {}
     core(const self_type& x) : rule_(x.rule_), cursor_(x.cursor_) {}
-    ~core() {}
 
     self_type& operator=(const self_type& x) {
         rule_ = x.rule_;
@@ -59,12 +58,12 @@ public:
         return id() != y.id() ? (id() - y.id()) : (cursor() - y.cursor());
     }
 
-    int                     id() const      { return rule_.id(); }
-    const rule_type&        rule() const    { return rule_; }
-    int                     cursor() const  { return cursor_; }
+    int                 id() const      { return rule_.id(); }
+    const rule_type&    rule() const    { return rule_; }
+    int                 cursor() const  { return cursor_; }
 
-    const symbol_type&      curr() const    { return rule_.right()[cursor_]; }
-    bool                    over() const    {
+    const symbol_type&  curr() const    { return rule_.right()[cursor_]; }
+    bool                over() const    {
         return int(rule_.right().size()) <= cursor_;
     }
 
@@ -123,7 +122,6 @@ public:
         : core_(r, c), lookahead_(s) {}
     item(const core_type& x, const symbol_type& y) : core_(x), lookahead_(y) {}
     item(const self_type& x) : core_(x.core_), lookahead_(x.lookahead_) {}
-    ~item() {}
 
     self_type& operator=(const self_type& x) {
         core_ = x.core_;
@@ -165,7 +163,7 @@ bool operator ==(const item<Token, Traits>& x, const item<Token, Traits>& y) {
 
 template <class Token, class Traits>
 std::ostream& operator<<(std::ostream& os, const item<Token, Traits>& y) {
-    os << y.core()<< " / " << y.lookahead();
+    os << y.core() << " / " << y.lookahead();
     return os;
 }
 
@@ -319,21 +317,20 @@ std::ostream& operator<<(
  *==========================================================================*/
 
 /*
-  template < class Token, class Traits >
-  class lr1_collection : public std::set< item_set< Token, Traits > > {
+template <class Token, class Traits>
+class lr1_collection : public std::set<item_set<Token, Traits>> {
   public:
-  lr1_collection() {}
-  ~lr1_collection() {}
-  };
+    lr1_collection() {}
+    ~lr1_collection() {}
+};
 
-  template < class Token, class Traits >
-  std::ostream& operator<<( std::ostream& os, const lr1_collection< Token, Traits >& C )
-  {
-  for( typename lr1_collection< Token, Traits >::const_iterator i = C.begin() ; i != C.end() ; ++i ) {
-  os << (*i) << std::endl;
-  }
-  return os;
-  }
+template <class Token, class Traits>
+std::ostream& operator<<(std::ostream& os, const lr1_collection<Token, Traits>& C) {
+    for (typename lr1_collection<Token, Traits>::const_iterator i = C.begin(); i != C.end(); ++i) {
+        os <<(*i)<< std::endl;
+    }
+    return os;
+}
 */
 
 /*============================================================================
@@ -816,7 +813,7 @@ public:
         typedef std::set<std::pair<int, core_type>>     propagate_type;
         typedef std::map<core_type, propagate_type>     propagate_map_type;
 
-        int                     no;
+        int                     no              = -1;
         core_set_type           cores;
         core_set_type           kernel;
         item_set_type           items;
@@ -825,6 +822,9 @@ public:
 
         goto_table_type         goto_table;
         action_table_type       action_table;
+        bool                    handle_error    = false;
+
+        state(int n) : no(n) {}
     };
 
     typedef std::vector<state> states_type;
@@ -834,7 +834,7 @@ public:
     parsing_table( const parsing_table< Token, Traits >& x ) { operator=(x); }
     ~parsing_table() { clear(); }
 
-    self_type& operator =(const self_type& x) {
+    self_type& operator=(const self_type& x) {
         clear();
         states_ = x.states_;
         rules_ = x.rules_;
@@ -864,8 +864,7 @@ public:
     }
     state& add_state() {
         enunique();
-        state s; s.no = int(states_.size());
-        states_.push_back(s);
+        states_.emplace_back(int(states_.size()));
         return states_.back();
     }
 

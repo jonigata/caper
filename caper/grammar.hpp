@@ -39,18 +39,19 @@ template <class Token,class Traits >
 class epsilon {
 public:
     epsilon(){}
-    epsilon( const epsilon< Token, Traits >& x ){}
+    epsilon(const epsilon<Token, Traits>& x) {}
     ~epsilon(){}
 
-    epsilon<Token,Traits>& operator=(const epsilon<Token,Traits>& x) { return *this; }
+    epsilon<Token, Traits>& operator=(const epsilon<Token, Traits>& x) {
+        return *this;
+    }
     
 private:
-    friend class symbol< Token, Traits >;
+    friend class symbol<Token, Traits>;
 };
 
 template <class Token,class Traits>
-std::ostream& operator<<( std::ostream& os, const epsilon< Token, Traits >& r )
-{
+std::ostream& operator<<(std::ostream& os, const epsilon<Token, Traits>& r) {
     os << "{}";
     return os;
 }
@@ -78,12 +79,12 @@ struct terminal_hash;
 template <class Token,class Traits >
 class terminal {
 public:
-    terminal() : token_( Traits::eof() ) {}
+    terminal(): token_(Traits::eof()) {}
     terminal(const std::string& d, const Token& t) : display_(d), token_(t) {}
     terminal(const terminal<Token, Traits>& x)
         : display_(x.display_), token_(x.token_) {}
 
-    terminal<Token, Traits>& operator =(const terminal<Token, Traits>& x) {
+    terminal<Token, Traits>& operator=(const terminal<Token, Traits>& x) {
         display_ = x.display_;
         token_ = x.token_;
         return *this;
@@ -274,24 +275,24 @@ public:
     symbol(const nonterminal<Token, Traits>& x)
         : type_(type_nonterminal), name_(x.name_) {}
 
-    symbol<Token, Traits>& operator =(const symbol<Token, Traits>& x) {
+    symbol<Token, Traits>& operator=(const symbol<Token, Traits>& x) {
         type_ = x.type_;
         token_ = x.token_;
         display_ = x.display_;
         name_ = x.name_;
         return *this;
     }
-    symbol<Token, Traits>& operator =(const epsilon<Token, Traits>& x) {
+    symbol<Token, Traits>& operator=(const epsilon<Token, Traits>& x) {
         type_ = type_epsilon;
         return *this;
     }
-    symbol<Token, Traits>& operator =(const terminal<Token, Traits>& x) {
+    symbol<Token, Traits>& operator=(const terminal<Token, Traits>& x) {
         type_ = type_terminal;
         token_ = x.token_;
         display_ = x.display_;
         return *this;
     }
-    symbol<Token, Traits>& operator =(const nonterminal<Token, Traits>& x) {
+    symbol<Token, Traits>& operator=(const nonterminal<Token, Traits>& x) {
         type_ = type_nonterminal;
         name_ = x.name_;
         return *this;
@@ -516,23 +517,6 @@ struct rule_hash {
 
 /*============================================================================
  *
- * class opgroup
- *
- * ââéZéqÇÃèWçá
- *
- *==========================================================================*/
-
-template <class Token,class Traits >
-class opgroup {
-public:
-    opgroup(){}
-    ~opgroup(){}
-
-    opgroup& operator<<(symbol<Token,Traits>&);
-};
-
-/*============================================================================
- *
  * class grammar
  *
  * ï∂ñ@ãKë•ÇÃèWçá
@@ -579,18 +563,16 @@ public:
     grammar(const grammar& x) : imp(x.imp) {}
     ~grammar(){}
 
-    grammar& operator =(const grammar& x) {
+    grammar& operator=(const grammar& x) {
         imp = x.imp;
         return *this;
     }
 
-    grammar& operator<<(const opgroup<Token, Traits>&) {
-        enunique();
-        return *this;
-    }
     grammar& operator<<(const rule_type& r) {
         enunique();
-        assert(std::find(imp->elements.begin(), imp->elements.end(), r) == imp->elements.end());
+        assert(std::find(imp->elements.begin(),
+                         imp->elements.end(), r) ==
+               imp->elements.end());
         imp->add(r);
         return *this;
     }
@@ -613,9 +595,8 @@ public:
     const dictionary_type& dictionary() const { return imp->dictionary; }
 
 private:
-    void enunique()
-    {
-        if( !imp.unique() ) { imp = std::make_shared<grammar_imp>( *imp ); }
+    void enunique() {
+        if (!imp.unique()) { imp = std::make_shared<grammar_imp>(*imp); }
     }
 
 private:

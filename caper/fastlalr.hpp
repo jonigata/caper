@@ -117,6 +117,7 @@ void
 make_lalr_table(
     parsing_table<Token, Traits>&   table,
     const grammar<Token, Traits>&   g,
+    Token                           error_token,
     SRReporter                      srr,
     RRReporter                      rrr) {
     typedef symbol<Token, Traits>                       symbol_type; 
@@ -404,14 +405,32 @@ make_lalr_table(
             }
         }
     }
+
+    // エラー処理状態かどうかの判定
+    for (auto& s: table.states()) {
+        // ルート文法かどうかのチェック
+        for (const auto& pair: s.action_table) {
+            if (pair.first == error_token) {
+                s.handle_error = true;
+                break;
+            }
+        }
+    }
+
 }
 
 template <class Token, class Traits>
 void
 make_lalr_table(
-    parsing_table<Token, Traits>& table,
-    const grammar<Token, Traits>& g) {
-    make_lalr_table(table, g, null_reporter<Token, Traits>(), null_reporter<Token, Traits>());
+    parsing_table<Token, Traits>&   table,
+    const grammar<Token, Traits>&   g,
+    Token                           error_token) {
+    make_lalr_table(
+        table,
+        g,
+        error_token,
+        null_reporter<Token, Traits>(),
+        null_reporter<Token, Traits>());
 }
 
 /*============================================================================
@@ -565,21 +584,30 @@ private:
 
 template < class Token, class Traits, class Value >
 struct package {
-    typedef zw::gr::rule< Token, Traits >              rule;
-    typedef zw::gr::epsilon< Token, Traits >           epsilon;
-    typedef zw::gr::nonterminal< Token, Traits >       nonterminal;
-    typedef zw::gr::terminal< Token, Traits >          terminal;
-    typedef zw::gr::grammar< Token, Traits >           grammar;
-    typedef zw::gr::parsing_table< Token, Traits >     parsing_table;
-    typedef zw::gr::parser< parsing_table, Value >     parser;
+    typedef zw::gr::rule<Token, Traits>              rule;
+    typedef zw::gr::epsilon<Token, Traits>           epsilon;
+    typedef zw::gr::nonterminal<Token, Traits>       nonterminal;
+    typedef zw::gr::terminal<Token, Traits>          terminal;
+    typedef zw::gr::symbol<Token, Traits>            symbol;
+    typedef zw::gr::grammar<Token, Traits>           grammar;
+    typedef zw::gr::parsing_table<Token, Traits>     parsing_table;
+    typedef zw::gr::parser<parsing_table, Value>     parser;
 
-    static void make_lalr_table(parsing_table& table, const grammar& g) {
-        zw::gr::make_lalr_table(table, g);
+    static void make_lalr_table(
+        parsing_table&  table,
+        const grammar&  g,
+        Token           error_token) {
+        zw::gr::make_lalr_table(table, g, error_token);
     }
 
     template < class Reporter > static
-    void make_lalr_table(parsing_table& table, const grammar& g, Reporter srr, Reporter rrr) {
-        zw::gr::make_lalr_table(table, g, srr, rrr);
+    void make_lalr_table(
+        parsing_table&  table,
+        const grammar&  g,
+        Token           error_token,
+        Reporter        srr,
+        Reporter        rrr) {
+        zw::gr::make_lalr_table(table, g, error_token, srr, rrr);
     }
 };
 

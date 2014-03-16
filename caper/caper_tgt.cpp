@@ -38,12 +38,14 @@ void make_target_parser(
     // ...非終端記号表(名前→nonterminal)
     std::unordered_map<std::string, tgt::nonterminal>   nonterminals;
 
+    int error_token = -1;
+
     // terminalsの作成
     token_id_map["eof"] = 0;
     int id_seed = 1;
     for (const auto& x: terminal_types) {
         if (x.second != "$error") { continue; }
-        token_id_map[x.first] = id_seed;
+        token_id_map[x.first] = error_token = id_seed;
         terminals[x.first] = tgt::terminal(x.first, id_seed++);
     }
     for (const auto& x: terminal_types) {
@@ -150,6 +152,10 @@ void make_target_parser(
     }
 
     zw::gr::make_lalr_table(
-        table, *g, sr_conflict_reporter(), rr_conflict_reporter());
+        table,
+        *g,
+        error_token,
+        sr_conflict_reporter(),
+        rr_conflict_reporter());
 }
 

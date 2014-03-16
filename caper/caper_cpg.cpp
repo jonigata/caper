@@ -246,6 +246,13 @@ struct term1_action { // identifier << lparen << integer << rparen;
         return Value(p);
     }
 };
+struct term2_action { // recovery << identifier;
+    value_type operator()(const arguments_type args) const {
+        auto p = std::make_shared<Recovery>(
+            range(args), get_node<Term>(args[1]));
+        return Value(p);
+    }
+};
 
 ////////////////////////////////////////////////////////////////
 // make_cpg_parser
@@ -257,6 +264,7 @@ void make_cpg_parser(cpg::parser& p) {
     cpg::terminal directive_namespace("%namespace", token_directive_namespace);
     cpg::terminal directive_dont_use_stl("%dont_use_stl", token_directive_dont_use_stl);
     cpg::terminal identifier("IDENT", token_identifier);
+    cpg::terminal recovery("@error", token_recovery);
     cpg::terminal integer("int", token_integer);
     cpg::terminal typetag("<type>", token_typetag);
     cpg::terminal semicolon(";", token_semicolon);
@@ -336,14 +344,14 @@ void make_cpg_parser(cpg::parser& p) {
     cpg::rule r_derivations0(derivations);     r_derivations0 << colon << derivation;
     cpg::rule r_derivations1(derivations);     r_derivations1 << derivations << pipe << derivation; 
 
-    // ...右辺の項目
     cpg::rule r_derivation0(derivation);       r_derivation0 << lbracket << rbracket;
     cpg::rule r_derivation1(derivation);       r_derivation1 << lbracket << identifier << rbracket;
     cpg::rule r_derivation2(derivation);       r_derivation2 << derivation << term;
 
+    // ...右辺の項目
     cpg::rule r_term0(term);                   r_term0 << identifier;
     cpg::rule r_term1(term);                   r_term1 << identifier << lparen << integer << rparen;
-
+    cpg::rule r_term2(term);                   r_term2 << recovery << identifier;
 
     // 入力ファイルの文法作成
     cpg::grammar g(r_document);
@@ -377,6 +385,7 @@ void make_cpg_parser(cpg::parser& p) {
       << r_derivation2
       << r_term0
       << r_term1
+      << r_term2
         ;
 
     // parsing tableの作成
@@ -427,6 +436,7 @@ void make_cpg_parser(cpg::parser& p) {
 
     p.set_semantic_action(r_term0, term0_action());
     p.set_semantic_action(r_term1, term1_action());
+    p.set_semantic_action(r_term2, term2_action());
 }
 
 ////////////////////////////////////////////////////////////////

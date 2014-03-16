@@ -11,7 +11,10 @@ public:
     typedef int char_type;
 
 public:
-    scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(EOF) {
+    static const char_type eof = -1;
+    
+public:
+    scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(eof) {
         addr_ = 0;
         dirdic_["token"] = token_directive_token;
         dirdic_["token_prefix"] = token_directive_token_prefix;
@@ -26,12 +29,12 @@ public:
     int addr() { return addr_; }
 
     int lineno(int addr) {
-        std::vector<int>::const_iterator i = std::upper_bound(lines_.begin(), lines_.end(), addr);
+        auto i = std::upper_bound(lines_.cbegin(), lines_.cend(), addr);
         assert(i != lines_.begin());
         return int(i - lines_.begin());
     }
     int column(int addr) {
-        std::vector<int>::const_iterator i = std::upper_bound(lines_.begin(), lines_.end(), addr);
+        auto i = std::upper_bound(lines_.cbegin(), lines_.cend(), addr);
         assert(i != lines_.begin());
         --i;
         return addr - *i;
@@ -60,38 +63,58 @@ public:
 
         // ‹L†—Ş
         switch (c) {
-            case ':': v = Value(range(b, addr_), Operator(':')); return token_colon;
-            case ';': v = Value(range(b, addr_), Operator(';')); return token_semicolon;
-            case '|': v = Value(range(b, addr_), Operator('|')); return token_pipe;
-            case '(': v = Value(range(b, addr_), Operator('(')); return token_lparen;
-            case ')': v = Value(range(b, addr_), Operator(')')); return token_rparen;
-            case '[': v = Value(range(b, addr_), Operator('[')); return token_lbracket;
-            case ']': v = Value(range(b, addr_), Operator(']')); return token_rbracket;
-            case EOF: v = Value(range(b, addr_), Operator('$')); return token_eof;
+            case ':': v = value(b, Operator(':')); return token_colon;
+            case ';': v = value(b, Operator(';')); return token_semicolon;
+            case '|': v = value(b, Operator('|')); return token_pipe;
+            case '(': v = value(b, Operator('(')); return token_lparen;
+            case ')': v = value(b, Operator(')')); return token_rparen;
+            case '[': v = value(b, Operator('[')); return token_lbracket;
+            case ']': v = value(b, Operator(']')); return token_rbracket;
+            case eof: v = value(b, Operator('$')); return token_eof;
         }
 
         // ¯•Êq
         if (isalpha(c)) {
             std::stringstream ss;
-            while (c != EOF &&(isalpha(c)|| isdigit(c)|| c == '_' || c == '.')) {
-                ss <<(char)c;
+            while (c != eof &&
+                   (isalpha(c) || isdigit(c) || c == '_' || c == '.')) {
+                ss << (char)c;
                 c = sgetc();
             }
             sungetc(c);
-            v = Value(range(b, addr_), Identifier(ss.str()));
+            v = value(b, Identifier(ss.str()));
             return token_identifier;
+        }
+
+        // “Áê¯•Êq
+        if (c == '@') {
+            std::stringstream ss;
+            ss << (char)c;
+            c = sgetc();
+            while (c != eof &&
+                   (isalpha(c) || isdigit(c) || c == '_' || c == '.')) {
+                ss << (char)c;
+                c = sgetc();
+            }
+            sungetc(c);
+            if (ss.str() == "@error") {
+                v = value(b, RecoveryTag());
+                return token_recovery;
+            } else {
+                throw unknown_special_identifier(addr_, ss.str());
+            }
         }
 
         // ®”
         if (isdigit(c)) {
             int n = 0;
-            while (c != EOF && isdigit(c)) {
+            while (c != eof && isdigit(c)) {
                 n *= 10;
                 n += c - '0';
                 c = sgetc();
             }
             sungetc(c);
-            v = Value(range(b, addr_), Integer(n));
+            v = value(b, Integer(n));
             return token_integer;
         }
 
@@ -99,7 +122,7 @@ public:
         if (c == '%') {
             std::stringstream ss;
             c = sgetc();
-            while (c != EOF &&(isalpha(c)|| isdigit(c)|| c == '_')) {
+            while (c != eof &&(isalpha(c)|| isdigit(c)|| c == '_')) {
                 ss <<(char)c;
                 c = sgetc();
             }
@@ -107,7 +130,7 @@ public:
 
             dirdic_type::const_iterator  i = dirdic_.find(ss.str());
             if (i != dirdic_.end()) {
-                v = Value(range(b, addr_), Directive(ss.str()));
+                v = value(b, Directive(ss.str()));
                 return(*i).second;
             }
             throw bad_directive(addr_, ss.str());
@@ -133,7 +156,7 @@ public:
                         break;
                     case ')': pop_paren(stack, c); ss << char(c); break;
                     case ']': pop_paren(stack, c); ss << char(c); break;
-                    case EOF: throw mismatch_paren(addr_, c);
+                    case eof: throw mismatch_paren(addr_, c);
                     default:
                         if (c == '*' || c == ':' || c == ',' || c == '_' ||
                             isspace(c)|| isalpha(c)|| isdigit(c)) {
@@ -144,7 +167,7 @@ public:
                         }
                 }
             }
-            v = Value(range(b, addr_), TypeTag(ss.str()));
+            v = value(b, TypeTag(ss.str()));
             return token_typetag;
         }
 
@@ -154,11 +177,11 @@ public:
 private:
     char_type sgetc() {
         int c;
-        if (unget_ != EOF) {
+        if (unget_ != eof) {
             c = unget_;
-            unget_ = EOF;
+            unget_ = eof;
         } else if (c_ == e_) {
-            c = EOF; 
+            c = eof; 
         } else {
             c = *c_++;
             if (c == '\n') {
@@ -170,7 +193,7 @@ private:
     }
 
     void sungetc(char_type c) {
-        if (c != EOF) {
+        if (c != eof) {
             addr_--;
             unget_ = c;
         }
@@ -184,15 +207,25 @@ private:
     void pop_paren(std::vector<char>& stack, int c) {
         assert(!stack.empty());
         switch (c) {
-            case '>': if (stack.back() != '<') { throw mismatch_paren(addr_, c); } break;
-            case ')': if (stack.back() != '(') { throw mismatch_paren(addr_, c); } break;
+            case '>':
+                if (stack.back() != '<') {
+                    throw mismatch_paren(addr_, c);
+                }
+                break;
+            case ')':
+                if (stack.back() != '(') {
+                    throw mismatch_paren(addr_, c);
+                }
+                break;
             default: assert(0);
         }
         stack.pop_back();
     }
 
-private:
-    Range range(int b, int e) { return Range(b, e); }
+    template <class T>
+    Value value(int b, const T& x) {
+        return Value(Range(b, addr_), x);
+    }
 
 private:
     It              b_;

@@ -9,7 +9,6 @@ void make_target_parser(
     action_map_type&                actions,
     const value_type&               ast,
     const symbol_map_type&          terminal_types,
-    const symbol_map_type&          nonterminal_types,
-    bool                            algorithm_lr1);
+    const symbol_map_type&          nonterminal_types);
 
 #endif // CAPER_TGT_HPP

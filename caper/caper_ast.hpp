@@ -47,6 +47,12 @@ struct Identifier {
 };
 
 ////////////////////////////////////////////////////////////////
+// RecoveryTag
+struct RecoveryTag {
+    RecoveryTag() {}
+};
+
+////////////////////////////////////////////////////////////////
 // Directive
 struct Directive {
     std::string s;
@@ -88,7 +94,7 @@ typedef std::shared_ptr<Node> node_ptr;
 ////////////////////////////////////////////////////////////////
 // value_type
 struct Value {
-    typedef boost::variant<Nil, Operator, Identifier, Directive, TypeTag, Integer, node_ptr> data_type;
+    typedef boost::variant<Nil, Operator, Identifier, RecoveryTag, Directive, TypeTag, Integer, node_ptr> data_type;
 
     Range       range;
     data_type   data;
@@ -113,6 +119,13 @@ struct Term : public Node {
 
     Term(const Range& r, const std::string& as, int ai)
         : Node(r), name(as), index(ai) {}
+};
+
+struct Recovery : public Node {
+    std::shared_ptr<Term> term;
+    
+    Recovery(const Range& r, const std::shared_ptr<Term>& p)
+        : Node(r), term(p) {}
 };
 
 struct Choise : public Node {

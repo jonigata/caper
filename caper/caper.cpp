@@ -187,8 +187,7 @@ int main(int argc, const char** argv) {
             actions,
             p.accept_value(),
             terminal_types,
-            nonterminal_types,
-            cmdopt.algorithm == "lr1");
+            nonterminal_types);
 
         // ターゲットパーサの出力
         std::map<size_t, std::string> reverse_token_id_map;

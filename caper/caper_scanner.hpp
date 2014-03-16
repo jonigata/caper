@@ -21,6 +21,7 @@ public:
         dirdic_["external_token"] = token_directive_external_token;
         dirdic_["access_modifier"] = token_directive_access_modifier;
         dirdic_["namespace"] = token_directive_namespace;
+        dirdic_["recover"] = token_directive_recover;
         dirdic_["dont_use_stl"] = token_directive_dont_use_stl;
         lines_.push_back(0);
     }

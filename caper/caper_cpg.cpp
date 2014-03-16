@@ -64,12 +64,17 @@ struct declaration3_action { // namespace_decl << semicolon;
         return Value(args[0]);
     }
 };
-struct declaration4_action { // dont_use_stl_decl << semicolon;
+struct declaration4_action { // recover_decl << semicolon;
     value_type operator()(const arguments_type args) const {
         return Value(args[0]);
     }
 };
-struct declaration5_action { // access_modifier_decl << semicolon;
+struct declaration5_action { // dont_use_stl_decl << semicolon;
+    value_type operator()(const arguments_type args) const {
+        return Value(args[0]);
+    }
+};
+struct declaration6_action { // access_modifier_decl << semicolon;
     value_type operator()(const arguments_type args) const {
         return Value(args[0]);
     }
@@ -122,7 +127,7 @@ struct token_pfx_decl1_action { // directive_token_prefix << identifier;
 };
 
 // ..%external_tokenéŒ¾
-struct external_token_decl_action { // directive_namespace << identifier;
+struct external_token_decl_action { // directive_external_token << identifier;
     value_type operator()(const arguments_type args) const {
         auto p = std::make_shared<ExternalTokenDecl>(range(args));
         return Value(p);
@@ -264,9 +269,9 @@ void make_cpg_parser(cpg::parser& p) {
     cpg::terminal directive_external_token("%external_token", token_directive_external_token);
     cpg::terminal directive_access_modifier("%access_modifier", token_directive_access_modifier);
     cpg::terminal directive_namespace("%namespace", token_directive_namespace);
+    cpg::terminal directive_recover("%recover", token_directive_recover);
     cpg::terminal directive_dont_use_stl("%dont_use_stl", token_directive_dont_use_stl);
     cpg::terminal identifier("IDENT", token_identifier);
-    cpg::terminal recovery("@error", token_recovery);
     cpg::terminal integer("int", token_integer);
     cpg::terminal typetag("<type>", token_typetag);
     cpg::terminal semicolon(";", token_semicolon);
@@ -287,6 +292,7 @@ void make_cpg_parser(cpg::parser& p) {
     cpg::nonterminal external_token_decl("ExternalTokenDecl");
     cpg::nonterminal access_modifier_decl("AccessModifierDecl");
     cpg::nonterminal namespace_decl("NamespaceDecl");
+    cpg::nonterminal recover_decl("RecoverDecl");
     cpg::nonterminal dont_use_stl_decl("DontUseSTLDecl");
     cpg::nonterminal entries("Entries");
     cpg::nonterminal entry("Entry");
@@ -308,8 +314,9 @@ void make_cpg_parser(cpg::parser& p) {
     cpg::rule r_declaration1(declaration);     r_declaration1 << token_prefix_decl << semicolon;
     cpg::rule r_declaration2(declaration);     r_declaration2 << external_token_decl << semicolon;
     cpg::rule r_declaration3(declaration);     r_declaration3 << namespace_decl << semicolon;
-    cpg::rule r_declaration4(declaration);     r_declaration4 << dont_use_stl_decl << semicolon;
-    cpg::rule r_declaration5(declaration);     r_declaration5 << access_modifier_decl << semicolon;
+    cpg::rule r_declaration4(declaration);     r_declaration4 << recover_decl << semicolon;
+    cpg::rule r_declaration5(declaration);     r_declaration5 << dont_use_stl_decl << semicolon;
+    cpg::rule r_declaration6(declaration);     r_declaration6 << access_modifier_decl << semicolon;
 
     // ..%tokenéŒ¾
     cpg::rule r_token_decl0(token_decl);       r_token_decl0 << directive_token;
@@ -331,6 +338,9 @@ void make_cpg_parser(cpg::parser& p) {
 
     // ..%namespaceéŒ¾
     cpg::rule r_namespace_decl(namespace_decl); r_namespace_decl << directive_namespace << identifier;
+
+    // ..%recoveréŒ¾
+    cpg::rule r_recover_decl(recover_decl); r_recover_decl << directive_recover << identifier;
 
     // ..%dont_use_stléŒ¾
     cpg::rule r_dont_use_stl_decl(dont_use_stl_decl); r_dont_use_stl_decl << directive_dont_use_stl;
@@ -365,16 +375,17 @@ void make_cpg_parser(cpg::parser& p) {
       << r_declaration3
       << r_declaration4
       << r_declaration5
+      << r_declaration6
       << r_token_decl0
       << r_token_decl1
       << r_token_decl_element0
       << r_token_decl_element1
-        //<< r_token_prefix_decl
       << r_token_pfx_decl0
       << r_token_pfx_decl1
       << r_external_token_decl
       << r_access_modifier_decl
       << r_namespace_decl
+      << r_recover_decl
       << r_dont_use_stl_decl
       << r_entries0
       << r_entries1
@@ -420,6 +431,7 @@ void make_cpg_parser(cpg::parser& p) {
     p.set_semantic_action(r_external_token_decl, external_token_decl_action());
     p.set_semantic_action(r_access_modifier_decl, access_modifier_decl_action());
     p.set_semantic_action(r_namespace_decl, namespace_decl_action());
+    p.set_semantic_action(r_recover_decl, recover_decl_action());
     p.set_semantic_action(r_dont_use_stl_decl, dont_use_stl_decl_action());
 
     p.set_semantic_action(r_entries0, entries0_action());
@@ -456,14 +468,6 @@ void collect_informations(
     // éŒ¾
     std::shared_ptr<Declarations> declarations = doc->declarations;
     for(const auto& x: declarations->declarations) {
-        if (auto recoverdecl = downcast<RecoverDecl>(x)) {
-            if (0 < known.count(recoverdecl->name)) {
-                throw duplicated_symbol(
-                    recoverdecl->range.beg, recoverdecl->name);
-            }
-            known.insert(recoverdecl->name);
-            terminal_types[recoverdecl->name] = "$recover";
-        }
         if (auto tokendecl = downcast<TokenDecl>(x)) {
             // %tokenéŒ¾
             for (const auto& y: tokendecl->elements) {
@@ -490,6 +494,14 @@ void collect_informations(
         if (auto namespacedecl = downcast<NamespaceDecl>(x)) {
             // %namespaceéŒ¾
             options.namespace_name = namespacedecl->name;
+        }
+        if (auto recoverdecl = downcast<RecoverDecl>(x)) {
+            if (0 < known.count(recoverdecl->name)) {
+                throw duplicated_symbol(
+                    recoverdecl->range.beg, recoverdecl->name);
+            }
+            known.insert(recoverdecl->name);
+            terminal_types[recoverdecl->name] = "$error";
         }
         if (auto dontusestldecl = downcast<DontUseSTLDecl>(x)) {
             // %dont_use_stléŒ¾

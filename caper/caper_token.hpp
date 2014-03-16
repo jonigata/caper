@@ -9,7 +9,6 @@ enum Token {
     token_empty,
     token_error,
     token_identifier,
-    token_recovery,
     token_integer,
     token_typetag,
     token_colon,
@@ -25,6 +24,7 @@ enum Token {
     token_directive_external_token,
     token_directive_access_modifier,
     token_directive_namespace,
+    token_directive_recover,
     token_directive_dont_use_stl,
     token_eof,
 };

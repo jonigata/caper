@@ -412,6 +412,7 @@ make_lalr_table(
         for (const auto& pair: s.action_table) {
             if (pair.first == error_token) {
                 s.handle_error = true;
+                std::cerr << "error handling: " << s.no << " = true\n";
                 break;
             }
         }

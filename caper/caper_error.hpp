@@ -55,7 +55,7 @@ public:
 class bad_directive : public caper_error {
 public:
     bad_directive(int a, const std::string& s)
-        : caper_error(a, fmt("bad directive: \"s\"", s)) {
+        : caper_error(a, fmt("bad directive: \"%s\"", s)) {
     }
 };
 class duplicated_semantic_action_argument : public caper_error {

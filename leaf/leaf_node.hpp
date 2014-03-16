@@ -1,7 +1,7 @@
 // 2008/08/11 Naoyuki Hirayama
 
 /*!
-    @file     calc_node.hpp
+    @file     leaf_node.hpp
     @brief    <ŠT—v>
 
     <à–¾>
@@ -123,9 +123,7 @@ struct CompileEnv : public boost::noncopyable {
 	}
     Symbol* gensym()
 	{
-		char buffer[256];
-		sprintf( buffer, "$gensym%d", idseed++ );
-		return intern( buffer );
+            return intern("$gensym" + std::to_string(idseed++));
 	}
 };
 
@@ -139,15 +137,19 @@ typedef std::map< symbol_t, type_t >    symmap_t;
 ////////////////////////////////////////////////////////////////
 // Header
 struct Header {
-    int     id;
+    int     id  = -1;
     Addr    beg;
     Addr    end;
-    type_t  t;
+    type_t  t   = nullptr;
 
-    Header(){ id = -1; t = NULL; }
-    Header( int aid, const Header& h )
-        : id(aid), beg(h.beg), end(h.end), t(NULL) {}
-    Header( int aid, const Addr& abeg, const Addr& aend )
+    Header(){}
+    Header(const Header& h)
+        : beg(h.beg), end(h.end), t(NULL) { }
+    Header(int aid, const Addr& abeg, const Addr& aend)
+        : id(aid), beg(abeg), end(aend), t(NULL) {}
+    Header(int aid, const Header& h)
+        : id(aid), beg(h.beg), end(h.end), t(NULL) { }
+    Header(int aid, const Addr& abeg, const Addr& aend)
         : id(aid), beg(abeg), end(aend), t(NULL) {}
 
     Header operator+( const Header& h ) const

@@ -1,6 +1,8 @@
 #ifndef CAPER_ERROR_HPP
 #define CAPER_ERROR_HPP
 
+#include "caper_ast.hpp"
+
 ////////////////////////////////////////////////////////////////
 // errors
 class caper_error : public std::exception {

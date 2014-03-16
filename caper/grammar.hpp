@@ -15,6 +15,8 @@
 #include <cassert>
 #include <algorithm>
 #include <memory>
+#include <set>
+#include <unordered_map>
 
 namespace zw {
 

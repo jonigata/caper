@@ -5,8 +5,7 @@
 
 #include "caper_tgt.hpp"
 #include "caper_error.hpp"
-#include "honalee.hpp"
-#include <boost/scoped_ptr.hpp>
+//#include "honalee.hpp"
 
 struct sr_conflict_reporter {
     typedef tgt::rule rule_type;
@@ -35,7 +34,7 @@ void make_target_parser(
         const symbol_map_type&          nonterminal_types,
         bool                            algorithm_lr1 )
 {
-        boost::shared_ptr< Document > doc = get_node< Document >( ast );
+    std::shared_ptr< Document > doc = get_node< Document >( ast );
 
         // 各種データ
         std::unordered_map< std::string, tgt::terminal >        terminals;      // 終端記号表   ( 名前→terminal )
@@ -55,14 +54,14 @@ void make_target_parser(
         }
 
         // 規則
-        boost::scoped_ptr< tgt::grammar > g;
+        std::unique_ptr< tgt::grammar > g;
 
-        boost::shared_ptr< Rules > rules = doc->rules;
-        for( std::vector< boost::shared_ptr< Rule > >::const_iterator i = rules->rules.begin() ;
+        std::shared_ptr< Rules > rules = doc->rules;
+        for( std::vector< std::shared_ptr< Rule > >::const_iterator i = rules->rules.begin() ;
              i != rules->rules.end() ;
              ++i ) {
                 // rule
-                boost::shared_ptr< Rule > rule = *i;
+                std::shared_ptr< Rule > rule = *i;
 
                 tgt::nonterminal& n = nonterminals[rule->name];
                 if( !g ) {
@@ -72,11 +71,11 @@ void make_target_parser(
                         g.reset( new tgt::grammar( r ) );
                 }
 
-                for( std::vector< boost::shared_ptr< Choise > >::const_iterator j = rule->choises->choises.begin() ;
+                for( std::vector< std::shared_ptr< Choise > >::const_iterator j = rule->choises->choises.begin() ;
                      j != rule->choises->choises.end() ;
                      ++j ) {
                         // choise
-                        boost::shared_ptr< Choise > choise = *j;
+                        std::shared_ptr< Choise > choise = *j;
 
                         tgt::rule r( n );
                         semantic_action sa;
@@ -84,11 +83,11 @@ void make_target_parser(
 
                         int index = 0;
                         int max_index = -1;
-                        for( std::vector< boost::shared_ptr< Term > >::const_iterator k = choise->terms.begin() ;
+                        for( std::vector< std::shared_ptr< Term > >::const_iterator k = choise->terms.begin() ;
                              k != choise->terms.end() ;
                              ++k ) {
                                 // term
-                                boost::shared_ptr< Term > term = *k;
+                                std::shared_ptr< Term > term = *k;
 
                                 if( 0 <= term->index ) {
                                         // セマンティックアクションの引数として用いられる
@@ -163,11 +162,15 @@ void make_target_parser(
                 }
         }
 
+/*
         if( algorithm_lr1 ) {
             zw::gr::make_lr1_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
         } else {
             zw::gr::make_lalr_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
         }
+*/
+        zw::gr::make_lalr_table( table, *g, sr_conflict_reporter(), rr_conflict_reporter() );
+
     //std::cerr << "\n[target parse table]\n";
         //std::cerr << table;
 }

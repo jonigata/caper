@@ -46,7 +46,7 @@ hello2: hello2.o
 hello2.o : hello2.cpp hello2.hpp
 
 clean :
-	rm -f *.o hello0.o hello1.o hello2.o calc0.o calc1.o calc2.o 
-	rm -f hello0 hello1 hello2 calc0 calc1 calc2
-	rm -f hello0.hpp hello1.hpp hello2.hpp calc0.hpp calc1_parser.hpp calc2.o calc2_parser.hpp
+	rm -f *.o hello0.o hello1.o hello2.o calc0.o calc1.o calc2.o recovery.o
+	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery
+	rm -f hello0.hpp hello1.hpp hello2.hpp calc0.hpp calc1_parser.hpp calc2.o calc2_parser.hpp recovery.hpp
 	rm -f conflict0.hpp conflict1.hpp samerule.hpp

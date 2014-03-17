@@ -78,57 +78,56 @@ void make_target_parser(
 
             int index = 0;
             int max_index = -1;
-            for (const auto& term_or_recovery: choise->elements) {
-                if (auto term = downcast<Term>(term_or_recovery)) {
-                    if (0 <= term->index) {
-                        // セマンティックアクションの引数として用いられる
-                        if (sa.args.count(term->index)) {
-                            // duplicated
-                            throw duplicated_semantic_action_argument(
-                                term->range.beg, sa.name, term->index);
-                        }
-
-                        // 引数になる場合、型が必要
-                        std::string type;
-                        {
-                            auto l = nonterminal_types.find(term->name);
-                            if (l != nonterminal_types.end()) {
-                                type = (*l).second;
-                            }
-                        }
-                        {
-                            auto l = terminal_types.find(term->name);
-                            if (l != terminal_types.end()) {
-                                if ((*l).second == "") {
-                                    throw untyped_terminal(
-                                        term->range.beg, term->name);
-                                }
-                                type =(*l).second;        
-                            }
-                        }
-                        assert(type != "");
-
-                        semantic_action_argument arg(index, type);
-                        sa.args[term->index] = arg;
-                        if (max_index <term->index) {
-                            max_index = term->index;
-                        }
+            for (const auto& term: choise->elements) {
+                if (0 <= term->index) {
+                    // セマンティックアクションの引数として用いられる
+                    if (sa.args.count(term->index)) {
+                        // duplicated
+                        throw duplicated_semantic_action_argument(
+                            term->range.beg, sa.name, term->index);
                     }
-                    index++;
 
+                    // 引数になる場合、型が必要
+                    std::string type;
                     {
-                        auto l = terminals.find(term->name);
-                        if (l != terminals.end()) {
-                            r << (*l).second;
+                        auto l = nonterminal_types.find(term->name);
+                        if (l != nonterminal_types.end()) {
+                            type = (*l).second;
                         }
                     }
                     {
-                        auto l = nonterminals.find(term->name);
-                        if (l != nonterminals.end()) {
-                            r <<(*l).second;
+                        auto l = terminal_types.find(term->name);
+                        if (l != terminal_types.end()) {
+                            if ((*l).second == "") {
+                                throw untyped_terminal(
+                                    term->range.beg, term->name);
+                            }
+                            type =(*l).second;        
                         }
+                    }
+                    assert(type != "");
+
+                    semantic_action_argument arg(index, type);
+                    sa.args[term->index] = arg;
+                    if (max_index <term->index) {
+                        max_index = term->index;
                     }
                 }
+                index++;
+
+                {
+                    auto l = terminals.find(term->name);
+                    if (l != terminals.end()) {
+                        r << (*l).second;
+                    }
+                }
+                {
+                    auto l = nonterminals.find(term->name);
+                    if (l != nonterminals.end()) {
+                        r <<(*l).second;
+                    }
+                }
+
             }
 
             // 引数に飛びがあったらエラー

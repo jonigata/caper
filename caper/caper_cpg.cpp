@@ -502,6 +502,7 @@ void collect_informations(
             }
             known.insert(recoverdecl->name);
             terminal_types[recoverdecl->name] = "$error";
+            options.recovery = true;
         }
         if (auto dontusestldecl = downcast<DontUseSTLDecl>(x)) {
             // %dont_use_stléŒ¾

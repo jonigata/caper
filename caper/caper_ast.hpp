@@ -244,11 +244,12 @@ typedef zw::gr::package<Token, TokenTraits, Value>    cpg;
 typedef zw::gr::package<int, TargetTokenTraits, int>  tgt;
 
 struct GenerateOptions {
-    std::string     token_prefix;
-    bool            external_token;
-    std::string     access_modifier;
-    std::string     namespace_name;
-    bool            dont_use_stl;
+    std::string     token_prefix    = "token_";
+    bool            external_token  = false;
+    std::string     access_modifier = "";
+    std::string     namespace_name  = "caper_parser";
+    bool            dont_use_stl    = false;
+    bool            recovery        = false;
 };
 
 struct semantic_action_argument {

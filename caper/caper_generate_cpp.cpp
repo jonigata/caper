@@ -171,6 +171,14 @@ void generate_cpp(
            << ind1 << ind1 << "stack_.clear();\n"
            << ind1 << "}\n"
            << "\n"
+           << ind1 << "bool empty() {\n"
+           << ind1 << ind1 << "if (!tmp_.empty()) {\n"
+           << ind1 << ind1 << ind1 << "return false;\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1 << "return gap_ == 0;\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
            << "private:\n"
            << ind1 << "std::vector<T> stack_;\n"
            << ind1 << "std::vector<T> tmp_;\n"
@@ -269,6 +277,14 @@ void generate_cpp(
            << ind1 << ind1 << "top_ = gap_ = tmp_ = 0;\n"
            << ind1 << "}\n"
            << "\n"
+           << ind1 << "bool empty() {\n"
+           << ind1 << ind1 << "if (0 < tmp_) {\n"
+           << ind1 << ind1 << ind1 << "return false;\n"
+           << ind1 << ind1 << "} else {\n"
+           << ind1 << ind1 << ind1 << "return gap_ == 0;\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
            << "private:\n"
            << ind1 << "T& at(size_t n) {\n"
            << ind1 << ind1 << "return *(T*)(stack_ +(n * sizeof(T)));\n"
@@ -323,19 +339,14 @@ void generate_cpp(
        << ind1 << "}\n\n"
        << ind1 << "bool post(token_type token, const value_type& value) {\n"
        << ind1 << ind1 << "reset_tmp_stack();\n"
-       << ind1 << ind1 << "while ((this->*(stack_top()->state))"
-       << "(token, value)); "
+       << ind1 << ind1 << "error_ = false;\n"
+       << ind1 << ind1 << "while ((this->*(stack_top()->state))(token, value));"
        << "// may throw\n"
        << ind1 << ind1 << "if (!error_) {\n"
        << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
-       << ind1 << ind1 << "} else {\n";
-/*
-    if (handle_error) {
-        os << ind1 << ind1 << ind1 << "reset_tmp_stack();\n";
-        // TODO: 未実装
-    }
-*/
-    os << ind1 << ind1 << "}\n"
+       << ind1 << ind1 << "} else {\n"
+       << ind1 << ind1 << ind1 << "recover();\n"
+       << ind1 << ind1 << "}\n"
        << ind1 << ind1 << "return accepted_ || error_;\n"
        << ind1 << "}\n\n"
        << ind1 << "bool accept(value_type& v) {\n"
@@ -406,6 +417,27 @@ void generate_cpp(
        << ind1 << ind1 << "stack_.commit_tmp();\n"
        << ind1 << "}\n\n"
         ;
+
+    if (options.recovery) {
+        os << ind1 << "void recover() {\n"
+           << ind1 << ind1 << "reset_tmp_stack();\n"
+           << ind1 << ind1 << "error_ = false;\n"
+           << ind1 << ind1 << "while(!stack_top()->handle_error) {\n"
+           << ind1 << ind1 << ind1 << "pop_stack(1);\n"
+           << ind1 << ind1 << ind1 << "if (stack_.empty()) {\n"
+           << ind1 << ind1 << ind1 << ind1 << "error_ = true;\n"
+           << ind1 << ind1 << ind1 << ind1 << "return;\n"
+           << ind1 << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "// post error_token\n"
+           << ind1 << ind1 << "while ((this->*(stack_top()->state))(token_error, value_type()));\n"
+           << ind1 << ind1 << "commit_tmp_stack();\n"
+           << ind1 << "}\n\n";
+    } else {
+        os << ind1 << "void recover() {\n"
+           << ind1 << "}\n\n";
+    }
+
 
     // member function signature -> index
     std::map< std::vector< std::string >, int > stub_index;

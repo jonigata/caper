@@ -164,10 +164,6 @@ int main(int argc, const char** argv) {
 
         // Šeíî•ñ‚ÌûW
         GenerateOptions options;
-        options.token_prefix = "token_";
-        options.external_token = false;
-        options.namespace_name = "caper_parser";
-        options.dont_use_stl = false;
 
         symbol_map_type terminal_types;
         symbol_map_type nonterminal_types;

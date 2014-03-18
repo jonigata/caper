@@ -250,6 +250,7 @@ struct GenerateOptions {
     std::string     namespace_name  = "caper_parser";
     bool            dont_use_stl    = false;
     bool            recovery        = false;
+    std::string     recovery_token  = "error";
 };
 
 struct semantic_action_argument {

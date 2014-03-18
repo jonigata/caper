@@ -10,7 +10,7 @@ CPPFLAGS = -g -Wall -DLINUX
 
 all: recovery hello0 hello1 hello2 calc0 calc1 calc2
 
-recovery: recovery.o 
+recovery: recovery.o
 	g++ $(CPPFLAGS) -o $@ $^
 
 recovery.o : recovery.cpp recovery.hpp 

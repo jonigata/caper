@@ -5,6 +5,7 @@
 
 #include "caper_ast.hpp"
 #include "caper_generate_cpp.hpp"
+#include "caper_format.hpp"
 #include <algorithm>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
@@ -12,13 +13,12 @@
 namespace {
 
 struct indent {
-    indent( int n ) : n_(n) {}
+    indent(int n) : n_(n) {}
     int n_;
 };
 
-std::ostream& operator<<( std::ostream& os, const indent& x )
-{
-    for( int i = 0 ; i < x.n_ * 4; i++ ) { os << ' '; }
+std::ostream& operator<<(std::ostream& os, const indent& x) {
+    for (int i = 0 ; i <x.n_ * 4; i++) { os << ' '; }
     return os;
 }
 
@@ -26,18 +26,17 @@ void make_signature(
     const symbol_map_type&                  nonterminal_types,
     const tgt::parsing_table::rule_type&    rule,
     const semantic_action&                  sa,
-    std::vector< std::string >&             signature )
-{
+    std::vector<std::string>&             signature) {
     // function name
-    signature.push_back( sa.name );
+    signature.push_back(sa.name);
 
     // return value
     signature.push_back(
-        (*nonterminal_types.find( rule.left().name() )).second );
+        (*nonterminal_types.find(rule.left().name())).second);
 
     // arguments
-    for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-        signature.push_back( (*sa.args.find( l )).second.type );
+    for (size_t l = 0 ; l <sa.args.size(); l++) {
+        signature.push_back((*sa.args.find(l)).second.type);
     }
 }
 
@@ -49,27 +48,24 @@ void generate_cpp(
     const GenerateOptions&                  options,
     const symbol_map_type&                  terminal_types,
     const symbol_map_type&                  nonterminal_types,
-    const std::map< size_t, std::string >&  token_id_map,
+    const std::map<size_t, std::string>&    token_id_map,
     const action_map_type&                  actions,
-    const tgt::parsing_table&               table )
-{
+    const tgt::parsing_table&               table) {
 #ifdef _WINDOWS
     char basename[_MAX_PATH];
     char extension[_MAX_PATH];
-    _splitpath( src_filename.c_str(), NULL, NULL, basename, extension );
-    std::string filename = std::string(basename) + extension;
-#else
+    _splitpath(src_filename.c_str(), NULL, NULL, basename, extension);
+    std::string filename = std::string(basename)+ extension;
+# else
     std::string filename = src_filename;
 #endif
-        
+
     std::string headername = filename;
-    for( std::string::iterator i = headername.begin() ;
-         i != headername.end() ;
-         ++i ) {
-        if( !isalpha( *i ) && !isdigit( *i ) ) {
-            *i = '_';
+    for (auto& x: headername){
+        if (!isalpha(x)&& !isdigit(x)) {
+            x = '_';
         } else {
-            *i = toupper( *i );
+            x = toupper(x);
         }
     }
 
@@ -86,6 +82,7 @@ void generate_cpp(
     // include
     os << "#include <cstdlib>\n";
     os << "#include <cassert>\n";
+    //os << "#include <iostream>\n";
     if( !options.dont_use_stl ) {
         os << "#include <vector>\n";
     }
@@ -94,19 +91,28 @@ void generate_cpp(
     // namespace header
     os << "namespace " << options.namespace_name << " {\n\n";
 
-    if( !options.external_token ) {
+    if (!options.external_token){
         // token enumeration
-        os << "enum Token {\n";
-        for( size_t i = 0 ; i < token_id_map.size() ; i++ ) {
-            os << "    " << options.token_prefix
-               << (*token_id_map.find( i )).second << ",\n";
+        os << "enum Token { \n";
+        for (size_t i = 0 ; i < token_id_map.size(); i++) {
+            os << ind1 << options.token_prefix
+               << (*token_id_map.find(i)).second << ",\n";
         }
         os << "};\n\n";
+
+        os << "const char* token_label(Token t) {\n"
+           << ind1 << "static const char* labels[] = {\n";
+        for (size_t i = 0 ; i < token_id_map.size(); i++) {
+            os << ind1 << ind1 << "\"" << options.token_prefix
+               << (*token_id_map.find(i)).second << "\",\n";
+        }
+        os << ind1 << "};\n\n"
+           << ind1 << "return labels[t];\n"
+           << "}\n";
     }
 
     // stack class header
-
-    if( !options.dont_use_stl ) {
+    if (!options.dont_use_stl) {
         // STL version
         os << "template <class T, unsigned int StackSize>\n"
            << "class Stack {\n"
@@ -186,7 +192,7 @@ void generate_cpp(
            << "\n"
            << "};\n\n"
             ;
-    }else {
+    } else {
         // bulkmemory version
         os << "template < class T, unsigned int StackSize >\n"
            << "class Stack {\n"
@@ -302,14 +308,14 @@ void generate_cpp(
 
     // parser class header
     std::string default_stacksize = "0";
-    if( options.dont_use_stl ) {
+    if (options.dont_use_stl) {
         default_stacksize = "1024";
     }
-
+        
     std::string template_parameters =
         "class Value, class SemanticAction, unsigned int StackSize = " +
         default_stacksize;
-    if( options.external_token ) {
+    if (options.external_token) {
         template_parameters = "class Token, " + template_parameters;
     }
         
@@ -345,7 +351,7 @@ void generate_cpp(
        << ind1 << ind1 << "if (!error_) {\n"
        << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
        << ind1 << ind1 << "} else {\n"
-       << ind1 << ind1 << ind1 << "recover();\n"
+       << ind1 << ind1 << ind1 << "recover(token, value);\n"
        << ind1 << ind1 << "}\n"
        << ind1 << ind1 << "return accepted_ || error_;\n"
        << ind1 << "}\n\n"
@@ -360,7 +366,7 @@ void generate_cpp(
 
     // implementation
     os << "private:\n";
-    if( options.external_token ) {
+    if (options.external_token) {
         os << ind1 << "typedef "
            << "Parser<Token, Value, SemanticAction, StackSize> self_type;\n";
     } else {
@@ -419,7 +425,7 @@ void generate_cpp(
         ;
 
     if (options.recovery) {
-        os << ind1 << "void recover() {\n"
+        os << ind1 << "void recover(Token token, const value_type& value) {\n"
            << ind1 << ind1 << "reset_tmp_stack();\n"
            << ind1 << ind1 << "error_ = false;\n"
            << ind1 << ind1 << "while(!stack_top()->handle_error) {\n"
@@ -430,8 +436,22 @@ void generate_cpp(
            << ind1 << ind1 << ind1 << "}\n"
            << ind1 << ind1 << "}\n"
            << ind1 << ind1 << "// post error_token\n"
-           << ind1 << ind1 << "while ((this->*(stack_top()->state))(token_error, value_type()));\n"
+            // << ind1 << ind1 << "std::cerr << \"posting error token\\n\";\n"
+           << ind1 << ind1 << "while ((this->*(stack_top()->state))("
+           << options.token_prefix << options.recovery_token
+           << ", value_type()));\n"
+            // << ind1 << ind1 << "std::cerr << \"posting error token done\\n\";\n"
            << ind1 << ind1 << "commit_tmp_stack();\n"
+           << ind1 << ind1 << "// repost original token\n"
+           << ind1 << ind1 << "// if it still causes error, discard it\n"
+            // << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n"
+           << ind1 << ind1
+           << "while ((this->*(stack_top()->state))(token, value));\n"
+            // << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n"
+           << ind1 << ind1 << "if (!error_) {\n"
+           << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
+           << ind1 << ind1 << "}\n"
+           << ind1 << ind1 << "error_ = false; // anyway clear\n"
            << ind1 << "}\n\n";
     } else {
         os << ind1 << "void recover() {\n"
@@ -440,66 +460,60 @@ void generate_cpp(
 
 
     // member function signature -> index
-    std::map< std::vector< std::string >, int > stub_index;
+    std::map<std::vector<std::string>, int> stub_index;
     {
         // member function name -> count
-        std::unordered_map< std::string, int > stub_count; 
+        std::unordered_map<std::string, int> stub_count; 
 
         // action handler stub
-        for( action_map_type::const_iterator k = actions.begin() ;
-             k != actions.end() ;
-             ++k ) {
-
-            const tgt::parsing_table::rule_type& rule = (*k).first;
+        for (const auto& pair: actions) {
+            const auto& rule = pair.first;
 
             //size_t base = rule.right().size();
 
-            const semantic_action& sa = (*k).second;
+            const semantic_action& sa = pair.second;
 
             // make signature
-            std::vector< std::string > signature;
+            std::vector<std::string> signature;
 
             // ... function name
-            signature.push_back( sa.name );
+            signature.push_back(sa.name);
 
             // ... return value
             signature.push_back(
-                (*nonterminal_types.find( rule.left().name() )).second );
+                (*nonterminal_types.find(rule.left().name())).second);
 
             // ... arguments
-            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                signature.push_back( (*sa.args.find( l )).second.type );
+            for (size_t l = 0 ; l <sa.args.size(); l++) {
+                signature.push_back((*sa.args.find(l)).second.type);
             }
 
             // skip duplicated
-            if( stub_index.find( signature ) != stub_index.end() ) {
+            if (0 < stub_index.count(signature)) {
                 continue;
             }
 
             // make function name
-            if( stub_count.find( sa.name ) == stub_count.end()) {
+            if (stub_count.count(sa.name) == 0) {
                 stub_count[sa.name] = 0;
             }
             int index = stub_count[sa.name];
             stub_index[signature] = index;
             stub_count[sa.name] = index+1;
 
-            char function_name_header[256];
-            sprintf( function_name_header, "call_%d_", index );
-            std::string function_name = function_name_header + sa.name;
+            std::string function_name = format("call_%d_%s", index, sa.name);
 
             // generate
             os << ind1 << "bool " << function_name
                << "(int nonterminal_index, int base";
-            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
+            for (size_t l = 0 ; l <sa.args.size(); l++) {
                 os << ", int arg_index" << l;
             }
             os << ") {\n";
 
             // automatic argument conversion
-            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                const semantic_action_argument& arg =
-                    (*sa.args.find( l )).second;
+            for (size_t l = 0 ; l <sa.args.size(); l++) {
+                const auto& arg = (*sa.args.find(l)).second;
                 os << ind1 << ind1 << arg.type
                    << " arg" << l << "; "
                    << "sa_.downcast( arg" << l
@@ -508,12 +522,11 @@ void generate_cpp(
 
             // semantic action
             os << ind1 << ind1
-               << (*nonterminal_types.find(
-                       rule.left().name() )).second
+               << (*nonterminal_types.find(rule.left().name())).second
                << " r = sa_." << sa.name << "(";
             bool first = true;
-            for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                if( first ) { first = false; } else { os << ", "; }
+            for (size_t l = 0 ; l < sa.args.size(); l++) {
+                if (first) { first = false; } else { os << ", "; }
                 os << "arg" << l;
             }
             os << ");\n";
@@ -541,11 +554,10 @@ void generate_cpp(
         bool output_switch = false;
         std::set<size_t> generated;
         for(const auto& rule: table.rules()) {
-
             size_t nonterminal_index = std::distance(
                 nonterminal_types.begin(),
                 nonterminal_types.find(rule.left().name()));
-            if (generated.find(nonterminal_index) != generated.end()) {
+            if (0 < generated.count(nonterminal_index)) {
                 continue;
             }
 
@@ -560,13 +572,13 @@ void generate_cpp(
                    << (table.states()[state_index].handle_error ?
                        "true" : "false")
                    << ");\n";
-                output_switch  = true;
+                output_switch = true;
                 generated.insert(nonterminal_index);
             }
         }
         ss << ind1 << ind1 << "default: assert(0); return false;\n"; 
         ss << ind1 << ind1 << "}\n";
-        if (output_switch ) {
+        if (output_switch) {
             os << ss.str();
         } else {
             os << ind1<< ind1 << "assert(0);\n"
@@ -579,20 +591,21 @@ void generate_cpp(
         // state header
         os << ind1 << "bool state_" << state.no
            << "(token_type token, const value_type& value) {\n";
+        // os << ind1 << ind1 << "std::cerr << \"state_" << state.no << " << \" << token_label(token) << \"\\n\";\n";
 
         // dispatcher header
         os << ind1 << ind1 << "switch(token) {\n";
 
         // reduce action cache
         typedef boost::tuple<
-            std::vector< std::string >,
+            std::vector<std::string>,
             size_t,
             size_t,
-            std::vector< int > >
+            std::vector<int>>
             reduce_action_cache_key_type;
         typedef 
-            std::map< reduce_action_cache_key_type, 
-                      std::vector< std::string > >
+            std::map<reduce_action_cache_key_type,
+                     std::vector<std::string>>
             reduce_action_cache_type;
         reduce_action_cache_type reduce_action_cache;
 
@@ -661,13 +674,13 @@ void generate_cpp(
                         os << ind1 << ind1 << "case " << case_tag << ":\n";
                         os << ind1 << ind1 << ind1 << "// reduce\n";
 
-                        os << ind1 << ind1 << ind1 << ind1
+                        os << ind1 << ind1 << ind1
                            << "// run_semantic_action();\n";
-                        os << ind1 << ind1 << ind1 << ind1 << "pop_stack("
+                        os << ind1 << ind1 << ind1 << "pop_stack("
                            << base
                            << ");\n";
-                        os << ind1 << ind1 << ind1 << ind1
-                           << "return(this->*(stack_top()->gotof))("
+                        os << ind1 << ind1 << ind1
+                           << "return (this->*(stack_top()->gotof))("
                            << nonterminal_index << ", value_type());\n";
                     }
                 }
@@ -695,17 +708,14 @@ void generate_cpp(
         }
 
         // flush reduce action cache
-        for( reduce_action_cache_type::const_iterator i =
-                 reduce_action_cache.begin() ;
-             i != reduce_action_cache.end();
-             ++i ) {
-            const reduce_action_cache_key_type& key = (*i).first;
-            const std::vector< std::string >& cases = (*i).second;
+        for(const auto& pair: reduce_action_cache) {
+            const reduce_action_cache_key_type& key = pair.first;
+            const std::vector< std::string >& cases = pair.second;
 
-            const std::vector< std::string >& signature = key.get<0>();
+            const std::vector<std::string>& signature = key.get<0>();
             size_t nonterminal_index = key.get<1>();
             size_t base = key.get<2>();
-            const std::vector< int >& arg_indices = key.get<3>();
+            const std::vector<int>& arg_indices = key.get<3>();
 
             for( size_t j = 0 ; j < cases.size() ; j++ ) {
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
@@ -713,18 +723,13 @@ void generate_cpp(
 
             int index = stub_index[signature];
 
-            char function_name_header[256];
-            sprintf( function_name_header, "call_%d_", index );
             std::string function_name =
-                function_name_header + signature[0];
-
+                format("call_%d_%s", index, signature[0]);
 
             os << ind1 << ind1 << ind1 << "return "
                << function_name << "(" << nonterminal_index << ", " << base;
-            for( std::vector< int >::const_iterator j = arg_indices.begin() ;
-                 j != arg_indices.end() ;
-                 ++j ) {
-                os  << ", " << (*j);
+            for(const auto& x: arg_indices) {
+                os  << ", " << x;
             }
             os << ");\n";
         }

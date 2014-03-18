@@ -18,7 +18,7 @@ struct indent {
 };
 
 std::ostream& operator<<(std::ostream& os, const indent& x) {
-    for (int i = 0 ; i <x.n_ * 4; i++) { os << ' '; }
+    for (int i = 0 ; i <x.n_ * 4 ; i++) { os << ' '; }
     return os;
 }
 
@@ -35,7 +35,7 @@ void make_signature(
         (*nonterminal_types.find(rule.left().name())).second);
 
     // arguments
-    for (size_t l = 0 ; l <sa.args.size(); l++) {
+    for (size_t l = 0 ; l <sa.args.size() ; l++) {
         signature.push_back((*sa.args.find(l)).second.type);
     }
 }
@@ -94,15 +94,15 @@ void generate_cpp(
     if (!options.external_token){
         // token enumeration
         os << "enum Token { \n";
-        for (size_t i = 0 ; i < token_id_map.size(); i++) {
+        for (size_t i = 0 ; i < token_id_map.size() ; i++) {
             os << ind1 << options.token_prefix
                << (*token_id_map.find(i)).second << ",\n";
         }
         os << "};\n\n";
 
-        os << "const char* token_label(Token t) {\n"
+        os << "inline const char* token_label(Token t) {\n"
            << ind1 << "static const char* labels[] = {\n";
-        for (size_t i = 0 ; i < token_id_map.size(); i++) {
+        for (size_t i = 0 ; i < token_id_map.size() ; i++) {
             os << ind1 << ind1 << "\"" << options.token_prefix
                << (*token_id_map.find(i)).second << "\",\n";
         }
@@ -454,7 +454,7 @@ void generate_cpp(
            << ind1 << ind1 << "error_ = false; // anyway clear\n"
            << ind1 << "}\n\n";
     } else {
-        os << ind1 << "void recover() {\n"
+        os << ind1 << "void recover(Token, const value_type&) {\n"
            << ind1 << "}\n\n";
     }
 
@@ -484,7 +484,7 @@ void generate_cpp(
                 (*nonterminal_types.find(rule.left().name())).second);
 
             // ... arguments
-            for (size_t l = 0 ; l <sa.args.size(); l++) {
+            for (size_t l = 0 ; l <sa.args.size() ; l++) {
                 signature.push_back((*sa.args.find(l)).second.type);
             }
 
@@ -506,13 +506,13 @@ void generate_cpp(
             // generate
             os << ind1 << "bool " << function_name
                << "(int nonterminal_index, int base";
-            for (size_t l = 0 ; l <sa.args.size(); l++) {
+            for (size_t l = 0 ; l <sa.args.size() ; l++) {
                 os << ", int arg_index" << l;
             }
             os << ") {\n";
 
             // automatic argument conversion
-            for (size_t l = 0 ; l <sa.args.size(); l++) {
+            for (size_t l = 0 ; l <sa.args.size() ; l++) {
                 const auto& arg = (*sa.args.find(l)).second;
                 os << ind1 << ind1 << arg.type
                    << " arg" << l << "; "
@@ -525,7 +525,7 @@ void generate_cpp(
                << (*nonterminal_types.find(rule.left().name())).second
                << " r = sa_." << sa.name << "(";
             bool first = true;
-            for (size_t l = 0 ; l < sa.args.size(); l++) {
+            for (size_t l = 0 ; l < sa.args.size() ; l++) {
                 if (first) { first = false; } else { os << ", "; }
                 os << "arg" << l;
             }
@@ -656,7 +656,7 @@ void generate_cpp(
                             signature);
 
                         std::vector<int> arg_indices;
-                        for (size_t l = 0 ; l <sa.args.size(); l++) {
+                        for (size_t l = 0 ; l <sa.args.size() ; l++) {
                             const semantic_action_argument& arg =
                                 (*sa.args.find(l)).second;
                             arg_indices.push_back(arg.src_index);
@@ -717,7 +717,7 @@ void generate_cpp(
             size_t base = key.get<2>();
             const std::vector<int>& arg_indices = key.get<3>();
 
-            for( size_t j = 0 ; j < cases.size() ; j++ ) {
+            for (size_t j = 0 ; j <cases.size() ; j++){
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
             }
 

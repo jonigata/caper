@@ -17,7 +17,7 @@ public:
 public:
     scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(eof()) {}
 
-    calc::Token get(int& v) {
+    rec::Token get(int& v) {
         int c;
         do {
             c = getc();
@@ -25,14 +25,14 @@ public:
 
         // ãLçÜóﬁ
         if (c == eof()) {
-            return calc::token_eof;
+            return rec::token_eof;
         } else {
             v = c;
             switch (c) {
-                case '(': return calc::token_LParen;
-                case ')': return calc::token_RParen;
-                case ',': return calc::token_Comma;
-                case '*': return calc::token_Star;
+                case '(': return rec::token_LParen;
+                case ')': return rec::token_RParen;
+                case ',': return rec::token_Comma;
+                case '*': return rec::token_Star;
             }
         }
 
@@ -46,7 +46,7 @@ public:
             }
             ungetc(c);
             v = n;
-            return calc::token_Number;
+            return rec::token_Number;
         }
 
 
@@ -113,9 +113,9 @@ int main( int, char** )
     scanner<is_iterator> s(b, e);
 
     SemanticAction sa;
-    calc::Parser<int, SemanticAction> parser(sa);
+    rec::Parser<int, SemanticAction> parser(sa);
 
-    calc::Token token;
+    rec::Token token;
     for(;;) {
         int v;
         token = s.get( v );
@@ -123,7 +123,7 @@ int main( int, char** )
     }
 
     if (parser.error()) {
-        std::cerr << "error occured: " << token << std::endl;
+        std::cerr << "error occured: " << rec::token_label(token) << std::endl;
         exit(1);
     }
 

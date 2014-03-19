@@ -1,7 +1,11 @@
 %token Number<int> LParen RParen Comma Star;
-%namespace calc;
+%namespace rec;
 %dont_use_stl;
 %recover error;
+
+Do<int> : [] List
+        | [] Star
+        ;
 
 List<int> : [PackList] LParen ListItems(0) RParen
 	  | [PackListError] LParen error RParen

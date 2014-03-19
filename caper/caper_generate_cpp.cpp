@@ -451,7 +451,10 @@ void generate_cpp(
            << ind1 << ind1 << "if (!error_) {\n"
            << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
            << ind1 << ind1 << "}\n"
-           << ind1 << ind1 << "error_ = false; // anyway clear\n"
+           << ind1 << ind1
+           << "if (token != " << options.token_prefix << "eof) {\n"
+           << ind1 << ind1 << ind1 << "error_ = false;\n"
+           << ind1 << ind1 << "}\n"
            << ind1 << "}\n\n";
     } else {
         os << ind1 << "void recover(Token, const value_type&) {\n"
@@ -717,7 +720,7 @@ void generate_cpp(
             size_t base = key.get<2>();
             const std::vector<int>& arg_indices = key.get<3>();
 
-            for (size_t j = 0 ; j <cases.size() ; j++){
+            for (size_t j = 0 ; j < cases.size() ; j++){
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
             }
 

@@ -556,7 +556,7 @@ void generate_cpp(
         ss << ind1 << ind1 << "switch(nonterminal_index) {\n";
         bool output_switch = false;
         std::set<size_t> generated;
-        for(const auto& rule: table.rules()) {
+        for(const auto& rule: table.grammar()) {
             size_t nonterminal_index = std::distance(
                 nonterminal_types.begin(),
                 nonterminal_types.find(rule.left().name()));
@@ -637,10 +637,10 @@ void generate_cpp(
                     break;
                 case zw::gr::action_reduce: {
                     size_t base =
-                        table.rules()[a->rule_index].right().size();
+                        table.grammar().at(a->rule_index).right().size();
 
                     const tgt::parsing_table::rule_type& rule =
-                        table.rules()[a->rule_index];
+                        table.grammar().at(a->rule_index);
                     action_map_type::const_iterator k =
                         actions.find(rule);
 

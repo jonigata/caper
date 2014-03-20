@@ -143,7 +143,7 @@ make_lalr_table(
     collect_symbols(terminals, nonterminals, all_symbols, g);
 
     // 接続チェック
-    check_reachable( g );
+    check_reachable(g);
 
     // FIRST, FOLLOWの作成
     first_collection<Token, Traits> first;
@@ -151,11 +151,7 @@ make_lalr_table(
     make_first_and_follow(first, follow, terminals, nonterminals, all_symbols, g);
 
     // 表の作成
-    // ルールのコピー/インデックスの作成
-    std::map<rule_type, int> rule_indices;
-    for(const auto& rule: g) {
-        rule_indices[rule] = table.add_rule(rule);
-    }
+    table.set_grammar(g);
 
     // p.271
 
@@ -326,15 +322,13 @@ make_lalr_table(
             auto k = s.action_table.find(a.token());
             if (k != s.action_table.end()) {
                 if ((*k).second.type == action_reduce) {
-                    srr(x.rule(), table.rules()[(*k).second.rule_index]);
+                    srr(x.rule(),
+                        table.grammar().at((*k).second.rule_index));
                 }
             }
 
             s.action_table[a.token()] = action_type(
-                action_shift,
-                next,
-                rule_indices[x.rule()]
-                );
+                action_shift, next, x.rule().id());
         }
 
         // b), c)は同時に行う
@@ -346,15 +340,17 @@ make_lalr_table(
 
             auto k = s.action_table.find(x.lookahead().token());
             if (k != s.action_table.end()) {
-                const rule_type& krule = table.rules()[(*k).second.rule_index];
+                const rule_type& krule =
+                    table.grammar().at((*k).second.rule_index);
                 if ((*k).second.type == action_shift) {
                     srr(krule, x.rule());
                     add_action = false; // shiftを優先
                 }
-                if ((*k).second.type == action_reduce && !(krule == x.rule())) {
+                if ((*k).second.type == action_reduce &&
+                    !(krule == x.rule())) {
                     rrr(krule, x.rule());
-                    add_action =
-                        table.rule_index(x.rule()) < (*k).second.rule_index; 
+                    // 若い方を優先
+                    add_action = x.rule().id() < (*k).second.rule_index; 
                 }
             }
 
@@ -365,18 +361,13 @@ make_lalr_table(
                     // "reduce A→α"を入れる。
 
                     s.action_table[x.lookahead().token()] = action_type(
-                        action_reduce,
-                        0xdeadbeaf,
-                        rule_indices[x.rule()]);
+                        action_reduce, 0xdeadbeaf, x.rule().id());
                 } else {
                     // c)項[S'→S・, $]がJiの要素ならば、
                     // action[i, $]に"accept"を入れる。
 
                     s.action_table[Traits::eof()] = action_type(
-                        action_accept,
-                        0xdeadbeaf,
-                        rule_indices[g.root_rule()]
-                        );
+                        action_accept, 0xdeadbeaf, g.root_rule().id());
                 }
             }
         }
@@ -513,7 +504,7 @@ public:
     bool push(const token_type& x, const value_type& v) {
         bool ate = false;
 
-        const auto& rules = table_.rules();
+        const auto& g = table_.grammar();
 
         while (!ate) {
             const state_type* state = stack_top();
@@ -527,7 +518,7 @@ public:
                     ate = true;
                     break;
                 case action_reduce: {
-                    const auto& rule = rules[action->rule_index];
+                    const auto& rule = g.at(action->rule_index);
                     value_type v;
                     run_semantic_action(v, rule);
                     pop_stack(rule.right().size());
@@ -540,7 +531,7 @@ public:
                     break;
                 }
                 case action_accept: {
-                    const auto& rule = rules[action->rule_index];
+                    const auto& rule = g.at(action->rule_index);
                     run_semantic_action(accept_value_, rule);
                     return true;
                 }

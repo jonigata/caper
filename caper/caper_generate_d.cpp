@@ -335,19 +335,16 @@ void generate_d(
                 ss << indent << indent << "switch(nonterminal_index){" << endl;
                 bool output_switch = false;
                 std::set<size_t> generated;
-                for( tgt::parsing_table::rules_type::const_iterator j = table.rules().begin() ;
-                     j != table.rules().end() ;
-                     ++j ) {
-
+                for(const auto& rule: table.grammar()) {
                         size_t nonterminal_index = std::distance(
                                 nonterminal_types.begin(),
-                                nonterminal_types.find( (*j).left().name() ) );
+                                nonterminal_types.find( rule.left().name() ) );
                         if( generated.find( nonterminal_index ) != generated.end() ) {
                                 continue;
                         }
 
                         tgt::parsing_table::state::goto_table_type::const_iterator k =
-                                (*i).goto_table.find( (*j).left() );
+                                (*i).goto_table.find( rule.left() );
 
                         if( k != (*i).goto_table.end() ) {
 
@@ -402,9 +399,9 @@ void generate_d(
                         case zw::gr::action_reduce:
                                 os << indent << indent << indent << "// reduce" << endl;
                                 {
-                                        size_t base = table.rules()[ a->rule_index ].right().size();
+                                    size_t base = table.grammar().at(a->rule_index).right().size();
                                         
-                                        const tgt::parsing_table::rule_type& rule = table.rules()[a->rule_index];
+                                    const tgt::parsing_table::rule_type& rule = table.grammar().at(a->rule_index);
                                         action_map_type::const_iterator k = actions.find( rule );
 
                                         size_t nonterminal_index = std::distance(

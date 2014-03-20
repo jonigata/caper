@@ -782,15 +782,15 @@ class parsing_table {
 public:
     struct state;
 
-    typedef Token                           token_type;
-    typedef Traits                          traits_type;
-    typedef parsing_table<Token,Traits>     self_type;
-    typedef symbol< Token, Traits >         symbol_type;
-    typedef symbol_set< Token, Traits >     symbol_set_type;
-    typedef rule< Token, Traits >           rule_type;
-    typedef std::vector< rule_type >        rules_type;
-    typedef core< Token, Traits >           core_type; 
-    typedef item< Token, Traits >           item_type; 
+    typedef Token                       token_type;
+    typedef Traits                      traits_type;
+    typedef parsing_table<Token,Traits> self_type;
+    typedef symbol<Token, Traits>       symbol_type;
+    typedef symbol_set<Token, Traits>   symbol_set_type;
+    typedef grammar<Token, Traits>      grammar_type;
+    typedef rule<Token, Traits>         rule_type;
+    typedef core<Token, Traits>         core_type; 
+    typedef item<Token, Traits>         item_type; 
     
     struct action {
         action_t type;
@@ -831,21 +831,23 @@ public:
 
 public:
     parsing_table() { first_ = -1; }
-    parsing_table( const parsing_table< Token, Traits >& x ) { operator=(x); }
+    parsing_table(const parsing_table<Token, Traits>& x) { operator=(x); }
     ~parsing_table() { clear(); }
 
     self_type& operator=(const self_type& x) {
         clear();
         states_ = x.states_;
-        rules_ = x.rules_;
+        grammar_ = x.grammar_;
         first_ = x.first_;
         return *this;
     }
 
+    void set_grammar(const grammar_type& g) { grammar_ = g; }
+
     int     first_state() const { return first_; }
 
     const states_type& states() const { return states_; }
-    const rules_type& rules() const { return rules_; }
+    const grammar_type& grammar() const { return grammar_; }
 
     void first_state(int s) {
         enunique();
@@ -857,36 +859,23 @@ public:
         return states_;
     }
 
-    int add_rule(const rule_type& rule) {
-        enunique();
-        rules_.push_back(rule);
-        return int(rules_.size())- 1;
-    }
     state& add_state() {
         enunique();
         states_.emplace_back(int(states_.size()));
         return states_.back();
     }
 
-    int rule_index(const rule<Token, Traits>& r) const {
-        auto i = std::find(rules_.cbegin(), rules_.cend(), r);
-        if (i == rules_.cend()) {
-            return -1;
-        }
-        return int(i - rules_.cbegin());
-    }
-
 protected:
     void clear() {
         states_.clear();
-        rules_.clear();
+        grammar_ = grammar_type();
     }
 
     void enunique(){}
 
 private:
     states_type     states_;
-    rules_type      rules_;
+    grammar_type    grammar_;
     int             first_;
     
 };
@@ -914,10 +903,10 @@ std::ostream& operator<<(
                     os << "shift(" << action.dest_index << ")\n";
                     break;
                 case action_reduce:    
-                    os << "reduce(" << x.rules()[action.rule_index] << ")\n";
+                    os << "reduce(" << x.grammar().at(action.rule_index) << ")\n";
                     break;
                 case action_accept:
-                    os << "accept(" << x.rules()[action.rule_index] << ")\n";
+                    os << "accept(" << x.grammar().at(action.rule_index) << ")\n";
                     break;
                 case action_error:
                     os << "error\n";

@@ -582,6 +582,7 @@ public:
     const_iterator begin()const { return imp->elements.begin(); }
     const_iterator end()  const { return imp->elements.end(); }
     size_t size() const { return imp->elements.size(); }
+    const rule_type& at(std::size_t n) const { return imp->elements[n]; }
 
     rule_type root_rule() const { return imp->elements[0]; }
 

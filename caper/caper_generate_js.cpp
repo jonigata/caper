@@ -99,17 +99,15 @@ void generate_javascript(
                 const tgt::parsing_table::state& s = *i;
 
                 // gotof header
-                os << "    this.gotof_" << s.no << " = new Array( " << table.rules().size() << " );\n";
+                os << "    this.gotof_" << s.no << " = new Array( " << table.grammar().size() << " );\n";
 
                 // gotof dispatcher
                 int rule_index = 0;
-                for( tgt::parsing_table::rules_type::const_iterator j = table.rules().begin() ;
-                     j != table.rules().end() ;
-                     ++j ) {
+                for(const auto& rule: table.grammar()) {
 
                         // 本当は nonterminal 1つにつき1行でよいが、大差ないし不便なので rule 1つにつき1行とする
                         tgt::parsing_table::state::goto_table_type::const_iterator k =
-                                (*i).goto_table.find( (*j).left() );
+                                (*i).goto_table.find( rule.left() );
 
                         if( k != (*i).goto_table.end() ) {
                                 os << "    this.gotof_" << s.no << "[ " << rule_index << " ] = "
@@ -150,9 +148,9 @@ void generate_javascript(
                         case zw::gr::action_reduce:
                                 os << "            // reduce\n";
                                 {
-                                        size_t base = table.rules()[ a->rule_index ].right().size();
+                                    size_t base = table.grammar().at(a->rule_index).right().size();
                                         
-                                        const tgt::parsing_table::rule_type& rule = table.rules()[a->rule_index];
+                                    const tgt::parsing_table::rule_type& rule = table.grammar().at(a->rule_index);
                                         action_map_type::const_iterator k = actions.find( rule );
                                         if( k != actions.end() ) {
                                                 const semantic_action& sa = (*k).second;

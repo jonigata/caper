@@ -25,7 +25,7 @@ public:
 class syntax_error : public caper_error {
 public:
     syntax_error(int a, Token at)
-        : caper_error(a, fmt("syntax error around %s", display_token(at))) {
+        : caper_error(a, fmt("syntax error around %s", token_labels(at))) {
     }
 };
 class duplicated_symbol : public caper_error {

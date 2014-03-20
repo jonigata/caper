@@ -97,7 +97,7 @@ void get_commandline_options(
         }
     }
 
-    if (state <2) {
+    if (state < 2) {
         std::cerr << "caper: usage: caper [-c++ | -js | -cs | -java] input_filename output_filename" << std::endl;
         exit(1);
     }

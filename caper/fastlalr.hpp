@@ -1,6 +1,7 @@
 // Copyright (C) 2006 Naoyuki Hirayama.
 // All Rights Reserved.
 
+
 // $Id$
 
 #if !defined(ZW_FASTLALR_HPP)
@@ -483,7 +484,11 @@ public:
     };
 
     typedef std::function<Value (const arguments&)> semantic_action_type;
-    typedef std::vector<semantic_action_type> semantic_actions_type;
+    typedef std::unordered_map<
+        rule_type,
+        semantic_action_type,
+        typename rule_type::hash>
+        semantic_actions_type;
     
 public:
     parser() {}
@@ -491,21 +496,18 @@ public:
 
     void reset(const table_type& x) {
         stack_.clear();
-        semantic_actions_.clear();
 
         table_ = x;
         push_stack(table_.first_state(), value_type());
-        semantic_actions_.resize(x.rules().size());
     }
 
     template <class F>
     void set_semantic_action(const rule_type& rule, F f) {
-        // TODO: ’x‚¢
-        for (size_t i = 0 ; i < table_.rules().size(); i++) {
-            if (table_.rules()[i] == rule) {
-                semantic_actions_[i] = semantic_action_type(f);
-            }
-        }
+        semantic_actions_[rule] = semantic_action_type(f);
+    }
+
+    void set_semantic_actions(const semantic_actions_type& m) {
+        semantic_actions_ = m;
     }
 
     bool push(const token_type& x, const value_type& v) {
@@ -525,9 +527,9 @@ public:
                     ate = true;
                     break;
                 case action_reduce: {
-                    const rule_type& rule = rules[action->rule_index];
+                    const auto& rule = rules[action->rule_index];
                     value_type v;
-                    run_semantic_action(v, action->rule_index);
+                    run_semantic_action(v, rule);
                     pop_stack(rule.right().size());
                     state = stack_top();
                     {
@@ -538,7 +540,8 @@ public:
                     break;
                 }
                 case action_accept: {
-                    run_semantic_action(accept_value_, action->rule_index);
+                    const auto& rule = rules[action->rule_index];
+                    run_semantic_action(accept_value_, rule);
                     return true;
                 }
                 case action_error:
@@ -553,10 +556,8 @@ public:
     const value_type& accept_value() { return accept_value_; }
 
 private:
-    void run_semantic_action(value_type& v, int rule_index) {
-        const rule_type& rule = table_.rules()[rule_index];
-
-        if (const auto& f = semantic_actions_[rule_index]) {
+    void run_semantic_action(value_type& v, const rule_type& rule) {
+        if (const auto& f = semantic_actions_[rule]) {
             v = f(arguments(
                       stack_.end() - rule.right().size(),
                       stack_.end()));
@@ -575,7 +576,7 @@ private:
         return &table_.states()[stack_.back().state];
     }
 
-private:
+public:
     Table                   table_;
     semantic_actions_type   semantic_actions_;
     value_type              accept_value_;

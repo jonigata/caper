@@ -7,7 +7,7 @@
 
 // typesafe sprintf
 inline
-void format(boost::format& f) {
+void format(boost::format&) {
 }
 
 template <typename TV, typename... T> inline

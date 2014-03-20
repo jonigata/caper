@@ -277,12 +277,24 @@ typedef std::map<std::string, std::string>      symbol_map_type;
 // utility functions
 template <class T>
 std::shared_ptr<T> get_node(const value_type& v) {
-    return std::static_pointer_cast<T>(boost::get<node_ptr>(v.data));
+    try {
+        return std::static_pointer_cast<T>(boost::get<node_ptr>(v.data));
+    }
+    catch(boost::bad_get& x) {
+        std::cerr << typeid(T).name() << std::endl;
+        throw x;
+    }
 }
 
 template <class T>
 const std::string& get_symbol(const value_type& v) {
-    return boost::get<T>(v.data).s;
+    try {
+        return boost::get<T>(v.data).s;
+    }
+    catch(boost::bad_get& x) {
+        std::cerr << typeid(T).name() << std::endl;
+        throw x;
+    }
 }
 
 template <class T, class U>

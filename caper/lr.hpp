@@ -178,7 +178,7 @@ std::ostream& operator<<(std::ostream& os, const item<Token, Traits>& y) {
 template <class Token, class Traits>
 class symbol_set :
         public std::unordered_set<symbol<Token, Traits>,
-                                  symbol_hash<Token, Traits>> {
+                                  typename symbol<Token, Traits>::hash> {
 };
 
 template <class Token, class Traits>
@@ -247,7 +247,7 @@ template <class Token, class Traits>
 class first_collection :
         public std::unordered_map<symbol<Token, Traits>,
                                   symbol_set<Token, Traits>,
-                                  symbol_hash<Token, Traits>> {
+                                  typename symbol<Token, Traits>::hash> {
 };
 
 template <class Token, class Traits>
@@ -273,7 +273,7 @@ template <class Token, class Traits>
 class follow_collection :
         public std::unordered_map<symbol<Token, Traits>,
                                   symbol_set<Token, Traits>,
-                                  symbol_hash<Token, Traits>> {
+                                  typename symbol<Token, Traits>::hash> {
 };
 
 template <class Token, class Traits>
@@ -369,7 +369,7 @@ void collect_symbols(
 
 template <class Token, class Traits>
 bool all_nullable(
-    const std::unordered_set<symbol<Token, Traits>, symbol_hash<Token, Traits>>& nullable,
+    const std::unordered_set<symbol<Token, Traits>, typename symbol<Token, Traits>::hash>& nullable,
     const std::vector<symbol<Token, Traits>>&    rule_right,
     int b, int e) {
     bool flag = true;
@@ -390,8 +390,8 @@ void make_first_and_follow(
     first_collection<Token, Traits>&    first,
     follow_collection<Token, Traits>&   follow,
     const symbol_set<Token, Traits>&    terminals,
-    const symbol_set<Token, Traits>&    nonterminals,
-    const symbol_set<Token, Traits>&    all_symbols,
+    const symbol_set<Token, Traits>&,
+    const symbol_set<Token, Traits>&,
     const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
 
@@ -936,7 +936,7 @@ template <class Token, class Traits>
 struct null_reporter {
     typedef rule<Token, Traits> rule_type;
 
-    void operator()(const rule_type& x, const rule_type& y) {
+    void operator()(const rule_type&, const rule_type& y) {
         // do nothing
     }
 };

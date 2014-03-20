@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <set>
+#include <unordered_set>
 #include <unordered_map>
 
 namespace zw {
@@ -39,10 +40,10 @@ template <class Token,class Traits >
 class epsilon {
 public:
     epsilon(){}
-    epsilon(const epsilon<Token, Traits>& x) {}
+    epsilon(const epsilon<Token, Traits>&) {}
     ~epsilon(){}
 
-    epsilon<Token, Traits>& operator=(const epsilon<Token, Traits>& x) {
+    epsilon<Token, Traits>& operator=(const epsilon<Token, Traits>&) {
         return *this;
     }
     
@@ -51,7 +52,7 @@ private:
 };
 
 template <class Token,class Traits>
-std::ostream& operator<<(std::ostream& os, const epsilon<Token, Traits>& r) {
+std::ostream& operator<<(std::ostream& os, const epsilon<Token, Traits>&) {
     os << "{}";
     return os;
 }
@@ -73,9 +74,6 @@ bool operator ==(const terminal<Token, Traits>& x,
 template <class Token, class Traits>
 std::ostream& operator<<(std::ostream&, const terminal<Token, Traits>&);
 
-template <class Token, class Traits>
-struct terminal_hash;
-
 template <class Token,class Traits >
 class terminal {
 public:
@@ -83,13 +81,13 @@ public:
     terminal(const std::string& d, const Token& t) : display_(d), token_(t) {}
     terminal(const terminal<Token, Traits>& x)
         : display_(x.display_), token_(x.token_) {}
-
+    
     terminal<Token, Traits>& operator=(const terminal<Token, Traits>& x) {
         display_ = x.display_;
         token_ = x.token_;
         return *this;
     }
-
+    
 private:
     std::string     display_;
     Token           token_;
@@ -100,8 +98,16 @@ private:
     friend std::ostream& operator<< <>(
         std::ostream& os, const terminal<Token, Traits>& r);
         
-    friend struct terminal_hash<Token, Traits>;
     friend class symbol<Token, Traits>;
+
+public:
+    struct hash {
+        std::size_t
+        operator()(const terminal< Token, Traits >& s) const {
+            return std::size_t(s.token_);
+        }
+    };
+    
 };
 
 template <class Token, class Traits>
@@ -118,15 +124,7 @@ std::ostream& operator<<( std::ostream& os, const terminal< Token, Traits >& r )
 }
 
 template <class Token, class Traits>
-struct terminal_hash {
-    std::size_t operator()(const terminal< Token, Traits >& s) const {
-        return std::size_t(s.token_);
-    }
-};
-
-template <class Token, class Traits>
-class terminal_set : public std::unordered_set<terminal<Token, Traits>,
-                                               terminal_hash<Token, Traits>> {
+class terminal_set : public std::unordered_set<terminal<Token, Traits>, typename terminal<Token, Traits>::hash> {
 };
 
 /*============================================================================
@@ -152,9 +150,6 @@ bool operator<(const nonterminal<Token, Traits>& x,
 template <class Token, class Traits>
 std::ostream& operator<<(
     std::ostream& os, const nonterminal<Token, Traits>& r);
-
-template <class Token, class Traits>
-struct nonterminal_hash;
 
 template <class Token, class Traits>
 class nonterminal {
@@ -194,8 +189,16 @@ private:
     friend std::ostream& operator<< <>(
         std::ostream&, const nonterminal<Token, Traits>& y);
 
-    friend struct nonterminal_hash<Token, Traits>;
     friend class symbol< Token, Traits >;
+
+public:
+    struct hash {
+        std::size_t
+        operator()(const nonterminal<Token, Traits>& s) const {
+            return reinterpret_cast<std::size_t>(s.name_);
+        }
+    };
+
 };
 
 template <class Token, class Traits>
@@ -218,16 +221,9 @@ std::ostream& operator<<(
 }
 
 template <class Token, class Traits>
-struct nonterminal_hash {
-    std::size_t operator()(const nonterminal<Token, Traits>& s) const {
-        return reinterpret_cast<std::size_t>(s.name_);
-    }
-};
-
-template <class Token, class Traits>
 class nonterminal_set :
         public std::unordered_set<nonterminal<Token, Traits>,
-                                  nonterminal_hash<Token, Traits>> {
+                                  typename nonterminal<Token, Traits>::hash> {
     
 };
 
@@ -253,9 +249,6 @@ template <class Token, class Traits>
 std::ostream& operator<<(std::ostream& os, const symbol<Token, Traits>& r);
 
 template <class Token, class Traits>
-struct symbol_hash;
-
-template <class Token, class Traits>
 class symbol {
 private:
     enum category_type {
@@ -269,7 +262,7 @@ public:
     symbol(const symbol<Token, Traits>& x)
         : type_(x.type_),
           token_(x.token_), display_(x.display_), name_(x.name_) {}
-    symbol(const epsilon<Token, Traits>& x) : type_(type_epsilon) {}
+    symbol(const epsilon<Token, Traits>&) : type_(type_epsilon) {}
     symbol(const terminal<Token, Traits>& x)
         : type_(type_terminal), token_(x.token_), display_(x.display_) {}
     symbol(const nonterminal<Token, Traits>& x)
@@ -282,7 +275,7 @@ public:
         name_ = x.name_;
         return *this;
     }
-    symbol<Token, Traits>& operator=(const epsilon<Token, Traits>& x) {
+    symbol<Token, Traits>& operator=(const epsilon<Token, Traits>&) {
         type_ = type_epsilon;
         return *this;
     }
@@ -352,23 +345,19 @@ private:
     friend std::ostream& operator<< <>(
         std::ostream& os, const symbol<Token, Traits>& r);
 
-    friend struct symbol_hash<Token, Traits>;
-};
-
-template <class Token, class Traits >
-struct symbol_hash
-{
-    std::size_t operator()(const symbol< Token, Traits >& s) const
-    {
-        typedef symbol< Token, Traits > symbol_type;
-
-        switch (s.type_) {
-            case symbol_type::type_epsilon:      return 0x11111111;
-            case symbol_type::type_terminal:     return std::size_t(s.token_);
-            case symbol_type::type_nonterminal:  return reinterpret_cast<std::size_t>(s.name_);
-            default: assert(0);     return false;
+public:
+    struct hash {
+        std::size_t operator()(const symbol<Token, Traits>& s) const {
+            switch (s.type_) {
+                case type_epsilon:      return 0x11111111;
+                case type_terminal:     return std::size_t(s.token_);
+                case type_nonterminal:
+                    return reinterpret_cast<std::size_t>(s.name_);
+                default: assert(0);     return false;
+            }
         }
-    }
+    };
+
 };
 
 template <class Token, class Traits> inline
@@ -405,8 +394,6 @@ std::ostream& operator<<(std::ostream& os, const symbol<Token, Traits>& r) {
 template <class Token, class Traits> class grammar;
 
 template <class Token, class Traits> class rule;
-
-template <class Token, class Traits> struct rule_hash;
 
 template <class Token, class Traits>
 bool operator ==(const rule<Token, Traits>& x,
@@ -462,9 +449,13 @@ public:
 
     std::size_t id() const { return imp->id; }
 
-    const nonterminal< Token, Traits >& left() const  { return imp->left; }
-    const elements_type&                right() const { return imp->elements; }
-
+    const nonterminal< Token, Traits >& left() const  {
+        return imp->left;
+    }
+    const elements_type&                right() const {
+        return imp->elements;
+    }
+    
 private:
     void enunique() {
         if (!imp.unique()) { imp = std::make_shared<rule_imp>(*imp); }
@@ -473,11 +464,29 @@ private:
 private:
     imp_ptr imp;
     
-    friend struct rule_hash< Token, Traits >;
     friend bool operator== <>(const rule<Token, Traits>& x,
                               const rule<Token, Traits>& y);
     friend bool operator< <>(const rule<Token, Traits>& x,
                              const rule<Token, Traits>& y);
+
+public:
+    struct hash {
+        std::size_t operator()(const rule<Token, Traits>& s) const {
+            // large prime numbers
+            const int p1 = 73856093;
+            const int p2 = 19349663;
+            //const int p3 = 83492791;
+            
+            typename elements_type::value_type::hash h2;
+            int n = 0;
+            for (const auto& x: s.right()) {
+                n += h2(x);
+            }
+            
+            typename nonterminal_type::hash h1;
+            return h1(s.left()) * p1 + n * p2;
+        }
+    };
 
 };
 
@@ -508,13 +517,6 @@ std::ostream& operator<<(std::ostream& os, const rule<Token, Traits>& r) {
     return os;
 }
 
-template <class Token, class Traits >
-struct rule_hash {
-    std::size_t operator()(const rule< Token, Traits >& s) const {
-        return reinterpret_cast<std::size_t>(s.imp.get());
-    }
-};
-
 /*============================================================================
  *
  * class grammar
@@ -538,14 +540,14 @@ public:
 
 private:
     struct grammar_imp {
-        rule_type       root;
-        elements_type   elements;
+        elements_type   elements;   // 0 = root
         dictionary_type dictionary;
 
-        grammar_imp() { }
-        grammar_imp(const rule_type& x) : root(x) { elements.push_back(x); }
+        grammar_imp() {} 
+        grammar_imp(const rule_type& x)
+            : elements { x } {}
         grammar_imp(const grammar_imp& x)
-        : root(x.root), elements(x.elements), dictionary(x.dictionary) {}
+            : elements(x.elements), dictionary(x.dictionary) {}
 
         void add(const rule_type& x) {
             rule_type y(x);
@@ -558,6 +560,8 @@ private:
     typedef std::shared_ptr<grammar_imp> imp_ptr;
 
 public:
+    grammar()
+        : imp(std::make_shared<grammar_imp>()){}
     explicit grammar(const rule<Token, Traits>& r)
         : imp(std::make_shared<grammar_imp>(r)){}
     grammar(const grammar& x) : imp(x.imp) {}
@@ -570,9 +574,7 @@ public:
 
     grammar& operator<<(const rule_type& r) {
         enunique();
-        assert(std::find(imp->elements.begin(),
-                         imp->elements.end(), r) ==
-               imp->elements.end());
+        assert(!exists(r));
         imp->add(r);
         return *this;
     }
@@ -581,18 +583,16 @@ public:
     const_iterator end()  const { return imp->elements.end(); }
     size_t size() const { return imp->elements.size(); }
 
-    rule_type root_rule() const { return imp->root; }
-
-    int rule_index(const rule<Token, Traits>& r) const {
-        typename elements_type::const_iterator i =
-            std::find(imp->elements.begin(), imp->elements.end(), r);
-        if (i == imp->elements.end()) {
-            return -1;
-        }
-        return int(i - imp->elements.begin());
-    }
+    rule_type root_rule() const { return imp->elements[0]; }
 
     const dictionary_type& dictionary() const { return imp->dictionary; }
+
+    bool exists(const rule_type& rule) const {
+        return
+            std::find(imp->elements.begin(),
+                      imp->elements.end(), rule) !=
+            imp->elements.end();
+    }
 
 private:
     void enunique() {

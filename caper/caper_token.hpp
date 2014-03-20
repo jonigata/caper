@@ -22,7 +22,6 @@ enum Token {
     token_directive_token,
     token_directive_token_prefix,
     token_directive_external_token,
-    token_directive_access_modifier,
     token_directive_namespace,
     token_directive_recover,
     token_directive_dont_use_stl,
@@ -34,9 +33,10 @@ struct TokenTraits {
 };
 
 inline
-const char* display_token(Token op) {
-    const char* display[] = {
-        "e",
+const char* token_labels(Token op) {
+    const char* labels[] = {
+        "<>",
+        "error",
         "IDENT",
         "number",
         "<type>",
@@ -53,16 +53,17 @@ const char* display_token(Token op) {
         "%token_prefix",
         "%external_token",
         "%namespace",
+        "%recover",
         "%dont_use_stl",
         "$"
     };
 
-    return display[op];
+    return labels[op];
 }
 
 inline
 std::ostream& operator<<(std::ostream& os, Token op) {
-    os <<  display_token(op);
+    os <<  token_labels(op);
     return os;
 }
 

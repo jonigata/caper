@@ -139,7 +139,7 @@ void make_target_parser(
             }
 
             // ‚·‚Å‚É‘¶İ‚µ‚Ä‚¢‚é‹K‘¥‚¾‚Á‚½‚çƒGƒ‰[
-            if (0 <= g->rule_index(r)) {
+            if (g->exists(r)) {
                 throw duplicated_rule(choise->range.beg, r);
             }
 

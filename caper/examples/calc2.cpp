@@ -100,23 +100,23 @@ struct SemanticAction {
     Expr MakeExpr( const Term& x ) { return Expr( x ); }
     Expr MakeAdd( const Expr& x, const Term& y )
     {
-        std::cerr << "expr " << x << " + " << y << std::endl;
+        std::cout << "expr " << x << " + " << y << std::endl;
         return BinOpExpr<Add>( x, y );
     }
     Expr MakeSub( const Expr& x, const Term& y )
     {
-        std::cerr << "expr " << x << " - " << y << std::endl;
+        std::cout << "expr " << x << " - " << y << std::endl;
         return BinOpExpr<Sub>( x, y );
     }
     Term MakeTerm( int x ) { return Term( x ); }
     Term MakeMul( const Term& x, int y )
     {
-        std::cerr << "expr " << x << " * " << y << std::endl;
+        std::cout << "expr " << x << " * " << y << std::endl;
         return BinOpTerm<Mul>( x, y );
     }
     Term MakeDiv( const Term& x, int y )
     {
-        std::cerr << "expr " << x << " / " << y << std::endl;
+        std::cout << "expr " << x << " / " << y << std::endl;
         return BinOpTerm<Div>( x, y );
     }
 };
@@ -181,8 +181,8 @@ int main( int, char** )
 
     Value v;
     if( parser.accept( v ) ) {
-        std::cerr << "accpeted\n";
-        std::cerr << boost::apply_visitor( calculator(), v ) << std::endl;
+        std::cout << "accepted\n";
+        std::cout << boost::apply_visitor( calculator(), v ) << std::endl;
     }
 
     return 0;

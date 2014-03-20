@@ -140,7 +140,7 @@ int main( int, char** )
 
     Node* v;
     if( parser.accept( v ) ) {
-        std::cerr << "accpeted\n";
+        std::cerr << "accepted\n";
         std::cerr << v->calc() << std::endl;
     }
 

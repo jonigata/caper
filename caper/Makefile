@@ -51,4 +51,7 @@ publish:
 	rm -f ~/caper-`date +%Y-%m-%d`.zip
 	cd /tmp; zip -r9 /home/naoyuki/caper/caper/site/caper-`date +%Y-%m-%d`.zip caper
 
+test:
+	cd examples; make test
+
 -include $(addprefix $(DEPENDDIR)/,$(OBJS:.o=.d))

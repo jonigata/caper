@@ -117,7 +117,7 @@ int main( int, char** )
 
         int v;
         if( parser.accept( v ) ) {
-                std::cerr << "accpeted\n";
+                std::cerr << "accepted\n";
                 std::cerr << v << std::endl;
         }
 

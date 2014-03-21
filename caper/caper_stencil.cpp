@@ -12,7 +12,11 @@ void stencil(
     const std::map<std::string, StencilCallback>& m) {
 
     std::stringstream ss(t);
-    int c;
+    int c = ss.get();
+    if (c != '\n') {
+        ss.unget();
+    }
+    
     while((c = ss.get()) != std::char_traits<char>::eof()) {
         if (c == '$') {
             bool chomp = false;

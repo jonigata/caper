@@ -102,6 +102,7 @@ $${labels}
 	};
 	return labels[t];
 }
+
 )",
             {
                 {"tokens", [&](std::ostream& os){
@@ -311,6 +312,7 @@ private:
     size_t tmp_;
 
 };
+
 )",
             {});
     }
@@ -451,6 +453,7 @@ private:
     void commit_tmp_stack() {
         stack_.commit_tmp();
     }
+
 )",
         {});
 
@@ -531,8 +534,8 @@ private:
     } else {
         stencil(
             os, R"(
-void recover(Token, const value_type&) {
-}
+    void recover(Token, const value_type&) {
+    }
 
 )",
             {});
@@ -621,6 +624,7 @@ void recover(Token, const value_type&) {
         pop_stack(base);
         return (this->*(stack_top()->gotof))(nonterminal_index, v);
     }
+
 )",
                 {
                     {"nonterminal_type", rule_type},
@@ -705,6 +709,7 @@ void recover(Token, const value_type&) {
         }
         stencil(os, R"(
     }
+
 )", {});
 
 
@@ -884,6 +889,7 @@ $${debmes:state}
             return false;
         }
     }
+
 )",
             {});
     }

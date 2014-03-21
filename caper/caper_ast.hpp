@@ -244,6 +244,7 @@ typedef zw::gr::package<Token, TokenTraits, Value>    cpg;
 typedef zw::gr::package<int, TargetTokenTraits, int>  tgt;
 
 struct GenerateOptions {
+    bool            debug_parser    = false;
     std::string     token_prefix    = "token_";
     bool            external_token  = false;
     std::string     access_modifier = "";

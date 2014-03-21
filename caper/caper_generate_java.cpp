@@ -389,9 +389,9 @@ void generate_java(
 				break;
 			case zw::gr::action_reduce:
 				{
-                                    size_t base = table.grammar().at(a->rule_index).right().size();
+                                    size_t base = a->rule.right().size();
 
-                                    const tgt::parsing_table::rule_type& rule = table.grammar().at(a->rule_index);
+                                    const tgt::parsing_table::rule_type& rule = a->rule;
 					action_map_type::const_iterator k = actions.find(rule);
 
 					size_t nonterminal_index = std::distance(

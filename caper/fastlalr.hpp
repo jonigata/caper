@@ -322,13 +322,12 @@ make_lalr_table(
             auto k = s.action_table.find(a.token());
             if (k != s.action_table.end()) {
                 if ((*k).second.type == action_reduce) {
-                    srr(x.rule(),
-                        table.grammar().at((*k).second.rule_index));
+                    srr(x.rule(), (*k).second.rule);
                 }
             }
 
             s.action_table[a.token()] = action_type(
-                action_shift, next, x.rule().id());
+                action_shift, next, x.rule());
         }
 
         // b), c)は同時に行う
@@ -340,8 +339,7 @@ make_lalr_table(
 
             auto k = s.action_table.find(x.lookahead().token());
             if (k != s.action_table.end()) {
-                const rule_type& krule =
-                    table.grammar().at((*k).second.rule_index);
+                const rule_type& krule = (*k).second.rule;
                 if ((*k).second.type == action_shift) {
                     srr(krule, x.rule());
                     add_action = false; // shiftを優先
@@ -350,7 +348,7 @@ make_lalr_table(
                     !(krule == x.rule())) {
                     rrr(krule, x.rule());
                     // 若い方を優先
-                    add_action = x.rule().id() < (*k).second.rule_index; 
+                    add_action = x.rule().id() < (*k).second.rule.id(); 
                 }
             }
 
@@ -361,13 +359,13 @@ make_lalr_table(
                     // "reduce A→α"を入れる。
 
                     s.action_table[x.lookahead().token()] = action_type(
-                        action_reduce, 0xdeadbeaf, x.rule().id());
+                        action_reduce, 0xdeadbeaf, x.rule());
                 } else {
                     // c)項[S'→S・, $]がJiの要素ならば、
                     // action[i, $]に"accept"を入れる。
 
                     s.action_table[Traits::eof()] = action_type(
-                        action_accept, 0xdeadbeaf, g.root_rule().id());
+                        action_accept, 0xdeadbeaf, g.root_rule());
                 }
             }
         }
@@ -504,8 +502,6 @@ public:
     bool push(const token_type& x, const value_type& v) {
         bool ate = false;
 
-        const auto& g = table_.grammar();
-
         while (!ate) {
             const state_type* state = stack_top();
             auto i = state->action_table.find(x);
@@ -518,7 +514,7 @@ public:
                     ate = true;
                     break;
                 case action_reduce: {
-                    const auto& rule = g.at(action->rule_index);
+                    const auto& rule = action->rule;
                     value_type v;
                     run_semantic_action(v, rule);
                     pop_stack(rule.right().size());
@@ -531,7 +527,7 @@ public:
                     break;
                 }
                 case action_accept: {
-                    const auto& rule = g.at(action->rule_index);
+                    const auto& rule = action->rule;
                     run_semantic_action(accept_value_, rule);
                     return true;
                 }

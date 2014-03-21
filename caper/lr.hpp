@@ -795,12 +795,12 @@ public:
     struct action {
         action_t type;
 
-        int dest_index; // index to states_
-        int rule_index; // index to rules_
+        int         dest_index; // index to states_
+        rule_type   rule;
 
         action(){}
-        action(action_t at, int di, int ri)
-            : type(at), dest_index(di), rule_index(ri) {}
+        action(action_t at, int di, const rule_type& r)
+            : type(at), dest_index(di), rule(r) {}
     };
 
     struct state {
@@ -903,10 +903,10 @@ std::ostream& operator<<(
                     os << "shift(" << action.dest_index << ")\n";
                     break;
                 case action_reduce:    
-                    os << "reduce(" << x.grammar().at(action.rule_index) << ")\n";
+                    os << "reduce(" << action.rule << ")\n";
                     break;
                 case action_accept:
-                    os << "accept(" << x.grammar().at(action.rule_index) << ")\n";
+                    os << "accept(" << action.rule << ")\n";
                     break;
                 case action_error:
                     os << "error\n";

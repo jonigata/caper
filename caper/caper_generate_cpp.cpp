@@ -62,7 +62,7 @@ void generate_cpp(
 
     std::string headername = filename;
     for (auto& x: headername){
-        if (!isalpha(x)&& !isdigit(x)) {
+        if (!isalpha(x) && !isdigit(x)) {
             x = '_';
         } else {
             x = toupper(x);
@@ -82,8 +82,10 @@ void generate_cpp(
     // include
     os << "#include <cstdlib>\n";
     os << "#include <cassert>\n";
-    //os << "#include <iostream>\n";
-    if( !options.dont_use_stl ) {
+    if (options.debug_parser) {
+        os << "#include <iostream>\n";
+    }
+    if (!options.dont_use_stl) {
         os << "#include <vector>\n";
     }
     os << "\n";
@@ -91,7 +93,7 @@ void generate_cpp(
     // namespace header
     os << "namespace " << options.namespace_name << " {\n\n";
 
-    if (!options.external_token){
+    if (!options.external_token) {
         // token enumeration
         os << "enum Token { \n";
         for (size_t i = 0 ; i < token_id_map.size() ; i++) {
@@ -177,12 +179,16 @@ void generate_cpp(
            << ind1 << ind1 << "stack_.clear();\n"
            << ind1 << "}\n"
            << "\n"
-           << ind1 << "bool empty() {\n"
+           << ind1 << "bool empty() const {\n"
            << ind1 << ind1 << "if (!tmp_.empty()) {\n"
            << ind1 << ind1 << ind1 << "return false;\n"
            << ind1 << ind1 << "} else {\n"
            << ind1 << ind1 << ind1 << "return gap_ == 0;\n"
            << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
+           << ind1 << "size_t depth() const {\n"
+           << ind1 << ind1 << "return gap_ + tmp_.size();\n"
            << ind1 << "}\n"
            << "\n"
            << "private:\n"
@@ -283,12 +289,16 @@ void generate_cpp(
            << ind1 << ind1 << "top_ = gap_ = tmp_ = 0;\n"
            << ind1 << "}\n"
            << "\n"
-           << ind1 << "bool empty() {\n"
+           << ind1 << "bool empty() const {\n"
            << ind1 << ind1 << "if (0 < tmp_) {\n"
            << ind1 << ind1 << ind1 << "return false;\n"
            << ind1 << ind1 << "} else {\n"
            << ind1 << ind1 << ind1 << "return gap_ == 0;\n"
            << ind1 << ind1 << "}\n"
+           << ind1 << "}\n"
+           << "\n"
+           << ind1 << "size_t depth() const {\n"
+           << ind1 << ind1 << "return gap_ + tmp_;\n"
            << ind1 << "}\n"
            << "\n"
            << "private:\n"
@@ -336,7 +346,7 @@ void generate_cpp(
        << ind1 << ind1 << "if (push_stack("
        << "&Parser::state_" << table.first_state() << ", "
        << "&Parser::gotof_" << table.first_state() << ", "
-       << "value_type(), false)) {\n"
+       << "value_type(), " << (table.states()[table.first_state()].handle_error ? "true" : "false") << ")) {\n"
        << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
        << ind1 << ind1 << "} else {\n"
        << ind1 << ind1 << ind1 << "sa_.stack_overflow();\n"
@@ -427,28 +437,46 @@ void generate_cpp(
     if (options.recovery) {
         os << ind1 << "void recover(Token token, const value_type& value) {\n"
            << ind1 << ind1 << "reset_tmp_stack();\n"
-           << ind1 << ind1 << "error_ = false;\n"
-           << ind1 << ind1 << "while(!stack_top()->handle_error) {\n"
+           << ind1 << ind1 << "error_ = false;\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"recover rewinding start: stack depth = \" << stack_.depth() << \"\\n\";\n";
+        }
+        os << ind1 << ind1 << "while(!stack_top()->handle_error) {\n"
            << ind1 << ind1 << ind1 << "pop_stack(1);\n"
-           << ind1 << ind1 << ind1 << "if (stack_.empty()) {\n"
-           << ind1 << ind1 << ind1 << ind1 << "error_ = true;\n"
+           << ind1 << ind1 << ind1 << "if (stack_.empty()) {\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"recover rewinding failed\\n\";\n";
+        }
+        os << ind1 << ind1 << ind1 << ind1 << "error_ = true;\n"
            << ind1 << ind1 << ind1 << ind1 << "return;\n"
            << ind1 << ind1 << ind1 << "}\n"
-           << ind1 << ind1 << "}\n"
-           << ind1 << ind1 << "// post error_token\n"
-            // << ind1 << ind1 << "std::cerr << \"posting error token\\n\";\n"
-           << ind1 << ind1 << "while ((this->*(stack_top()->state))("
+           << ind1 << ind1 << "}\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"recover rewinding done: stack depth = \" << stack_.depth() << \"\\n\";\n";
+        }
+        os << ind1 << ind1 << "// post error_token\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1
+               << "std::cerr << \"posting error token\\n\";\n";
+        }
+        os << ind1 << ind1 << "while ((this->*(stack_top()->state))("
            << options.token_prefix << options.recovery_token
-           << ", value_type()));\n"
-            // << ind1 << ind1 << "std::cerr << \"posting error token done\\n\";\n"
-           << ind1 << ind1 << "commit_tmp_stack();\n"
+           << ", value_type()));\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"posting error token done\\n\";\n";
+        }
+        os << ind1 << ind1 << "commit_tmp_stack();\n"
            << ind1 << ind1 << "// repost original token\n"
-           << ind1 << ind1 << "// if it still causes error, discard it\n"
-            // << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n"
-           << ind1 << ind1
-           << "while ((this->*(stack_top()->state))(token, value));\n"
-            // << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n"
-           << ind1 << ind1 << "if (!error_) {\n"
+           << ind1 << ind1 << "// if it still causes error, discard it\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n";
+        }
+        os << ind1 << ind1
+           << "while ((this->*(stack_top()->state))(token, value));\n";
+        if (options.debug_parser) {
+            os << ind1 << ind1 << "std::cerr << \"reposting original token done\\n\";\n";
+        }
+        os << ind1 << ind1 << "if (!error_) {\n"
            << ind1 << ind1 << ind1 << "commit_tmp_stack();\n"
            << ind1 << ind1 << "}\n"
            << ind1 << ind1
@@ -574,7 +602,8 @@ void generate_cpp(
                    << ", v, "
                    << (table.states()[state_index].handle_error ?
                        "true" : "false")
-                   << ");\n";
+                   << ");";
+                ss << " // " << rule << "\n";
                 output_switch = true;
                 generated.insert(nonterminal_index);
             }
@@ -594,7 +623,9 @@ void generate_cpp(
         // state header
         os << ind1 << "bool state_" << state.no
            << "(token_type token, const value_type& value) {\n";
-        // os << ind1 << ind1 << "std::cerr << \"state_" << state.no << " << \" << token_label(token) << \"\\n\";\n";
+        if (options.debug_parser) {
+             os << ind1 << ind1 << "std::cerr << \"state_" << state.no << " << \" << token_label(token) << \"\\n\";\n";
+        }
 
         // dispatcher header
         os << ind1 << ind1 << "switch(token) {\n";
@@ -636,17 +667,14 @@ void generate_cpp(
                        << ind1 << ind1 << ind1 << "return false;\n";
                     break;
                 case zw::gr::action_reduce: {
-                    size_t base =
-                        table.grammar().at(a->rule_index).right().size();
+                    size_t base = a->rule.right().size();
 
-                    const tgt::parsing_table::rule_type& rule =
-                        table.grammar().at(a->rule_index);
                     action_map_type::const_iterator k =
-                        actions.find(rule);
+                        actions.find(a->rule);
 
                     size_t nonterminal_index = std::distance(
                         nonterminal_types.begin(),
-                        nonterminal_types.find(rule.left().name()));
+                        nonterminal_types.find(a->rule.left().name()));
 
                     if (k != actions.end()) {
                         const semantic_action& sa =(*k).second;
@@ -654,7 +682,7 @@ void generate_cpp(
                         std::vector<std::string> signature;
                         make_signature(
                             nonterminal_types,
-                            rule,
+                            a->rule,
                             sa,
                             signature);
 

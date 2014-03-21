@@ -5,7 +5,7 @@ CPPFLAGS = -g -Wall -DLINUX
 .cpp.o:
 	g++ $(CPPFLAGS) -c -o $@ $<
 
-all: recovery hello0 hello1 hello2 calc0 calc1 calc2
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2
 
 recovery: recovery.o
 	g++ $(CPPFLAGS) -o $@ $^
@@ -13,6 +13,14 @@ recovery: recovery.o
 recovery.o : recovery.cpp recovery.hpp
 
 recovery.hpp : recovery.cpg ../caper
+	../caper $< $@
+
+recovery2: recovery2.o
+	g++ $(CPPFLAGS) -o $@ $^
+
+recovery2.o : recovery2.cpp recovery2.hpp
+
+recovery2.hpp : recovery2.cpg ../caper
 	../caper $< $@
 
 calc0: calc0.o
@@ -64,9 +72,9 @@ hello2.hpp : hello2.cpg ../caper
 	../caper $< $@
 
 clean :
-	rm -f *.o hello0.o hello1.o hello2.o calc0.o calc1.o calc2.o recovery.o
-	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery
-	rm -f hello0.hpp hello1.hpp hello2.hpp calc0.hpp calc1_parser.hpp calc2.o calc2_parser.hpp recovery.hpp
+	rm -f *.o hello0.o hello1.o hello2.o calc0.o calc1.o calc2.o recovery.o recovery2.o
+	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2
+	rm -f hello0.hpp hello1.hpp hello2.hpp calc0.hpp calc1_parser.hpp calc2.o calc2_parser.hpp recovery.hpp recovery2.hpp
 	rm -f conflict0.hpp conflict1.hpp samerule.hpp
 
 test : calc2.o

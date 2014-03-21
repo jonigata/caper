@@ -148,9 +148,9 @@ void generate_javascript(
                         case zw::gr::action_reduce:
                                 os << "            // reduce\n";
                                 {
-                                    size_t base = table.grammar().at(a->rule_index).right().size();
+                                    size_t base = a->rule.right().size();
                                         
-                                    const tgt::parsing_table::rule_type& rule = table.grammar().at(a->rule_index);
+                                    const tgt::parsing_table::rule_type& rule = a->rule;
                                         action_map_type::const_iterator k = actions.find( rule );
                                         if( k != actions.end() ) {
                                                 const semantic_action& sa = (*k).second;
@@ -167,12 +167,12 @@ void generate_javascript(
                                                 
                                                 os << "            o.pop_stack( " << base << " );\n";
                                                 os << "            return ( o.stack_top_gotof()[ "
-                                                   << a->rule_index << " ] )( o, r );\n";
+                                                   << a->rule.id() << " ] )( o, r );\n";
                                         } else {
                                                 os << "            // o.sa.run_semantic_action();\n";
                                                 os << "            o.pop_stack( " << base << " );\n";
                                                 os << "            return ( o.stack_top_gotof()[ "
-                                                   << a->rule_index << " ] )( nil );\n";
+                                                   << a->rule.id() << " ] )( nil );\n";
                                         }
                                 }
                                 break;

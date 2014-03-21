@@ -28,10 +28,11 @@ using std::exit;
 #include <boost/filesystem/operations.hpp>
 
 struct commandline_options {
-    std::string		infile;
-    std::string		outfile;
-    std::string		language;
-    std::string		algorithm;
+    std::string infile;
+    std::string outfile;
+    std::string language;
+    std::string algorithm;
+    bool        debug_parser;
 };
 
 void get_commandline_options(
@@ -40,6 +41,7 @@ void get_commandline_options(
     const char**            argv) {
     cmdopt.language = "C++";
     cmdopt.algorithm = "lalr1";
+    cmdopt.debug_parser = false;
 
     int state = 0;
     for (int index = 1 ; index < argc ; index++) {
@@ -77,6 +79,11 @@ void get_commandline_options(
                 cmdopt.algorithm = "lalr1";
                 continue;
             }
+            if (arg == "--debug") {
+                cmdopt.debug_parser = true;
+                continue;
+            }
+            
 /*
             if (arg == "-lr1") == 0) {
                 cmdopt.algorithm = "lr1";
@@ -164,6 +171,7 @@ int main(int argc, const char** argv) {
 
         // ŠeŽíî•ñ‚ÌŽûW
         GenerateOptions options;
+        options.debug_parser = cmdopt.debug_parser;
 
         symbol_map_type terminal_types;
         symbol_map_type nonterminal_types;

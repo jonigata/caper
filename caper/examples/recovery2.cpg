@@ -1,0 +1,37 @@
+%token Number<int> LParen RParen;
+%token Minus Plus Star Slash NewLine;
+%namespace calc;
+%recover error;
+
+Input<int>
+    : [] Input Line
+    | [] Line
+    ;
+
+Line<int>
+    : [DoLine1] NewLine
+    | [DoLine2] AddExp(0) NewLine
+    | [DoLine3] error NewLine
+    ;
+
+AddExp<int>
+    : [DoAddExp1] MulExp(0)
+    | [DoAddExp2] AddExp(0) Plus MulExp(1)
+    | [DoAddExp3] AddExp(0) Minus MulExp(1)
+    ;
+
+MulExp<int>
+    : [DoMulExp1] UnaryExp(0)
+    | [DoMulExp2] MulExp(0) Star UnaryExp(1)
+    | [DoMulExp3] MulExp(0) Slash UnaryExp(1)
+    ;
+
+UnaryExp<int>
+    : [DoUnaryExp1] PrimExp(0)
+    | [DoUnaryExp2] Minus UnaryExp(0)
+    ;
+
+PrimExp<int>
+    : [DoPrimExp1] Number(0)
+    | [DoPrimExp2] LParen AddExp(0) RParen
+    ;

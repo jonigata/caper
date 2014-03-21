@@ -177,9 +177,9 @@ public:
     const T& get_arg(size_t base, size_t index) {
         size_t n = tmp_.size();
         if (base - index <= n) {
-            return tmp_[n -(base - index)];
+            return tmp_[n - (base - index)];
         } else {
-            return stack_[gap_ - (base - n)+ index];
+            return stack_[gap_ - (base - n) + index];
         }
     }
 	   
@@ -274,9 +274,9 @@ public:
 
     const T& get_arg(size_t base, size_t index) {
         if (base - index <= tmp_) {
-            return at(StackSize-1-(tmp_ -(base - index)));
+            return at(StackSize-1 - (tmp_ -(base - index)));
         } else {
-            return at(gap_ -(base - tmp_)+ index);
+            return at(gap_ -(base - tmp_) + index);
         }
     }
 
@@ -439,7 +439,7 @@ private:
     }
 
     const value_type& get_arg(size_t base, size_t index) {
-        return stack_.get_arg( base, index ).value;
+        return stack_.get_arg(base, index).value;
     }
 
     void clear_stack() {
@@ -463,26 +463,26 @@ private:
     void recover(Token token, const value_type& value) {
         reset_tmp_stack();
         error_ = false;
-        $${debmes:start}
+$${debmes:start}
         while(!stack_top()->handle_error) {
             pop_stack(1);
             if (stack_.empty()) {
-                $${debmes:failed}
+$${debmes:failed}
                 error_ = true;
                 return;
             }
         }
-        $${debmes:done}
+$${debmes:done}
         // post error_token;
-        $${debmes:post_error_start}
+$${debmes:post_error_start}
         while ((this->*(stack_top()->state))(${recovery_token}, value_type()));
-        $${debmes:post_error_done}
+$${debmes:post_error_done}
         commit_tmp_stack();
         // repost original token
         // if it still causes error, discard it;
-        $${debmes:repost_start}
+$${debmes:repost_start}
         while ((this->*(stack_top()->state))(token, value));;
-        $${debmes:repost_done}
+$${debmes:repost_done}
         if (!error_) {
             commit_tmp_stack();
         }
@@ -490,6 +490,7 @@ private:
             error_ = false;
         }
     }
+
 )",
             {
                 {"recovery_token",
@@ -592,6 +593,7 @@ private:
             stencil(
                 os, R"(
     bool ${function_name}(int nonterminal_index, int base${args}) {
+        // nonterminal : semantic_action = n : 1
 )",
                 {
                     {"function_name", function_name},

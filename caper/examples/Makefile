@@ -5,7 +5,15 @@ CPPFLAGS = -g -Wall -DLINUX
 .cpp.o:
 	g++ $(CPPFLAGS) -c -o $@ $<
 
-all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 list
+
+list: list.o
+	g++ $(CPPFLAGS) -o $@ $^
+
+list.o : list.cpp list.hpp
+
+list.hpp : list.cpg ../caper
+	../caper $< $@
 
 recovery: recovery.o
 	g++ $(CPPFLAGS) -o $@ $^

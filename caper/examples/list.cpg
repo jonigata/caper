@@ -1,0 +1,8 @@
+%token Number<int> LParen RParen Comma Star;
+%namespace list;
+%dont_use_stl;
+%recover error;
+
+List<int> : [List0] 
+	  | [List1] List(0) Number(1)
+          ;

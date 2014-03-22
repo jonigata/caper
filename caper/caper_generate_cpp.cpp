@@ -136,7 +136,7 @@ class Stack {
 public:
     Stack() { gap_ = 0; }
 
-    void reset_tmp() {
+    void rollback_tmp() {
         gap_ = stack_.size();
         tmp_.clear();
     }
@@ -219,7 +219,7 @@ public:
     Stack() { top_ = 0; gap_ = 0; tmp_ = 0; }
     ~Stack() {}
 
-    void reset_tmp() {
+    void rollback_tmp() {
         for (size_t i = 0 ; i <tmp_ ; i++) {
             at(StackSize - 1 - i).~T(); // explicit destructor
         }
@@ -282,7 +282,7 @@ public:
     }
 
     void clear() {
-        reset_tmp();
+        rollback_tmp();
         for (size_t i = 0 ; i <top_ ; i++) {
             at(i).~T(); // explicit destructor
         }
@@ -366,7 +366,7 @@ public:
         error_ = false;
         accepted_ = false;
         clear_stack();
-        reset_tmp_stack();
+        rollback_tmp_stack();
         if (push_stack(${first_state}, value_type())) {
             commit_tmp_stack();
         } else {
@@ -376,7 +376,7 @@ public:
     }
 
     bool post(token_type token, const value_type& value) {
-        reset_tmp_stack();
+        rollback_tmp_stack();
         error_ = false;
         while ((this->*(stack_top()->entry->state))(token, value))
             ; // may throw
@@ -472,8 +472,8 @@ private:
         stack_.clear();
     }
 
-    void reset_tmp_stack() {
-        stack_.reset_tmp();
+    void rollback_tmp_stack() {
+        stack_.rollback_tmp();
     }
 
     void commit_tmp_stack() {
@@ -487,7 +487,7 @@ private:
         stencil(
             os, R"(
     void recover(Token token, const value_type& value) {
-        reset_tmp_stack();
+        rollback_tmp_stack();
         error_ = false;
 $${debmes:start}
         while(!stack_top()->entry->handle_error) {
@@ -588,8 +588,6 @@ $${debmes:repost_done}
         for (const auto& pair: actions) {
             const auto& rule = pair.first;
 
-            //size_t base = rule.right().size();
-
             const auto& rule_type =
                 (*nonterminal_types.find(rule.left().name())).second;
             const semantic_action& sa = pair.second;
@@ -621,16 +619,14 @@ $${debmes:repost_done}
             stub_index[signature] = index;
             stub_count[sa.name] = index+1;
 
-            std::string function_name =
-                format("call_%d_%s", index, sa.name);
-
             // header
             stencil(
                 os, R"(
-    bool ${function_name}(Nonterminal nonterminal, int base${args}) {
+    bool call_${index}_${sa_name}(Nonterminal nonterminal, int base${args}) {
 )",
                 {
-                    {"function_name", function_name},
+                    {"index", index},
+                    {"sa_name", sa.name},
                     {"args", [&](std::ostream& os) {
                                 for (size_t l = 0 ;
                                      l < sa.args.size() ; l++) {
@@ -766,7 +762,7 @@ $${debmes:state}
                             os, R"(
         case ${case_tag}:
             // reduce
-            return call_nothing(Nonterminal_${nonterminal}, ${base});
+            return call_nothing(Nonterminal_${nonterminal}, /*pop*/ ${base});
 )",
                             {
                                 {"case_tag", case_tag},
@@ -809,7 +805,7 @@ $${debmes:state}
         // flush reduce action cache
         for(const auto& pair: reduce_action_cache) {
             const reduce_action_cache_key_type& key = pair.first;
-            const std::vector< std::string >& cases = pair.second;
+            const std::vector<std::string>& cases = pair.second;
 
             const std::vector<std::string>& signature = key.get<0>();
             const std::string& nonterminal_name = key.get<1>();
@@ -822,15 +818,13 @@ $${debmes:state}
 
             int index = stub_index[signature];
 
-            std::string function_name =
-                format("call_%d_%s", index, signature[0]);
-
             stencil(
                 os, R"(
-            return ${function_name}(Nonterminal_${nonterminal}, ${base}${args});
+            return call_${index}_${sa_name}(Nonterminal_${nonterminal}, /*pop*/ ${base}${args});
 )",
                 {
-                    {"function_name", function_name},
+                    {"index", index},
+                    {"sa_name", signature[0]},
                     {"nonterminal", nonterminal_name},
                     {"base", base},
                     {"args", [&](std::ostream& os) {
@@ -885,12 +879,13 @@ $${debmes:state}
                 int state_index = (*k).second;
                 stencil(
                     ss, R"(
-        case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value); // ${rule}
+        // ${rule}
+        case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value);
 )",
                     {
+                        {"rule", [&](std::ostream& os) { os << rule; }},
                         {"nonterminal", {rule.left().name()}},
-                        {"state_index", {state_index}},
-                        {"rule", [&](std::ostream& os) { os << rule; }}
+                        {"state_index", {state_index}}
                     });
                 output_switch = true;
                 generated.insert(nonterminal_index);

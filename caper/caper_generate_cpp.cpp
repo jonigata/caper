@@ -65,6 +65,17 @@ void make_signature(
     }
 }
 
+std::string make_type_name(const std::string& x) {
+    int c = x[x.size()-1];
+    std::string body = x.substr(0, x.size()-1);
+    if (c == '*' || c == '+') {
+        return "Sequence<" + body + ">";
+    } else if(c == '?') {
+        return "Option<" + body + ">";
+    }
+    return x;
+}
+
 } // unnamed namespace
 
 void generate_cpp(
@@ -494,8 +505,8 @@ private:
         value_type          value;
         int                 sequence_length = 0;
 
-        stack_frame(const table_entry* e, const value_type& v)
-            : entry(e), value(v) {}
+        stack_frame(const table_entry* e, const value_type& v, int sl)
+            : entry(e), value(v), sequence_length(sl) {}
     };
 
 )",
@@ -508,8 +519,8 @@ private:
         os, R"(
     Stack<stack_frame, StackSize> stack_;
 
-    bool push_stack(int state_index, const value_type& v) {
-        bool f = stack_.push(stack_frame(entry(state_index), v));
+    bool push_stack(int state_index, const value_type& v, int sl = 0) {
+        bool f = stack_.push(stack_frame(entry(state_index), v, sl));
         assert(!error_);
         if (!f) { 
             error_ = true;

@@ -86,7 +86,6 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-<<<<<<< HEAD
     template <class S>
     int Document(const S& x) {
         std::cerr << "Document: ";
@@ -95,10 +94,6 @@ struct SemanticAction {
         }
         std::cerr << "\n";
         return 0;
-=======
-    int Document(int x) {
-        return x;
->>>>>>> a92610a... WIP
     }
 
     int List0() {

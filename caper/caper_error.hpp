@@ -107,13 +107,6 @@ public:
     }
 };
 
-class unallowed_ebnf : public caper_error {
-public:
-    unallowed_ebnf(int a)
-        : caper_error(a, "EBNF is not allowed, use %allow_ebnf"){
-    }
-};
-
 class unsupported_feature : public caper_error {
 public:
     unsupported_feature(const char* g, const char* f) 

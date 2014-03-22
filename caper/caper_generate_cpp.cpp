@@ -65,17 +65,6 @@ void make_signature(
     }
 }
 
-std::string make_type_name(const std::string& x) {
-    int c = x[x.size()-1];
-    std::string body = x.substr(0, x.size()-1);
-    if (c == '*' || c == '+') {
-        return "Sequence<" + body + ">";
-    } else if(c == '?') {
-        return "Option<" + body + ">";
-    }
-    return x;
-}
-
 } // unnamed namespace
 
 void generate_cpp(

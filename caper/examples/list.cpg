@@ -4,14 +4,5 @@
 %recover error;
 %allow_ebnf;
 
-<<<<<<< HEAD
 Document<int> : [Document] LParen Number*(0) RParen
               ;
-=======
-Document<int> : [Document] List(0)
-              ;
-
-List<int> : [List0] 
-	  | [List1] List(0) Number(1)
-          ;
->>>>>>> a92610a... WIP

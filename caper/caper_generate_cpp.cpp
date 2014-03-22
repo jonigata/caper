@@ -220,7 +220,7 @@ public:
 
     void reset_tmp() {
         for (size_t i = 0 ; i <tmp_ ; i++) {
-                at(StackSize - 1 - i).~T(); // explicit destructor
+            at(StackSize - 1 - i).~T(); // explicit destructor
         }
         tmp_ = 0;
         gap_ = top_;
@@ -346,7 +346,7 @@ public:
         accepted_ = false;
         clear_stack();
         reset_tmp_stack();
-        if (push_stack(&Parser::state_${first_state}, &Parser::gotof_${first_state}, value_type(), ${first_state_handle_error})) {
+        if (push_stack(${first_state}, value_type())) {
             commit_tmp_stack();
         } else {
             sa_.stack_overflow();
@@ -357,7 +357,7 @@ public:
     bool post(token_type token, const value_type& value) {
         reset_tmp_stack();
         error_ = false;
-        while ((this->*(stack_top()->state))(token, value)); // may throw
+        while ((this->*(stack_top()->entry->state))(token, value)); // may throw
         if (!error_) {
             commit_tmp_stack();
         } else {
@@ -396,14 +396,19 @@ private:
     bool            error_;
     value_type      accepted_value_;
     SemanticAction& sa_;
-    struct stack_frame {
-        state_type state;
-        gotof_type gotof;
-        value_type value;
-        bool handle_error;
 
-        stack_frame(state_type s, gotof_type g, const value_type& v, bool h)
-            : state(s), gotof(g), value(v), handle_error(h) {}
+    struct table_entry {
+        state_type  state;
+        gotof_type  gotof;
+        bool        handle_error;
+    };
+
+    struct stack_frame {
+        const table_entry*  entry;
+        value_type          value;
+
+        stack_frame(const table_entry* e, const value_type& v)
+            : entry(e), value(v) {}
     };
 
 )",
@@ -420,8 +425,8 @@ private:
         os, R"(
     Stack<stack_frame, StackSize> stack_;
 
-    bool push_stack(state_type s, gotof_type g, const value_type& v, bool h) {
-        bool f = stack_.push(stack_frame(s, g, v, h));
+    bool push_stack(int state_index, const value_type& v) {
+        bool f = stack_.push(stack_frame(entry(state_index), v));
         assert(!error_);
         if (!f) { 
             error_ = true;
@@ -464,7 +469,7 @@ private:
         reset_tmp_stack();
         error_ = false;
 $${debmes:start}
-        while(!stack_top()->handle_error) {
+        while(!stack_top()->entry->handle_error) {
             pop_stack(1);
             if (stack_.empty()) {
 $${debmes:failed}
@@ -475,13 +480,13 @@ $${debmes:failed}
 $${debmes:done}
         // post error_token;
 $${debmes:post_error_start}
-        while ((this->*(stack_top()->state))(${recovery_token}, value_type()));
+        while ((this->*(stack_top()->entry->state))(${recovery_token}, value_type()));
 $${debmes:post_error_done}
         commit_tmp_stack();
         // repost original token
         // if it still causes error, discard it;
 $${debmes:repost_start}
-        while ((this->*(stack_top()->state))(token, value));;
+        while ((this->*(stack_top()->entry->state))(token, value));;
 $${debmes:repost_done}
         if (!error_) {
             commit_tmp_stack();
@@ -542,6 +547,15 @@ $${debmes:repost_done}
             {});
     }
 
+    stencil(
+        os, R"(
+    bool call_nothing(int nonterminal_index, int base) {
+        pop_stack(base);
+        return (this->*(stack_top()->entry->gotof))(nonterminal_index, value_type());
+    }
+
+)",
+        {});
 
     // member function signature -> index
     std::map<std::vector<std::string>, int> stub_index;
@@ -624,7 +638,7 @@ $${debmes:repost_done}
         ${nonterminal_type} r = sa_.${semantic_action_name}(${args});
         value_type v; sa_.upcast(v, r);
         pop_stack(base);
-        return (this->*(stack_top()->gotof))(nonterminal_index, v);
+        return (this->*(stack_top()->entry->gotof))(nonterminal_index, v);
     }
 
 )",
@@ -678,13 +692,11 @@ $${debmes:repost_done}
                 int state_index = (*k).second;
                 stencil(
                     ss, R"(
-        case ${nonterminal_index}: return push_stack(&Parser::state_${state_index}, &Parser::gotof_${state_index}, v, ${handle_error}); // ${rule}
+        case ${nonterminal_index}: return push_stack(${state_index}, v); // ${rule}
 )",
                     {
                         {"nonterminal_index", {nonterminal_index}},
                         {"state_index", {state_index}},
-                        {"handle_error",
-                            {table.states()[state_index].handle_error}},
                         {"rule", [&](std::ostream& os) { os << rule; }}
                     });
                 output_switch = true;
@@ -758,13 +770,12 @@ $${debmes:state}
                         os, R"(
         case ${case_tag}:
             // shift
-            push_stack(&Parser::state_${dest_index}, &Parser::gotof_${dest_index}, value, ${handle_error});
+            push_stack(${dest_index}, value);
             return false;
 )",
                         {
                             {"case_tag", case_tag},
                             {"dest_index", a->dest_index},
-                            {"handle_error", table.states()[a->dest_index].handle_error}
                         });
                     break;
                 case zw::gr::action_reduce: {
@@ -805,9 +816,8 @@ $${debmes:state}
                         stencil(
                             os, R"(
         case ${case_tag}:
-            // reduce: run semantic_action
-            pop_stack(${base});
-            return (this->*(stack_top()->gotof))(${nonterminal_index}, value_type());
+            // reduce
+            return call_nothing(${nonterminal_index}, ${base});
 )",
                             {
                                 {"case_tag", case_tag},
@@ -821,7 +831,7 @@ $${debmes:state}
                     stencil(
                         os, R"(
         case ${case_tag}:
-            // accept: run semantic_action
+            // accept
             accepted_ = true;
             accepted_value_ = get_arg(1, 0);
             return false;
@@ -895,6 +905,33 @@ $${debmes:state}
 )",
             {});
     }
+
+    // table
+    stencil(os, R"(
+    const table_entry* entry(int n) const {
+        static const table_entry entries[] = {
+$${entries}
+        };
+        return &entries[n];
+    }
+
+)",
+        {
+            {"entries", [&](std::ostream& os) {
+                    int i = 0;
+                    for (const auto& state: table.states()) {
+                        stencil(
+                            os, R"(
+            { &Parser::state_${i}, &Parser::gotof_${i}, ${handle_error} },
+)",
+                            {
+                                {"i", i},
+                                {"handle_error", state.handle_error}
+                            });
+                        ++i;
+                    }                    
+                }}
+        });
 
     // parser class footer
     // namespace footer

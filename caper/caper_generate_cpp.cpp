@@ -339,6 +339,26 @@ public:
     typedef Token token_type;
     typedef Value value_type;
 
+    enum Nonterminal {
+)",
+        {
+            {"template_parameters", template_parameters}
+        });
+
+    for (const auto& nonterminal_type: nonterminal_types) {
+        stencil(
+            os, R"(
+        Nonterminal_${nonterminal_name},
+)",
+            {
+                {"nonterminal_name", nonterminal_type.first}
+            });
+    }
+    
+    stencil(
+        os, R"(
+    };
+
 public:
     Parser(SemanticAction& sa) : sa_(sa) { reset(); }
 
@@ -379,7 +399,6 @@ public:
 
 )",
         {
-            {"template_parameters", template_parameters},
             {"first_state", table.first_state()},
             {"first_state_handle_error",
                     table.states()[table.first_state()].handle_error}
@@ -392,7 +411,7 @@ private:
     ${typedef_self_type}
 
     typedef bool (self_type::*state_type)(token_type, const value_type&);
-    typedef bool (self_type::*gotof_type)(int, const value_type&);
+    typedef bool (self_type::*gotof_type)(Nonterminal, const value_type&);
 
     bool            accepted_;
     bool            error_;
@@ -551,9 +570,9 @@ $${debmes:repost_done}
 
     stencil(
         os, R"(
-    bool call_nothing(int nonterminal_index, int base) {
+    bool call_nothing(Nonterminal nonterminal, int base) {
         pop_stack(base);
-        return (this->*(stack_top()->entry->gotof))(nonterminal_index, value_type());
+        return (this->*(stack_top()->entry->gotof))(nonterminal, value_type());
     }
 
 )",
@@ -608,7 +627,7 @@ $${debmes:repost_done}
             // header
             stencil(
                 os, R"(
-    bool ${function_name}(int nonterminal_index, int base${args}) {
+    bool ${function_name}(Nonterminal nonterminal, int base${args}) {
 )",
                 {
                     {"function_name", function_name},
@@ -639,7 +658,7 @@ $${debmes:repost_done}
         ${nonterminal_type} r = sa_.${semantic_action_name}(${args});
         value_type v; sa_.upcast(v, r);
         pop_stack(base);
-        return (this->*(stack_top()->entry->gotof))(nonterminal_index, v);
+        return (this->*(stack_top()->entry->gotof))(nonterminal, v);
     }
 
 )",
@@ -679,7 +698,7 @@ $${debmes:state}
         // reduce action cache
         typedef boost::tuple<
             std::vector<std::string>,
-            size_t,
+            std::string,
             size_t,
             std::vector<int>>
             reduce_action_cache_key_type;
@@ -704,7 +723,7 @@ $${debmes:state}
                         os, R"(
         case ${case_tag}:
             // shift
-            push_stack(${dest_index}, value);
+            push_stack(/*state*/ ${dest_index}, value);
             return false;
 )",
                         {
@@ -716,10 +735,6 @@ $${debmes:state}
                     size_t base = a->rule.right().size();
 
                     auto k = actions.find(a->rule);
-
-                    size_t nonterminal_index = std::distance(
-                        nonterminal_types.begin(),
-                        nonterminal_types.find(a->rule.left().name()));
 
                     if (k != actions.end()) {
                         const semantic_action& sa = (*k).second;
@@ -741,7 +756,7 @@ $${debmes:state}
                         reduce_action_cache_key_type key =
                             boost::make_tuple(
                                 signature,
-                                nonterminal_index,
+                                a->rule.left().name(),
                                 base,
                                 arg_indices);
 
@@ -751,12 +766,12 @@ $${debmes:state}
                             os, R"(
         case ${case_tag}:
             // reduce
-            return call_nothing(${nonterminal_index}, ${base});
+            return call_nothing(Nonterminal_${nonterminal}, ${base});
 )",
                             {
                                 {"case_tag", case_tag},
                                 {"base", base},
-                                {"nonterminal_index", nonterminal_index}
+                                {"nonterminal", a->rule.left().name()}
                             });
                     }
                 }
@@ -797,7 +812,7 @@ $${debmes:state}
             const std::vector< std::string >& cases = pair.second;
 
             const std::vector<std::string>& signature = key.get<0>();
-            size_t nonterminal_index = key.get<1>();
+            const std::string& nonterminal_name = key.get<1>();
             size_t base = key.get<2>();
             const std::vector<int>& arg_indices = key.get<3>();
 
@@ -812,11 +827,11 @@ $${debmes:state}
 
             stencil(
                 os, R"(
-            return ${function_name}(${nonterminal_index}, ${base}${args});
+            return ${function_name}(Nonterminal_${nonterminal}, ${base}${args});
 )",
                 {
                     {"function_name", function_name},
-                    {"nonterminal_index", nonterminal_index},
+                    {"nonterminal", nonterminal_name},
                     {"base", base},
                     {"args", [&](std::ostream& os) {
                                 for(const auto& x: arg_indices) {
@@ -842,7 +857,7 @@ $${debmes:state}
         // gotof header
         stencil(
             os, R"(
-    bool gotof_${state_no}(int nonterminal_index, const value_type& value) {
+    bool gotof_${state_no}(Nonterminal nonterminal, const value_type& value) {
 )",
             {
                 {"state_no", state.no}
@@ -852,7 +867,7 @@ $${debmes:state}
         std::stringstream ss;
         stencil(
             ss, R"(
-        switch(nonterminal_index) {
+        switch(nonterminal) {
 )",
             {});
         bool output_switch = false;
@@ -870,10 +885,10 @@ $${debmes:state}
                 int state_index = (*k).second;
                 stencil(
                     ss, R"(
-        case ${nonterminal_index}: return push_stack(${state_index}, value); // ${rule}
+        case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value); // ${rule}
 )",
                     {
-                        {"nonterminal_index", {nonterminal_index}},
+                        {"nonterminal", {rule.left().name()}},
                         {"state_index", {state_index}},
                         {"rule", [&](std::ostream& os) { os << rule; }}
                     });

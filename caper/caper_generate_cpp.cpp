@@ -26,7 +26,7 @@ void make_signature(
         (*nonterminal_types.find(rule.left().name())).second);
 
     // arguments
-    for (size_t l = 0 ; l <sa.args.size() ; l++) {
+    for (size_t l = 0 ; l < sa.args.size() ; l++) {
         signature.push_back((*sa.args.find(l)).second.type);
     }
 }
@@ -327,21 +327,10 @@ private:
     }
 
     // parser class header
-    std::string default_stacksize = "0";
-    if (options.dont_use_stl) {
-        default_stacksize = "1024";
-    }
-        
-    std::string template_parameters =
-        "class Value, class SemanticAction,\n          unsigned int StackSize = " +
-        default_stacksize;
-    if (options.external_token) {
-        template_parameters = "class Token, " + template_parameters;
-    }
-
     stencil(
         os, R"(
-template <${template_parameters}>
+template <${token_parameter}class Value, class SemanticAction,
+          unsigned int StackSize = ${default_stack_size}>
 class Parser {
 public:
     typedef Token token_type;
@@ -350,7 +339,9 @@ public:
     enum Nonterminal {
 )",
         {
-            {"template_parameters", template_parameters}
+            {"token_parameter", {
+                    options.external_token ? "class Token, " : ""}},
+            {"default_stack_size", {options.dont_use_stl ? "1024" : "0"}},
         });
 
     for (const auto& nonterminal_type: nonterminal_types) {
@@ -416,7 +407,7 @@ public:
     stencil(
         os, R"(
 private:
-    ${typedef_self_type}
+    typedef Parser<${token_paremter}Value, SemanticAction, StackSize> self_type;
 
     typedef bool (self_type::*state_type)(token_type, const value_type&);
     typedef bool (self_type::*gotof_type)(Nonterminal, const value_type&);
@@ -442,11 +433,7 @@ private:
 
 )",
         {
-            {"typedef_self_type", {
-                    options.external_token ? 
-                        "typedef Parser<Token, Value, SemanticAction, StackSize> self_type;" :
-                        "typedef Parser<Value, SemanticAction, StackSize> self_type;"}
-            }
+            {"token_paremter", {options.external_token ? "Token, " : ""}}
         });
 
     // stack operation

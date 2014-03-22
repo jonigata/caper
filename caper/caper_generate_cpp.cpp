@@ -687,7 +687,13 @@ $${debmes:state}
                 {"state_no", state.no},
                 {"debmes:state", [&](std::ostream& os){
                             if (options.debug_parser) {
-                                os << "        std::cerr << \"state_" << state.no << " << \" << token_label(token) << \"\\n\";\n";
+                                stencil(
+                                    os, R"(
+        std::cerr << "state_${state_no} << " << token_label(token) << "\n";
+)",
+                                    {
+                                        {"state_no", state.no}
+                                    });
                             }}}
             });
 
@@ -820,6 +826,7 @@ $${debmes:state}
 
             stencil(
                 os, R"(
+            // reduce
             return call_${index}_${sa_name}(Nonterminal_${nonterminal}, /*pop*/ ${base}${args});
 )",
                 {

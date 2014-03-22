@@ -24,6 +24,7 @@ enum Token {
     token_directive_external_token,
     token_directive_namespace,
     token_directive_recover,
+    token_directive_access_modifier,
     token_directive_dont_use_stl,
     token_eof,
 };
@@ -54,6 +55,7 @@ const char* token_labels(Token op) {
         "%external_token",
         "%namespace",
         "%recover",
+        "%access_modifier",
         "%dont_use_stl",
         "$"
     };

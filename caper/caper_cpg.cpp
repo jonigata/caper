@@ -125,6 +125,13 @@ void make_cpg_parser(cpg::parser& p) {
         [](const arguments_type& args) -> Value {
             return Value(args[0]);
         },
+        "AccessModifierDecl", token_semicolon);
+    make_rule(
+        g, p,
+        "Declaration", 
+        [](const arguments_type& args) -> Value {
+            return Value(args[0]);
+        },
         "DontUseSTLDecl", token_semicolon);
 
     // ..%tokenéŒ¾
@@ -216,6 +223,17 @@ void make_cpg_parser(cpg::parser& p) {
             return Value(p);
         },
         token_directive_recover, token_identifier);
+
+    // ..%recoveréŒ¾
+    make_rule(
+        g, p,
+        "AccessModifierDecl",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<AccessModifierDecl>(
+                range(args), get_symbol<Identifier>(args[1]));
+            return Value(p);
+        },
+        token_directive_access_modifier, token_identifier);
 
     // ..%dont_use_stléŒ¾
     make_rule(
@@ -396,6 +414,9 @@ void collect_informations(
             terminal_types[recoverdecl->name] = "$error";
             options.recovery = true;
             options.recovery_token = recoverdecl->name;
+        }
+        if (auto accessmodifierdecl = downcast<AccessModifierDecl>(x)) {
+            options.access_modifier = accessmodifierdecl->modifier;
         }
         if (auto dontusestldecl = downcast<DontUseSTLDecl>(x)) {
             // %dont_use_stléŒ¾

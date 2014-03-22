@@ -190,13 +190,6 @@ struct ExternalTokenDecl : public Declaration {
     ExternalTokenDecl(const Range& r) : Declaration(r) {}
 };
 
-struct AccessModifierDecl : public Declaration {
-    std::string     modifier;
-
-    AccessModifierDecl(const Range& r, const std::string& as)
-        : Declaration(r), modifier(as) {}
-};
-
 struct NamespaceDecl : public Declaration {
     std::string     name;
 
@@ -209,6 +202,13 @@ struct RecoverDecl : public Declaration {
 
     RecoverDecl(const Range& r, const std::string& as)
         : Declaration(r), name(as) {}
+};
+
+struct AccessModifierDecl : public Declaration {
+    std::string     modifier;
+
+    AccessModifierDecl(const Range& r, const std::string& as)
+        : Declaration(r), modifier(as) {}
 };
 
 struct DontUseSTLDecl : public Declaration {

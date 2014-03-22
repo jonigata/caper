@@ -455,6 +455,10 @@ public:
     const elements_type&                right() const {
         return imp->elements;
     }
+
+    bool is_ebnf_expanded() const {
+        return imp->left.name()[0] == '#';
+    }
     
 private:
     void enunique() {

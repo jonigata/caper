@@ -86,6 +86,10 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
+    int Document(int x) {
+        return x;
+    }
+
     int List0() {
         std::cerr << "list0" << std::endl;
         return 0;

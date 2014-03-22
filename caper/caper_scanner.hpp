@@ -71,6 +71,9 @@ public:
             case ')': v = value(b, Operator(')')); return token_rparen;
             case '[': v = value(b, Operator('[')); return token_lbracket;
             case ']': v = value(b, Operator(']')); return token_rbracket;
+            case '*': v = value(b, Operator('*')); return token_star;
+            case '+': v = value(b, Operator('+')); return token_plus;
+            case '?': v = value(b, Operator('?')); return token_question;
             case eof: v = value(b, Operator('$')); return token_eof;
         }
 

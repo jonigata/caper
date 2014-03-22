@@ -240,7 +240,6 @@ public:
             if (gap_ + i <top_) {
                 at(gap_ + i) = at(StackSize - 1 - i);
             } else {
-                // placement new copy constructor
                 new (&at(gap_ + i)) T(at(StackSize - 1 - i));
             }
             at(StackSize - 1 - i).~T(); // explicit destructor
@@ -255,9 +254,8 @@ public:
         tmp_ = 0;
     }
 
-    bool push( const T& f ) {
+    bool push(const T& f) {
         if (StackSize <= top_ + tmp_) { return false; }
-        // placement new copy constructor
         new (&at(StackSize - 1 - tmp_++)) T(f);
         return true;
     }

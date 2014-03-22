@@ -3,6 +3,9 @@
 %dont_use_stl;
 %recover error;
 
+Document<int> : [Document] List(0)
+              ;
+
 List<int> : [List0] 
 	  | [List1] List(0) Number(1)
           ;

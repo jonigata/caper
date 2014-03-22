@@ -22,6 +22,92 @@ struct rr_conflict_reporter {
     }
 };
 
+void make_target_rule(
+    action_map_type&                                    actions,
+    tgt::grammar&                                       g,
+    const tgt::nonterminal&                             rule_left,
+    std::shared_ptr<Choise>                             choise,
+    const symbol_map_type&                              terminal_types,
+    const symbol_map_type&                              nonterminal_types,
+    std::unordered_map<std::string, tgt::terminal>&     terminals,
+    std::unordered_map<std::string, tgt::nonterminal>&  nonterminals) {
+
+    tgt::rule r(rule_left);
+    semantic_action sa(choise->name);
+
+    int index = 0;
+    int max_index = -1;
+    for (const auto& term: choise->elements) {
+        if (0 <= term->index) {
+            // セマンティックアクションの引数として用いられる
+            if (sa.args.count(term->index)) {
+                // duplicated
+                throw duplicated_semantic_action_argument(
+                    term->range.beg, sa.name, term->index);
+            }
+
+            // 引数になる場合、型が必要
+            std::string type;
+            {
+                auto l = nonterminal_types.find(term->item->name);
+                if (l != nonterminal_types.end()) {
+                    type = (*l).second;
+                }
+            }
+            {
+                auto l = terminal_types.find(term->item->name);
+                if (l != terminal_types.end()) {
+                    if ((*l).second == "") {
+                        throw untyped_terminal(
+                            term->range.beg, term->item->name);
+                    }
+                    type =(*l).second;        
+                }
+            }
+            assert(type != "");
+
+            semantic_action_argument arg(index, type);
+            sa.args[term->index] = arg;
+            if (max_index <term->index) {
+                max_index = term->index;
+            }
+        }
+        index++;
+
+        {
+            auto l = terminals.find(term->item->name);
+            if (l != terminals.end()) {
+                r << (*l).second;
+            }
+        }
+        {
+            auto l = nonterminals.find(term->item->name);
+            if (l != nonterminals.end()) {
+                r << (*l).second;
+            }
+        }
+
+    }
+
+    // 引数に飛びがあったらエラー
+    for (int k = 0 ; k <= max_index ; k++) {
+        if (!sa.args.count(k)) {
+            throw skipped_semantic_action_argument(
+                choise->range.beg, sa.name, k);
+        }
+    }
+
+    // すでに存在している規則だったらエラー
+    if (g.exists(r)) {
+        throw duplicated_rule(choise->range.beg, r);
+    }
+
+    if (!sa.name.empty()) {
+        actions[r] = sa;
+    }
+    g << r;
+}
+
 void make_target_parser(
     tgt::parsing_table&             table,
     std::map<std::string, size_t>&  token_id_map,
@@ -62,91 +148,24 @@ void make_target_parser(
     // 規則
     std::unique_ptr<tgt::grammar> g;
 
-    std::shared_ptr<Rules> rules = doc->rules;
-    for (const auto& rule: rules->rules) {
-        const tgt::nonterminal& n = nonterminals[rule->name];
+    for (const auto& rule: doc->rules->rules) {
+        const tgt::nonterminal& rule_left = nonterminals[rule->name];
         if (!g) {
-            tgt::nonterminal implicit_root("implicit_root");
-            tgt::rule r(implicit_root);
-            r << n;
-            g.reset(new tgt::grammar(r));
+            tgt::nonterminal implicit_root("$implicit_root");
+            g.reset(new tgt::grammar(
+                        tgt::rule(implicit_root) << rule_left));
         }
 
         for (const auto& choise: rule->choises->choises) {
-            tgt::rule r(n);
-            semantic_action sa(choise->name);
-
-            int index = 0;
-            int max_index = -1;
-            for (const auto& term: choise->elements) {
-                if (0 <= term->index) {
-                    // セマンティックアクションの引数として用いられる
-                    if (sa.args.count(term->index)) {
-                        // duplicated
-                        throw duplicated_semantic_action_argument(
-                            term->range.beg, sa.name, term->index);
-                    }
-
-                    // 引数になる場合、型が必要
-                    std::string type;
-                    {
-                        auto l = nonterminal_types.find(term->name);
-                        if (l != nonterminal_types.end()) {
-                            type = (*l).second;
-                        }
-                    }
-                    {
-                        auto l = terminal_types.find(term->name);
-                        if (l != terminal_types.end()) {
-                            if ((*l).second == "") {
-                                throw untyped_terminal(
-                                    term->range.beg, term->name);
-                            }
-                            type =(*l).second;        
-                        }
-                    }
-                    assert(type != "");
-
-                    semantic_action_argument arg(index, type);
-                    sa.args[term->index] = arg;
-                    if (max_index <term->index) {
-                        max_index = term->index;
-                    }
-                }
-                index++;
-
-                {
-                    auto l = terminals.find(term->name);
-                    if (l != terminals.end()) {
-                        r << (*l).second;
-                    }
-                }
-                {
-                    auto l = nonterminals.find(term->name);
-                    if (l != nonterminals.end()) {
-                        r <<(*l).second;
-                    }
-                }
-
-            }
-
-            // 引数に飛びがあったらエラー
-            for (int k = 0 ; k <= max_index ; k++) {
-                if (!sa.args.count(k)) {
-                    throw skipped_semantic_action_argument(
-                        choise->range.beg, sa.name, k);
-                }
-            }
-
-            // すでに存在している規則だったらエラー
-            if (g->exists(r)) {
-                throw duplicated_rule(choise->range.beg, r);
-            }
-
-            if (!sa.name.empty()) {
-                actions[r] = sa;
-            }
-            *g << r;
+            make_target_rule(
+                actions,
+                *g,
+                rule_left,
+                choise,
+                terminal_types,
+                nonterminal_types,
+                terminals,
+                nonterminals);
         }
     }
 
@@ -158,3 +177,30 @@ void make_target_parser(
         rr_conflict_reporter());
 }
 
+void expand_ebnf(const GenerateOptions& options, const value_type& ast) {
+    auto doc = get_node<Document>(ast);
+
+    for (const auto& rule: doc->rules->rules) {
+        for (const auto& choise: rule->choises->choises) {
+            for (const auto& term: choise->elements) {
+                switch (term->item->extension) {
+                    case Extension::None:
+                        break;
+                    case Extension::Star:
+                        if (!options.allow_ebnf) {
+                            throw unallowed_ebnf(term->range.beg);
+                        }
+                    case Extension::Plus:
+                        if (!options.allow_ebnf) {
+                            throw unallowed_ebnf(term->range.beg);
+                        }
+                    case Extension::Question:
+                        if (!options.allow_ebnf) {
+                            throw unallowed_ebnf(term->range.beg);
+                        }
+                        break;
+                }
+            }
+        }
+    }
+}

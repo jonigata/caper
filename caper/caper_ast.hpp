@@ -18,6 +18,15 @@ struct Range {
 };
 
 ////////////////////////////////////////////////////////////////
+// extension(EBNF)
+enum class Extension {
+    None,
+    Star,
+    Plus,
+    Question,
+};
+
+////////////////////////////////////////////////////////////////
 // Nil
 struct Nil {
 };
@@ -107,12 +116,20 @@ typedef Value value_type;
 
 ////////////////////////////////////////////////////////////////
 // concrete Node
-struct Term : public Node {
-    std::string     name;
-    int             index;
+struct Item : public Node {
+    std::string name;
+    Extension   extension;
 
-    Term(const Range& r, const std::string& as, int ai)
-        : Node(r), name(as), index(ai) {}
+    Item(const Range& r, const std::string& n, Extension extension)
+        : Node(r), name(n), extension(extension) {}
+};
+
+struct Term : public Node {
+    std::shared_ptr<Item>   item;
+    int                     index;
+
+    Term(const Range& r, std::shared_ptr<Item> p, int i)
+        : Node(r), item(p), index(i) {}
 };
 
 struct Choise : public Node {
@@ -190,6 +207,10 @@ struct ExternalTokenDecl : public Declaration {
     ExternalTokenDecl(const Range& r) : Declaration(r) {}
 };
 
+struct AllowEBNF : public Declaration {
+    AllowEBNF(const Range& r) : Declaration(r) {}
+};
+
 struct NamespaceDecl : public Declaration {
     std::string     name;
 
@@ -247,6 +268,7 @@ struct GenerateOptions {
     bool            debug_parser    = false;
     std::string     token_prefix    = "token_";
     bool            external_token  = false;
+    bool            allow_ebnf      = false;
     std::string     access_modifier = "";
     std::string     namespace_name  = "caper_parser";
     bool            dont_use_stl    = false;

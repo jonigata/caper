@@ -78,6 +78,7 @@ $${debug_include}
 $${use_stl}
 
 namespace ${namespace_name} {
+
 )",
         {
             {"headername", headername},
@@ -97,10 +98,10 @@ $${tokens}
 };
 
 inline const char* token_label(Token t) {
-	static const char* labels[] = {
+    static const char* labels[] = {
 $${labels}
-	};
-	return labels[t];
+    };
+    return labels[t];
 }
 
 )",
@@ -324,7 +325,7 @@ private:
     }
         
     std::string template_parameters =
-        "class Value, class SemanticAction, unsigned int StackSize = " +
+        "class Value, class SemanticAction,\n          unsigned int StackSize = " +
         default_stacksize;
     if (options.external_token) {
         template_parameters = "class Token, " + template_parameters;
@@ -357,7 +358,8 @@ public:
     bool post(token_type token, const value_type& value) {
         reset_tmp_stack();
         error_ = false;
-        while ((this->*(stack_top()->entry->state))(token, value)); // may throw
+        while ((this->*(stack_top()->entry->state))(token, value))
+            ; // may throw
         if (!error_) {
             commit_tmp_stack();
         } else {
@@ -607,7 +609,6 @@ $${debmes:repost_done}
             stencil(
                 os, R"(
     bool ${function_name}(int nonterminal_index, int base${args}) {
-        // nonterminal : semantic_action = n : 1
 )",
                 {
                     {"function_name", function_name},
@@ -660,73 +661,6 @@ $${debmes:repost_done}
 
     // states handler
     for (const auto& state: table.states()) {
-
-        // gotof header
-        stencil(
-            os, R"(
-    bool gotof_${state_no}(int nonterminal_index, const value_type& v) {
-)",
-            {
-                {"state_no", state.no}
-            });
-            
-        // gotof dispatcher
-        std::stringstream ss;
-        stencil(
-            ss, R"(
-        switch(nonterminal_index) {
-)",
-            {});
-        bool output_switch = false;
-        std::set<size_t> generated;
-        for(const auto& rule: table.grammar()) {
-            size_t nonterminal_index = std::distance(
-                nonterminal_types.begin(),
-                nonterminal_types.find(rule.left().name()));
-            if (0 < generated.count(nonterminal_index)) {
-                continue;
-            }
-
-            auto k = state.goto_table.find(rule.left());
-            if (k != state.goto_table.end()) {
-                int state_index = (*k).second;
-                stencil(
-                    ss, R"(
-        case ${nonterminal_index}: return push_stack(${state_index}, v); // ${rule}
-)",
-                    {
-                        {"nonterminal_index", {nonterminal_index}},
-                        {"state_index", {state_index}},
-                        {"rule", [&](std::ostream& os) { os << rule; }}
-                    });
-                output_switch = true;
-                generated.insert(nonterminal_index);
-            }
-        }
-
-        // gotof footer
-        stencil(
-            ss, R"(
-        default: assert(0); return false;
-        }
-
-)",
-            {});
-        if (output_switch) {
-            os << ss.str();
-        } else {
-            stencil(
-                os, R"(
-        assert(0);
-        return true;
-)", {});
-        }
-        stencil(os, R"(
-    }
-
-)", {});
-
-
         // state header
         stencil(
             os, R"(
@@ -904,6 +838,72 @@ $${debmes:state}
 
 )",
             {});
+
+        // gotof header
+        stencil(
+            os, R"(
+    bool gotof_${state_no}(int nonterminal_index, const value_type& value) {
+)",
+            {
+                {"state_no", state.no}
+            });
+            
+        // gotof dispatcher
+        std::stringstream ss;
+        stencil(
+            ss, R"(
+        switch(nonterminal_index) {
+)",
+            {});
+        bool output_switch = false;
+        std::set<size_t> generated;
+        for(const auto& rule: table.grammar()) {
+            size_t nonterminal_index = std::distance(
+                nonterminal_types.begin(),
+                nonterminal_types.find(rule.left().name()));
+            if (0 < generated.count(nonterminal_index)) {
+                continue;
+            }
+
+            auto k = state.goto_table.find(rule.left());
+            if (k != state.goto_table.end()) {
+                int state_index = (*k).second;
+                stencil(
+                    ss, R"(
+        case ${nonterminal_index}: return push_stack(${state_index}, value); // ${rule}
+)",
+                    {
+                        {"nonterminal_index", {nonterminal_index}},
+                        {"state_index", {state_index}},
+                        {"rule", [&](std::ostream& os) { os << rule; }}
+                    });
+                output_switch = true;
+                generated.insert(nonterminal_index);
+            }
+        }
+
+        // gotof footer
+        stencil(
+            ss, R"(
+        default: assert(0); return false;
+        }
+)",
+            {});
+        if (output_switch) {
+            os << ss.str();
+        } else {
+            stencil(
+                os, R"(
+        assert(0);
+        return true;
+)", {});
+        }
+        stencil(os, R"(
+    }
+
+)", {});
+
+
     }
 
     // table

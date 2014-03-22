@@ -121,7 +121,7 @@ int main(int argc, const char** argv) {
         const GenerateOptions&,
         const symbol_map_type&,
         const symbol_map_type&,
-        const std::map<size_t, std::string>&,
+        const std::vector<std::string>&,
         const action_map_type&,
         const tgt::parsing_table&);
 
@@ -194,9 +194,9 @@ int main(int argc, const char** argv) {
             nonterminal_types);
 
         // ターゲットパーサの出力
-        std::map<size_t, std::string> reverse_token_id_map;
+        std::vector<std::string> tokens(token_id_map.size());
         for (const auto& x: token_id_map) {
-            reverse_token_id_map[x.second] = x.first;
+            tokens[x.second] = x.first;
         }
         generators[cmdopt.language](
             cmdopt.outfile,
@@ -204,7 +204,7 @@ int main(int argc, const char** argv) {
             options,
             terminal_types,
             nonterminal_types,
-            reverse_token_id_map,
+            tokens,
             actions,
             table);
 

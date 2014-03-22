@@ -6,16 +6,16 @@ using std::endl;
 std::string const indent = "\t";
 
 void generate_d(
-        const std::string&                      filename,
-        std::ostream&                           os,
-        const GenerateOptions&                  options,
-        const symbol_map_type&                  terminal_types,
-        const symbol_map_type&                  nonterminal_types,
-        const std::map< size_t, std::string >&  token_id_map,
-        const action_map_type&                  actions,
-        const tgt::parsing_table&               table )
-{
-        std::string modulename = filename;
+    const std::string&              src_filename,
+    std::ostream&                   os,
+    const GenerateOptions&          options,
+    const symbol_map_type&          ,
+    const symbol_map_type&          nonterminal_types,
+    const std::vector<std::string>& tokens,
+    const action_map_type&          actions,
+    const tgt::parsing_table&       table) {
+
+        std::string modulename = src_filename;
         if( modulename [modulename.size() - 2] == '.' &&
             modulename [modulename.size() - 1] == 'd')
         {
@@ -34,9 +34,10 @@ void generate_d(
         if( !options.external_token ) {
                 // token enumeration
                 os << "enum Token {" << endl;
-                for( size_t i = 0 ; i < token_id_map.size() ; i++ ) {
-                        os << indent << options.token_prefix << (*token_id_map.find( i )).second;
-                        if(i == token_id_map.size() - 1){
+                for(size_t i = 0 ; i < tokens.size() ; ++i) {
+                        const std::string token = tokens[i];
+                        os << indent << options.token_prefix << token;
+                        if(i == tokens.size() - 1){
                                os << endl << "}" << endl << endl;
                                break;
                         }else{
@@ -383,7 +384,7 @@ void generate_d(
                      ++j ) {
                         // action header 
                         os << indent << indent << "case Token." << options.token_prefix
-                           << (*token_id_map.find( (*j).first )).second << ":" << endl;
+                           << tokens[(*j).first] << ":" << endl;
 
                         // action
                         const tgt::parsing_table::action* a = &(*j).second;

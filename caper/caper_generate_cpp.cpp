@@ -17,7 +17,7 @@ void make_signature(
     const symbol_map_type&                  nonterminal_types,
     const tgt::parsing_table::rule_type&    rule,
     const semantic_action&                  sa,
-    std::vector<std::string>&             signature) {
+    std::vector<std::string>&               signature) {
     // function name
     signature.push_back(sa.name);
 
@@ -34,14 +34,14 @@ void make_signature(
 } // unnamed namespace
 
 void generate_cpp(
-    const std::string&                      src_filename,
-    std::ostream&                           os,
-    const GenerateOptions&                  options,
-    const symbol_map_type&                  ,
-    const symbol_map_type&                  nonterminal_types,
-    const std::map<size_t, std::string>&    token_id_map,
-    const action_map_type&                  actions,
-    const tgt::parsing_table&               table) {
+    const std::string&              src_filename,
+    std::ostream&                   os,
+    const GenerateOptions&          options,
+    const symbol_map_type&          ,
+    const symbol_map_type&          nonterminal_types,
+    const std::vector<std::string>& tokens,
+    const action_map_type&          actions,
+    const tgt::parsing_table&       table) {
 
     const char* ind1 = "    ";
 
@@ -107,21 +107,29 @@ $${labels}
 )",
             {
                 {"tokens", [&](std::ostream& os){
-                            for (size_t i = 0 ;
-                                 i < token_id_map.size() ; i++) {
-                                os << "    " << options.token_prefix
-                                   << (*token_id_map.find(i)).second
-                                   << ",\n";
-                            }
-                        }},
+                        for(const auto& token: tokens) {
+                            stencil(
+                                os, R"(
+    ${prefix}${token},
+)",
+                                {
+                                    {"prefix", options.token_prefix},
+                                    {"token", token}
+                                });
+                        }
+                    }},
                 {"labels", [&](std::ostream& os){
-                            for (size_t i = 0 ;
-                                 i < token_id_map.size() ; i++) {
-                                os << "        \"" << options.token_prefix
-                                   << (*token_id_map.find(i)).second
-                                   << "\",\n";
-                            }
-                        }}
+                        for(const auto& token: tokens) {
+                            stencil(
+                                os, R"(
+        "${prefix}${token}",
+)",
+                                {
+                                    {"prefix", options.token_prefix},
+                                    {"token", token}
+                                });
+                        }
+                    }}
             });
 
     }
@@ -714,8 +722,7 @@ $${debmes:state}
         for (const auto& pair: state.action_table) {
             // action header 
             std::string case_tag =
-                options.token_prefix +
-                (*token_id_map.find(pair.first)).second;
+                options.token_prefix + tokens[pair.first];
 
             // action
             const tgt::parsing_table::action* a = &pair.second;

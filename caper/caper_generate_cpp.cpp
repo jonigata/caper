@@ -574,10 +574,10 @@ $${debmes:repost_done}
         {});
 
     // member function signature -> index
-    std::map<std::vector<std::string>, int> stub_index;
+    std::map<std::vector<std::string>, int> stub_indices;
     {
         // member function name -> count
-        std::unordered_map<std::string, int> stub_count; 
+        std::unordered_map<std::string, int> stub_counts; 
 
         // action handler stub
         for (const auto& pair: actions) {
@@ -589,38 +589,32 @@ $${debmes:repost_done}
 
             // make signature
             std::vector<std::string> signature;
-
-            // ... function name
-            signature.push_back(sa.name);
-
-            // ... return value
-            signature.push_back(rule_type);
-
-            // ... arguments
-            for (size_t l = 0 ; l < sa.args.size() ; l++) {
-                signature.push_back((*sa.args.find(l)).second.type);
-            }
+            make_signature(
+                nonterminal_types,
+                rule,
+                sa,
+                signature);
 
             // skip duplicated
-            if (0 < stub_index.count(signature)) {
+            if (0 < stub_indices.count(signature)) {
                 continue;
             }
 
             // make function name
-            if (stub_count.count(sa.name) == 0) {
-                stub_count[sa.name] = 0;
+            if (stub_counts.count(sa.name) == 0) {
+                stub_counts[sa.name] = 0;
             }
-            int index = stub_count[sa.name];
-            stub_index[signature] = index;
-            stub_count[sa.name] = index+1;
+            int stub_index = stub_counts[sa.name];
+            stub_indices[signature] = stub_index;
+            stub_counts[sa.name] = stub_index+1;
 
             // header
             stencil(
                 os, R"(
-    bool call_${index}_${sa_name}(Nonterminal nonterminal, int base${args}) {
+    bool call_${stub_index}_${sa_name}(Nonterminal nonterminal, int base${args}) {
 )",
                 {
-                    {"index", index},
+                    {"stub_index", stub_index},
                     {"sa_name", sa.name},
                     {"args", [&](std::ostream& os) {
                                 for (size_t l = 0 ;
@@ -816,7 +810,7 @@ $${debmes:state}
                 os << ind1 << ind1 << "case " << cases[j] << ":\n";
             }
 
-            int index = stub_index[signature];
+            int index = stub_indices[signature];
 
             stencil(
                 os, R"(

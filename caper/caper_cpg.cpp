@@ -422,4 +422,3 @@ void make_cpg_parser(cpg::parser& p) {
 
     p.reset(table);
 }
-

@@ -102,9 +102,9 @@ private:
 
 public:
     struct hash {
-        std::size_t
+        size_t
         operator()(const terminal< Token, Traits >& s) const {
-            return std::size_t(s.token_);
+            return size_t(s.token_);
         }
     };
     
@@ -193,9 +193,9 @@ private:
 
 public:
     struct hash {
-        std::size_t
+        size_t
         operator()(const nonterminal<Token, Traits>& s) const {
-            return reinterpret_cast<std::size_t>(s.name_);
+            return reinterpret_cast<size_t>(s.name_);
         }
     };
 
@@ -347,12 +347,12 @@ private:
 
 public:
     struct hash {
-        std::size_t operator()(const symbol<Token, Traits>& s) const {
+        size_t operator()(const symbol<Token, Traits>& s) const {
             switch (s.type_) {
                 case type_epsilon:      return 0x11111111;
-                case type_terminal:     return std::size_t(s.token_);
+                case type_terminal:     return size_t(s.token_);
                 case type_nonterminal:
-                    return reinterpret_cast<std::size_t>(s.name_);
+                    return reinterpret_cast<size_t>(s.name_);
                 default: assert(0);     return false;
             }
         }
@@ -414,7 +414,7 @@ private:
     struct rule_imp {
         nonterminal_type    left;
         elements_type       elements;
-        std::size_t         id = std::size_t(-1);
+        size_t              id = size_t(-1);
 
         rule_imp() {}
         rule_imp(const nonterminal_type& n) : left(n) {}
@@ -442,12 +442,12 @@ public:
         return *this;
     }
     
-    void stamp(std::size_t id) {
+    void stamp(size_t id) {
         enunique();
         imp->id = id;
     }
 
-    std::size_t id() const { return imp->id; }
+    size_t id() const { return imp->id; }
 
     const nonterminal< Token, Traits >& left() const  {
         return imp->left;
@@ -475,7 +475,7 @@ private:
 
 public:
     struct hash {
-        std::size_t operator()(const rule<Token, Traits>& s) const {
+        size_t operator()(const rule<Token, Traits>& s) const {
             // large prime numbers
             const int p1 = 73856093;
             const int p2 = 19349663;
@@ -586,7 +586,7 @@ public:
     const_iterator begin()const { return imp->elements.begin(); }
     const_iterator end()  const { return imp->elements.end(); }
     size_t size() const { return imp->elements.size(); }
-    const rule_type& at(std::size_t n) const { return imp->elements[n]; }
+    const rule_type& at(size_t n) const { return imp->elements[n]; }
 
     rule_type root_rule() const { return imp->elements[0]; }
 

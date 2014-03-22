@@ -416,10 +416,10 @@ void generate_d(
                                                 // automatic argument conversion
                                                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
                                                         const semantic_action_argument& arg =
-                                                                (*sa.args.find( l )).second;
+                                                                sa.args[l];
                                                         os << indent << indent << indent << indent << arg.type << " arg" << l << ";" << endl
                                                            << indent << indent << indent << indent << "sa_.downcast(arg" << l << ", *get_arg(" << base
-                                                           << ", " << arg.src_index << "));" << endl;
+                                                           << ", " << arg.source_index << "));" << endl;
                                                 }
 
                                                 // semantic action

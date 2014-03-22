@@ -26,9 +26,20 @@ void make_signature(
         (*nonterminal_types.find(rule.left().name())).second);
 
     // arguments
-    for (size_t l = 0 ; l < sa.args.size() ; l++) {
-        signature.push_back((*sa.args.find(l)).second.type);
+    for (const auto& arg: sa.args) {
+        signature.push_back(arg.type);
     }
+}
+
+std::string make_type_name(const std::string& x) {
+    int c = x[x.size()-1];
+    std::string body = x.substr(0, x.size()-1);
+    if (c == '*' || c == '+') {
+        return "Sequence<" + body + ">";
+    } else if(c == '?') {
+        return "Option<" + body + ">";
+    }
+    return x;
 }
 
 } // unnamed namespace
@@ -424,9 +435,10 @@ private:
     struct stack_frame {
         const table_entry*  entry;
         value_type          value;
+        int                 sequence_length;
 
-        stack_frame(const table_entry* e, const value_type& v)
-            : entry(e), value(v) {}
+        stack_frame(const table_entry* e, const value_type& v, int sl)
+            : entry(e), value(v), sequence_length(sl) {}
     };
 
 )",
@@ -439,8 +451,8 @@ private:
         os, R"(
     Stack<stack_frame, StackSize> stack_;
 
-    bool push_stack(int state_index, const value_type& v) {
-        bool f = stack_.push(stack_frame(entry(state_index), v));
+    bool push_stack(int state_index, const value_type& v, int sl = 0) {
+        bool f = stack_.push(stack_frame(entry(state_index), v, sl));
         assert(!error_);
         if (!f) { 
             error_ = true;
@@ -561,6 +573,23 @@ $${debmes:repost_done}
             {});
     }
 
+    if (options.allow_ebnf) {
+        stencil(
+            os, R"(
+    // ebnf support methods
+    bool sequence_head(int state_index) {
+        return push_stack(state_index, value_type(), 0);
+    }
+
+    void sequence_trail() {
+        stack_.swap_top_and_second();
+        stack_top()->sequence_length++;
+    }
+
+)",
+            {});
+    }
+
     stencil(
         os, R"(
     bool call_nothing(Nonterminal nonterminal, int base) {
@@ -624,13 +653,12 @@ $${debmes:repost_done}
 
             // automatic argument conversion
             for (size_t l = 0 ; l < sa.args.size() ; l++) {
-                const auto& arg = (*sa.args.find(l)).second;
                 stencil(
                     os, R"(
         ${arg_type} arg${index}; sa_.downcast(arg${index}, get_arg(base, arg_index${index}));
 )",
                     {
-                        {"arg_type", {arg.type}},
+                        {"arg_type", {sa.args[l].type}},
                         {"index", {l}}
                     });
             }
@@ -734,19 +762,12 @@ $${debmes:state}
                             sa,
                             signature);
 
-                        std::vector<int> arg_indices;
-                        for (size_t l = 0 ; l < sa.args.size() ; l++) {
-                            const semantic_action_argument& arg =
-                                (*sa.args.find(l)).second;
-                            arg_indices.push_back(arg.src_index);
-                        }
-
                         reduce_action_cache_key_type key =
                             boost::make_tuple(
                                 signature,
                                 a->rule.left().name(),
                                 base,
-                                arg_indices);
+                                sa.source_indices);
 
                         reduce_action_cache[key].push_back(case_tag);
                     } else {

@@ -26,6 +26,16 @@ enum class Extension {
     Question,
 };
 
+inline const char* extension_label(Extension e) {
+    static const char* labels[] = {
+        "",
+        "*",
+        "+",
+        "?",
+    };
+    return labels[int(e)];
+}
+
 ////////////////////////////////////////////////////////////////
 // Nil
 struct Nil {
@@ -126,21 +136,21 @@ struct Item : public Node {
 
 struct Term : public Node {
     std::shared_ptr<Item>   item;
-    int                     index;
+    int                     argument_index;
 
-    Term(const Range& r, std::shared_ptr<Item> p, int i)
-        : Node(r), item(p), index(i) {}
+    Term(const Range& r, std::shared_ptr<Item> p, int ai)
+        : Node(r), item(p), argument_index(ai) {}
 };
 
 struct Choise : public Node {
     typedef std::vector<std::shared_ptr<Term>>
         elements_type;
 
-    std::string     name;
+    std::string     action_name;
     elements_type   elements;
 
     Choise(const Range& r, const std::string& as, const elements_type& ae)
-        : Node(r), name(as), elements(ae) {}
+        : Node(r), action_name(as), elements(ae) {}
 };
 
 struct Choises : public Node {
@@ -277,16 +287,17 @@ struct GenerateOptions {
 };
 
 struct semantic_action_argument {
-    int             src_index = -1;
+    int             source_index = -1;
     std::string     type;
 
     semantic_action_argument(){}
     semantic_action_argument(int ai, const std::string& at)
-        : src_index(ai), type(at) {}
+        : source_index(ai), type(at) {}
 };
 struct semantic_action {
-    std::string                                 name;
-    std::map<size_t, semantic_action_argument>  args;
+    std::string                             name;
+    std::vector<semantic_action_argument>   args;
+    std::vector<int>                        source_indices;
 
     semantic_action() {}
     semantic_action(const std::string& n) : name(n) {}

@@ -61,7 +61,7 @@ void generate_csharp(
                 sae.args.push_back( (*nonterminal_types.find( rule.left().name() )).second );
                 
                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                        sae.args.push_back( (*sa.args.find( l )).second.type );
+                        sae.args.push_back( sa.args[l].type );
                 }
 
                 ss.insert( sae );
@@ -418,10 +418,10 @@ void generate_csharp(
                                                 // automatic argument conversion
                                                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
                                                         const semantic_action_argument& arg =
-                                                                (*sa.args.find( l )).second;
+                                                                sa.args[l];
                                                         os << "                " << arg.type << " arg" << l
                                                            << " = (" << arg.type << ")get_arg(" << base
-                                                           << ", " << arg.src_index << ");\n";
+                                                           << ", " << arg.source_index << ");\n";
                                                 }
                                                 
                                                 // semantic action

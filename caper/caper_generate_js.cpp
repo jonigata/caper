@@ -158,9 +158,9 @@ void generate_javascript(
                                                 os << "            var r = o.sa." << sa.name << "( ";
                                                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
                                                         const semantic_action_argument& arg =
-                                                                (*sa.args.find( l )).second;
+                                                                sa.args[l];
                                                         if( l != 0 ) { os << ", "; }
-                                                        os << "o.get_arg( " << base << ", " << arg.src_index << ")";
+                                                        os << "o.get_arg( " << base << ", " << arg.source_index << ")";
                                                 }
                                                 os << " );\n";
                                                 

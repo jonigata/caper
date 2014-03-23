@@ -119,8 +119,8 @@ int main(int argc, const char** argv) {
         const std::string&,
         std::ostream&,
         const GenerateOptions&,
-        const symbol_map_type&,
-        const symbol_map_type&,
+        const std::map<std::string, Type>&,
+        const std::map<std::string, Type>&,
         const std::vector<std::string>&,
         const action_map_type&,
         const tgt::parsing_table&);
@@ -173,8 +173,8 @@ int main(int argc, const char** argv) {
         GenerateOptions options;
         options.debug_parser = cmdopt.debug_parser;
 
-        symbol_map_type terminal_types;
-        symbol_map_type nonterminal_types;
+        std::map<std::string, Type> terminal_types;
+        std::map<std::string, Type> nonterminal_types;
         collect_informations(
             options,
             terminal_types,

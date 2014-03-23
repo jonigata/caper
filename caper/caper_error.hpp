@@ -43,7 +43,7 @@ public:
 class unexpected_char : public caper_error {
 public:
     unexpected_char(int a, int c)
-        : caper_error(a, fmt("unexpected char: '%c'", c)) {
+        : caper_error(a, fmt("unexpected char: '%c'", (char)c)) {
     }
 };
 class mismatch_paren : public caper_error {
@@ -100,10 +100,19 @@ public:
         : caper_error(a, fmt("unknown special identifier '%s'", m)){
     }
 };
+
 class unallowed_ebnf : public caper_error {
 public:
     unallowed_ebnf(int a)
         : caper_error(a, "EBNF is not allowed, use %allow_ebnf"){
+    }
+};
+
+class unsupported_feature : public caper_error {
+public:
+    unsupported_feature(const char* g, const char* f) 
+        : caper_error(
+            0, fmt("%s generator does not support the feature '%s'", g, f)){
     }
 };
 

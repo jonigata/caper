@@ -2,10 +2,7 @@
 %namespace list;
 %dont_use_stl;
 %recover error;
+%allow_ebnf;
 
-Document<int> : [Document] List(0)
+Document<int> : [Document] LParen Number*(0) RParen
               ;
-
-List<int> : [List0] 
-	  | [List1] List(0) Number(1)
-          ;

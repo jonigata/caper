@@ -1,8 +1,8 @@
 // 2014/03/22 Naoyuki Hirayama
 // All Rights Reserved.
 
-#include "list.hpp"
 #include <iostream>
+#include "list.hpp"
 
 class unexpected_char : public std::exception {};
 
@@ -86,8 +86,14 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    int Document(int x) {
-        return x;
+    template <class S>
+    int Document(const S& x) {
+        std::cerr << "Document: ";
+        for(const auto& y: x) {
+            std::cerr << y << ", ";
+        }
+        std::cerr << "\n";
+        return 0;
     }
 
     int List0() {

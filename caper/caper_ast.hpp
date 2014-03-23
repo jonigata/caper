@@ -286,24 +286,33 @@ struct GenerateOptions {
     std::string     recovery_token  = "error";
 };
 
-struct semantic_action_argument {
-    int             source_index = -1;
-    std::string     type;
+struct Type {
+    std::string name;
+    Extension   extension   = Extension::None;
 
-    semantic_action_argument(){}
-    semantic_action_argument(int ai, const std::string& at)
-        : source_index(ai), type(at) {}
-};
-struct semantic_action {
-    std::string                             name;
-    std::vector<semantic_action_argument>   args;
-    std::vector<int>                        source_indices;
-
-    semantic_action() {}
-    semantic_action(const std::string& n) : name(n) {}
+    Type(){}
+    Type(const std::string& n, Extension e)
+        : name(n), extension(e) {}
 };
 
-typedef std::map<tgt::rule, semantic_action>    action_map_type;
+struct SemanticAction {
+    struct Argument {
+        int     source_index = -1;
+        Type    type;
+
+        Argument(){}
+        Argument(int ai, const Type& at)
+            : source_index(ai), type(at) {}
+    };
+    std::string             name;
+    std::vector<Argument>   args;
+    std::vector<int>        source_indices;
+
+    SemanticAction() {}
+    SemanticAction(const std::string& n) : name(n) {}
+};
+
+typedef std::map<tgt::rule, SemanticAction>     action_map_type;
 typedef std::set<std::string>                   symbol_set_type;
 typedef std::map<std::string, std::string>      symbol_map_type;
 

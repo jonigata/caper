@@ -7,52 +7,75 @@
 #include "caper_generate_cpp.hpp"
 #include "caper_format.hpp"
 #include "caper_stencil.hpp"
+#include "caper_finder.hpp"
 #include <algorithm>
 #include <boost/tuple/tuple.hpp>
 #include <boost/tuple/tuple_comparison.hpp>
 
 namespace {
 
+std::string make_type_name(const Type& x) {
+    switch(x.extension) {
+        case Extension::None:
+            return x.name;
+        case Extension::Star:
+        case Extension::Plus:
+            return "Sequence<" + x.name + ">";
+        case Extension::Question:
+            return "Option<" + x.name + ">";
+        default:
+            assert(0);
+            return "";
+    }
+}
+        
+std::string make_arg_decl(const Type& x, size_t l) {
+    std::string sl = std::to_string(l);
+    std::string y = make_type_name(x) + " arg" + sl;
+    switch (x.extension) {
+        case Extension::None:
+            return y;
+        case Extension::Star:
+        case Extension::Plus:
+            return
+                y + "(sa_, stack_, seq_get_range(base, arg_index" + sl + "))";
+        case Extension::Question:
+            return y + "()";
+        default:
+            assert(0);
+            return "";
+    }
+}
+
 void make_signature(
-    const symbol_map_type&                  nonterminal_types,
+    const std::map<std::string, Type>&      nonterminal_types,
     const tgt::parsing_table::rule_type&    rule,
-    const semantic_action&                  sa,
+    const SemanticAction&                   sa,
     std::vector<std::string>&               signature) {
     // function name
     signature.push_back(sa.name);
 
     // return value
     signature.push_back(
-        (*nonterminal_types.find(rule.left().name())).second);
+        make_type_name(*finder(nonterminal_types, rule.left().name())));
 
     // arguments
     for (const auto& arg: sa.args) {
-        signature.push_back(arg.type);
+        signature.push_back(make_type_name(arg.type));
     }
-}
-
-std::string make_type_name(const std::string& x) {
-    int c = x[x.size()-1];
-    std::string body = x.substr(0, x.size()-1);
-    if (c == '*' || c == '+') {
-        return "Sequence<" + body + ">";
-    } else if(c == '?') {
-        return "Option<" + body + ">";
-    }
-    return x;
 }
 
 } // unnamed namespace
 
 void generate_cpp(
-    const std::string&              src_filename,
-    std::ostream&                   os,
-    const GenerateOptions&          options,
-    const symbol_map_type&          ,
-    const symbol_map_type&          nonterminal_types,
-    const std::vector<std::string>& tokens,
-    const action_map_type&          actions,
-    const tgt::parsing_table&       table) {
+    const std::string&                  src_filename,
+    std::ostream&                       os,
+    const GenerateOptions&              options,
+    const std::map<std::string, Type>&  terminal_types,
+    const std::map<std::string, Type>&  nonterminal_types,
+    const std::vector<std::string>&     tokens,
+    const action_map_type&              actions,
+    const tgt::parsing_table&           table) {
 
     const char* ind1 = "    ";
 
@@ -186,7 +209,8 @@ public:
         }
     }
 
-    const T& top() {
+    T& top() {
+        assert(0 < depth());
         if (!tmp_.empty()) {
             return tmp_.back();
         } else {
@@ -219,6 +243,22 @@ public:
         return gap_ + tmp_.size();
     }
 	   
+    T& nth(size_t index) {
+        if (gap_ <= index) {
+            return tmp_[index - gap_];
+        } else {
+            return stack_[index];
+        }
+    }
+
+    void swap_top_and_second() {
+        int d = depth();
+        assert(2 <= d);
+        T x = nth(d - 1);
+        nth(d - 1) = nth(d - 2);
+        nth(d - 2) = x;
+    }
+
 private:
     std::vector<T> stack_;
     std::vector<T> tmp_;
@@ -282,7 +322,8 @@ public:
         gap_ -= n - m;
     }
 
-    const T& top() {
+    T& top() {
+        assert(0 < depth());
         if (0 <tmp_) {
             return at(StackSize - 1 -(tmp_-1));
         } else {
@@ -318,9 +359,25 @@ public:
         return gap_ + tmp_;
     }
 
+    T& nth(size_t index) {
+        if (gap_ <= index) {
+            return at(StackSize-1 - (index - gap_));
+        } else {
+            return at(index);
+        }
+    }
+
+    void swap_top_and_second() {
+        int d = depth();
+        assert(2 <= d);
+        T x = nth(d - 1);
+        nth(d - 1) = nth(d - 2);
+        nth(d - 2) = x;
+    }
+
 private:
     T& at(size_t n) {
-        return *(T*)(stack_ +(n * sizeof(T)));
+        return *(T*)(stack_ + (n * sizeof(T)));
     }
 
 private:
@@ -462,10 +519,10 @@ private:
     }
 
     void pop_stack(size_t n) {
-        stack_.pop( n );
+$${pop_stack_implementation}
     }
 
-    const stack_frame* stack_top() {
+    stack_frame* stack_top() {
         return &stack_.top();
     }
 
@@ -486,7 +543,26 @@ private:
     }
 
 )",
-        {});
+        {
+            {"pop_stack_implementation", [&](std::ostream& os) {
+                    if (options.allow_ebnf) {
+                        stencil(
+                            os, R"(
+        int nn = int(n);
+        while(nn--) {
+            stack_.pop(1 + stack_.top().sequence_length);
+        }
+)",
+                            {});
+                    } else {
+                        stencil(
+                            os, R"(
+        stack_.pop( n );
+)",
+                            {});
+                    }
+                }}
+        });
 
     if (options.recovery) {
         stencil(
@@ -576,14 +652,102 @@ $${debmes:repost_done}
     if (options.allow_ebnf) {
         stencil(
             os, R"(
-    // ebnf support methods
-    bool sequence_head(int state_index) {
+    // EBNF support class
+    struct Range {
+        int beg;
+        int end;
+        Range() : beg(-1), end(-1) {}
+        Range(int b, int e) : beg(b), end(e) {}
+    };
+
+    template <class T>
+    class Sequence {
+    public:
+        typedef Stack<stack_frame, StackSize> stack_type;
+
+        class const_iterator {
+        public:
+            typedef T value_type;
+
+        public:
+            const_iterator(SemanticAction& sa, stack_type& s, int p)
+                : sa_(&sa), s_(&s), p_(p){}
+            const_iterator(const const_iterator& x) : s_(x.s_), p_(x.p_){}
+            const_iterator& operator=(const const_iterator& x) {
+                sa_ = x.sa_;
+                s_ = x.s_;
+                p_ = x.p_;
+                return *this;
+            }
+            value_type operator*() const {
+                value_type v;
+                sa_->downcast(v, s_->nth(p_).value);
+                return v;
+            }
+            const_iterator& operator++() {
+                ++p_;
+                return *this;
+            }
+            bool operator==(const const_iterator& x) const {
+                return p_ == x.p_;
+            }
+            bool operator!=(const const_iterator& x) const {
+                return !((*this)==x);
+            }
+        private:
+            SemanticAction* sa_;
+            stack_type*     s_;
+            int             p_;
+
+        };
+
+    public:
+        Sequence(SemanticAction& sa, stack_type& stack, const Range& r)
+            : sa_(sa), stack_(stack), range_(r) {
+        }
+
+        const_iterator begin() const {
+            return const_iterator(sa_, stack_, range_.beg);
+        }
+        const_iterator end() const {
+            return const_iterator(sa_, stack_, range_.end);
+        }
+
+    private:
+        SemanticAction& sa_;
+        stack_type&     stack_;
+        Range           range_;
+
+    };
+
+    // EBNF support member functions
+    bool seq_head(int state_index) {
         return push_stack(state_index, value_type(), 0);
     }
 
-    void sequence_trail() {
+    bool seq_trail() {
         stack_.swap_top_and_second();
         stack_top()->sequence_length++;
+        return true;
+    }
+
+    Range seq_get_range(size_t base, size_t index) {
+        int n = int(base - index);
+        assert(0 < n);
+        int prev_actual_index;
+        int actual_index  = stack_.depth();
+        while(n--) {
+            actual_index--;
+            prev_actual_index = actual_index;
+            actual_index -= stack_.nth(actual_index).sequence_length;
+        }
+        return Range(actual_index, prev_actual_index);
+    }
+
+    const value_type& seq_get_arg(size_t base, size_t index) {
+        Range r = seq_get_range(base, index);
+        assert(r.end - r.beg == 1);
+        return stack_.nth(r.beg);
     }
 
 )",
@@ -609,10 +773,10 @@ $${debmes:repost_done}
         // action handler stub
         for (const auto& pair: actions) {
             const auto& rule = pair.first;
+            const auto& sa = pair.second;
 
             const auto& rule_type =
-                (*nonterminal_types.find(rule.left().name())).second;
-            const semantic_action& sa = pair.second;
+                *finder(nonterminal_types, rule.left().name());
 
             // make signature
             std::vector<std::string> signature;
@@ -651,16 +815,37 @@ $${debmes:repost_done}
                             }}
                 });
 
+            // check sequence conciousness
+            std::string get_arg = "get_arg";
+            for (const auto& arg: sa.args) {
+                if (arg.type.extension != Extension::None) {
+                    get_arg = "seq_get_arg";
+                    break;
+                }
+            }
+
             // automatic argument conversion
             for (size_t l = 0 ; l < sa.args.size() ; l++) {
-                stencil(
-                    os, R"(
-        ${arg_type} arg${index}; sa_.downcast(arg${index}, get_arg(base, arg_index${index}));
+                const auto& arg = sa.args[l];
+                if (arg.type.extension == Extension::None) {
+                    stencil(
+                        os, R"(
+        ${arg_type} arg${index}; sa_.downcast(arg${index}, ${get_arg}(base, arg_index${index}));
 )",
-                    {
-                        {"arg_type", {sa.args[l].type}},
-                        {"index", {l}}
-                    });
+                        {
+                            {"arg_type", make_type_name(arg.type)},
+                            {"get_arg", get_arg},
+                            {"index", l}
+                        });
+                } else {
+                    stencil(
+                        os, R"(
+        ${arg_decl}; 
+)",
+                        {
+                            {"arg_decl", make_arg_decl(arg.type, l)},
+                        });
+                }
             }
 
             // semantic action / automatic value conversion
@@ -674,7 +859,7 @@ $${debmes:repost_done}
 
 )",
                 {
-                    {"nonterminal_type", rule_type},
+                    {"nonterminal_type", make_type_name(rule_type)},
                     {"semantic_action_name", sa.name},
                     {"args", [&](std::ostream& os) {
                                 bool first = true;
@@ -727,13 +912,16 @@ $${debmes:state}
 
         // action table
         for (const auto& pair: state.action_table) {
+            const auto& token = pair.first;
+            const auto& action = pair.second;
+
+            const auto& rule = action.rule;
+
             // action header 
-            std::string case_tag =
-                options.token_prefix + tokens[pair.first];
+            std::string case_tag = options.token_prefix + tokens[token];
 
             // action
-            const tgt::parsing_table::action* a = &pair.second;
-            switch (a->type) {
+            switch (action.type) {
                 case zw::gr::action_shift:
                     stencil(
                         os, R"(
@@ -744,28 +932,27 @@ $${debmes:state}
 )",
                         {
                             {"case_tag", case_tag},
-                            {"dest_index", a->dest_index},
+                            {"dest_index", action.dest_index},
                         });
                     break;
                 case zw::gr::action_reduce: {
-                    size_t base = a->rule.right().size();
+                    size_t base = rule.right().size();
+                    const std::string& rule_name = rule.left().name();
 
-                    auto k = actions.find(a->rule);
-
-                    if (k != actions.end()) {
-                        const semantic_action& sa = (*k).second;
+                    if (auto k = finder(actions, rule)) {
+                        const auto& sa = *k;
 
                         std::vector<std::string> signature;
                         make_signature(
                             nonterminal_types,
-                            a->rule,
+                            rule,
                             sa,
                             signature);
 
                         reduce_action_cache_key_type key =
                             boost::make_tuple(
                                 signature,
-                                a->rule.left().name(),
+                                rule_name,
                                 base,
                                 sa.source_indices);
 
@@ -774,14 +961,47 @@ $${debmes:state}
                         stencil(
                             os, R"(
         case ${case_tag}:
-            // reduce
-            return call_nothing(Nonterminal_${nonterminal}, /*pop*/ ${base});
 )",
                             {
                                 {"case_tag", case_tag},
-                                {"base", base},
-                                {"nonterminal", a->rule.left().name()}
                             });
+                        const auto& t = *finder(nonterminal_types, rule_name);
+                        if (t.extension != Extension::None) {
+                            if (base == 0) {
+                                // sequence head
+                                int goto_target =
+                                    *finder(state.goto_table, rule.left());
+                                stencil(
+                                    os, R"(
+            // reduce sequence head: (HACK)
+            //      using the fact that 'base' is always 0
+            //      therefore goto_target is deterministic
+            return seq_head(/*state*/${goto_target});
+)",
+                                    {
+                                        {"goto_target", goto_target}
+                                    });
+                            } else {
+                                // sequence trailer
+                                stencil(
+                                    os, R"(
+            // reduce sequence trailer: (HACK) 
+            //      the state to where to go is pulled up to the top of stack
+            return seq_trail();
+)",
+                                    {});
+                            }
+                        } else {
+                            stencil(
+                                os, R"(
+            // reduce
+            return call_nothing(Nonterminal_${nonterminal}, /*pop*/ ${base});
+)",
+                                {
+                                    {"base", base},
+                                    {"nonterminal", rule.left().name()}
+                                });
+                        }
                     }
                 }
                     break;
@@ -879,30 +1099,39 @@ $${debmes:state}
 )",
             {});
         bool output_switch = false;
-        std::set<size_t> generated;
+        std::unordered_set<std::string> generated;
+        // TODO: ‚±‚± for (pair: state.goto_table) ‚Å‚æ‚¢‚Ì‚Å‚Í
         for(const auto& rule: table.grammar()) {
-            size_t nonterminal_index = std::distance(
-                nonterminal_types.begin(),
-                nonterminal_types.find(rule.left().name()));
-            if (0 < generated.count(nonterminal_index)) {
-                continue;
-            }
+            const std::string& rule_name = rule.left().name();
+            if (0 < generated.count(rule_name)) { continue; }
 
-            auto k = state.goto_table.find(rule.left());
-            if (k != state.goto_table.end()) {
-                int state_index = (*k).second;
-                stencil(
-                    ss, R"(
+            if (auto k = finder(state.goto_table, rule.left())) {
+                int state_index = *k;
+                const auto& t = *finder(nonterminal_types, rule_name);
+                if (t.extension != Extension::None) {
+                    stencil(
+                        ss, R"(
+        // ${rule} is sequence
+        case Nonterminal_${nonterminal}: return seq_trail();
+)",
+                    {
+                        {"rule", [&](std::ostream& os) { os << rule; }},
+                        {"nonterminal", rule_name},
+                    });
+                } else {
+                    stencil(
+                        ss, R"(
         // ${rule}
         case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value);
 )",
                     {
                         {"rule", [&](std::ostream& os) { os << rule; }},
-                        {"nonterminal", {rule.left().name()}},
-                        {"state_index", {state_index}}
+                        {"nonterminal", rule_name},
+                        {"state_index", state_index}
                     });
+                }
                 output_switch = true;
-                generated.insert(nonterminal_index);
+                generated.insert(rule_name);
             }
         }
 

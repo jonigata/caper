@@ -1,6 +1,6 @@
 .SUFFIXES: .o .c .cpp .hpp .cpg
 
-CPPFLAGS = -g -Wall -DLINUX 
+CPPFLAGS = -g -Wall -DLINUX -std=c++11
 
 .cpp.o:
 	g++ $(CPPFLAGS) -c -o $@ $<
@@ -13,7 +13,7 @@ list: list.o
 list.o : list.cpp list.hpp
 
 list.hpp : list.cpg ../caper
-	../caper $< $@
+	../caper $< $@ --debug
 
 recovery: recovery.o
 	g++ $(CPPFLAGS) -o $@ $^

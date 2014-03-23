@@ -1,4 +1,5 @@
 #include "caper_ast.hpp"
+#include "caper_error.hpp"
 #include "caper_generate_d.hpp"
 #include <algorithm>
 
@@ -6,14 +7,18 @@ using std::endl;
 std::string const indent = "\t";
 
 void generate_d(
-    const std::string&              src_filename,
-    std::ostream&                   os,
-    const GenerateOptions&          options,
-    const symbol_map_type&          ,
-    const symbol_map_type&          nonterminal_types,
-    const std::vector<std::string>& tokens,
-    const action_map_type&          actions,
-    const tgt::parsing_table&       table) {
+    const std::string&                  src_filename,
+    std::ostream&                       os,
+    const GenerateOptions&              options,
+    const std::map<std::string, Type>&  terminal_types,
+    const std::map<std::string, Type>&  nonterminal_types,
+    const std::vector<std::string>&     tokens,
+    const action_map_type&              actions,
+    const tgt::parsing_table&           table) {
+
+    if (options.allow_ebnf) {
+        throw unsupported_feature("D", "EBNF");
+    }
 
         std::string modulename = src_filename;
         if( modulename [modulename.size() - 2] == '.' &&
@@ -410,21 +415,21 @@ void generate_d(
                                                 nonterminal_types.find( rule.left().name() ) );
 
                                         if( k != actions.end() ) {
-                                                const semantic_action& sa = (*k).second;
+                                                const SemanticAction& sa = (*k).second;
 
                                                 os << indent << indent << indent << "{" << endl;
                                                 // automatic argument conversion
                                                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                                                        const semantic_action_argument& arg =
+                                                        const SemanticAction::Argument& arg =
                                                                 sa.args[l];
-                                                        os << indent << indent << indent << indent << arg.type << " arg" << l << ";" << endl
+                                                        os << indent << indent << indent << indent << arg.type.name << " arg" << l << ";" << endl
                                                            << indent << indent << indent << indent << "sa_.downcast(arg" << l << ", *get_arg(" << base
                                                            << ", " << arg.source_index << "));" << endl;
                                                 }
 
                                                 // semantic action
                                                 os << indent << indent << indent << indent
-                                                   << (*nonterminal_types.find( rule.left().name() )).second
+                                                   << (*nonterminal_types.find( rule.left().name() )).second.name
                                                    << " r = sa_." << sa.name << "(";
                                                 bool first = true;
                                                 for( size_t l = 0 ; l < sa.args.size() ; l++ ) {

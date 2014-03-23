@@ -25,10 +25,10 @@ struct rr_conflict_reporter {
 ////////////////////////////////////////////////////////////////
 // collect_informations
 void collect_informations(
-    GenerateOptions&    options,
-    symbol_map_type&    terminal_types,
-    symbol_map_type&    nonterminal_types,
-    const value_type&   ast) {
+    GenerateOptions&                options,
+    std::map<std::string, Type>&    terminal_types,
+    std::map<std::string, Type>&    nonterminal_types,
+    const value_type&               ast) {
     std::unordered_set<std::string> known;      // 確定識別子名
     std::unordered_set<std::string> unknown;    // 未確定識別子名
 
@@ -46,7 +46,7 @@ void collect_informations(
                     throw duplicated_symbol(tokendecl->range.beg,y->name);
                 }
                 known.insert(y->name);
-                terminal_types[y->name] =y->type.s;
+                terminal_types[y->name] = Type{y->type.s, Extension::None};
             }
         }
         if (auto tokenprefixdecl = downcast<TokenPrefixDecl>(x)) {
@@ -71,7 +71,8 @@ void collect_informations(
                     recoverdecl->range.beg, recoverdecl->name);
             }
             known.insert(recoverdecl->name);
-            terminal_types[recoverdecl->name] = "$error";
+            terminal_types[recoverdecl->name] =
+                Type{"$error", Extension::None};
             options.recovery = true;
             options.recovery_token = recoverdecl->name;
         }
@@ -90,7 +91,7 @@ void collect_informations(
             throw duplicated_symbol(rule->range.beg, rule->name);
         }
         known.insert(rule->name);
-        nonterminal_types[rule->name] = rule->type.s;
+        nonterminal_types[rule->name] = Type{rule->type.s, Extension::None};
 
         for (const auto& choise: rule->choises->choises) {
             for(const auto& term: choise->elements) {
@@ -136,36 +137,57 @@ find_iterator<T, V> finder(const T& c, const V& v) {
     return find_iterator<T, V>(c, v);
 }
 
-std::string make_sequence_name(
+std::string make_extended_name(
     const std::string source_name,
-    std::unordered_map<std::string, tgt::terminal>&     used_terminals,
-    std::unordered_map<std::string, tgt::nonterminal>&  used_nonterminals) {
+    const std::unordered_map<std::string, tgt::terminal>&     terminals,
+    const std::unordered_map<std::string, tgt::nonterminal>&  nonterminals) {
 
     int n = 0;
     while(true) {
         std::string x = source_name + "_seq" + std::to_string(n++);
-        if (used_terminals.count(x) == 0 && used_nonterminals.count(x) == 0) {
+        if (terminals.count(x) == 0 && nonterminals.count(x) == 0) {
             return x;
         }            
     }
 }
+
+tgt::symbol find_symbol(
+    const std::string& name,
+    const std::unordered_map<std::string, tgt::terminal>&     terminals,
+    const std::unordered_map<std::string, tgt::nonterminal>&  nonterminals) {
+    if (auto l = finder(terminals, name)) {
+        return *l;
+    }
+    if (auto l = finder(nonterminals, name)) {
+        return *l;
+    }
+    assert(0);
+    return tgt::symbol();
+}
     
+struct Pending {
+    std::string extended_name;
+    Extension   extension;
+    tgt::symbol element;
+    std::string source_name;
+};
 
 ////////////////////////////////////////////////////////////////
 // make_target_rule
 void make_target_rule(
-    action_map_type&                                    actions,
-    tgt::grammar&                                       g,
-    const tgt::nonterminal&                             rule_left,
-    std::shared_ptr<Choise>                             choise,
-    const symbol_map_type&                              terminal_types,
-    const symbol_map_type&                              nonterminal_types,
-    std::unordered_map<std::string, tgt::terminal>&     terminals,
-    std::unordered_map<std::string, tgt::nonterminal>&  nonterminals) {
+    action_map_type&                    actions,
+    tgt::grammar&                       g,
+    const tgt::nonterminal&             rule_left,
+    std::shared_ptr<Choise>             choise,
+    const std::map<std::string, Type>&  terminal_types,
+    const std::map<std::string, Type>&  nonterminal_types,
+    const std::unordered_map<std::string, tgt::terminal>&       terminals,
+    const std::unordered_map<std::string, tgt::nonterminal>&    nonterminals,
+    std::vector<Pending>&               pending) {
 
     tgt::rule r(rule_left);
 
-    std::unordered_map<size_t, semantic_action_argument> args;
+    std::unordered_map<size_t, SemanticAction::Argument> args;
 
     int source_index = 0;
     int max_index = -1;
@@ -178,42 +200,41 @@ void make_target_rule(
                     term->range.beg, choise->action_name, term->argument_index);
             }
 
-            std::string name = term->item->name;
-            std::string type;
-            if (term->item->extension != Extension::None) {
-                // EBNF名を生成
-                name = make_sequence_name(name, terminals, nonterminals);
-            }
+            Type type;
 
             // 引数になる場合、型が必要
             if (auto l = finder(nonterminal_types, term->item->name)) {
-                type = *l;
+                type.name = (*l).name;
             }
             if (auto l = finder(terminal_types, term->item->name)) {
-                if (*l == "") {
+                if ((*l).name == "") {
                     throw untyped_terminal(term->range.beg, term->item->name);
                 }
-                type = *l;
+                type.name = (*l).name;
             }
-            assert(type != "");
+            type.extension = term->item->extension;
+            assert(type.name != "");
 
-            if (term->item->extension != Extension::None) {
-                // EBNF型を生成
-                type = type + extension_label(term->item->extension);
-            }            
-
-            semantic_action_argument arg(source_index, type);
+            SemanticAction::Argument arg(source_index, type);
             args[term->argument_index] = arg;
             max_index = (std::max)(max_index, term->argument_index);
         }
 
-        if (auto l = finder(terminals, term->item->name)) {
-            r << *l;
+        tgt::symbol s =
+            find_symbol(term->item->name, terminals, nonterminals);
+        if (term->item->extension != Extension::None) {
+            std::string extended_name =
+                make_extended_name(
+                    term->item->name,
+                    terminals,
+                    nonterminals);
+            r << tgt::nonterminal(extended_name);
+            Pending p {
+                extended_name, term->item->extension, s ,term->item->name};
+            pending.push_back(p);
+        } else {
+            r << s;
         }
-        if (auto l = finder(nonterminals, term->item->name)) {
-            r << *l;
-        }
-
         source_index++;
     }
 
@@ -231,7 +252,7 @@ void make_target_rule(
     }
 
     if (!choise->action_name.empty()) {
-        semantic_action sa(choise->action_name);
+        SemanticAction sa(choise->action_name);
         for (int k = 0 ; k <= max_index ; k++) {
             sa.args.push_back(args[k]);
             sa.source_indices.push_back(args[k].source_index);
@@ -246,8 +267,8 @@ void make_target_parser(
     std::map<std::string, size_t>&  token_id_map,
     action_map_type&                actions,
     const value_type&               ast,
-    const symbol_map_type&          terminal_types,
-    const symbol_map_type&          nonterminal_types) {
+    std::map<std::string, Type>&    terminal_types,
+    std::map<std::string, Type>&    nonterminal_types) {
 
     auto doc = get_node<Document>(ast);
 
@@ -263,12 +284,12 @@ void make_target_parser(
     token_id_map["eof"] = 0;
     int id_seed = 1;
     for (const auto& x: terminal_types) {
-        if (x.second != "$error") { continue; }
+        if (x.second.name != "$error") { continue; }
         token_id_map[x.first] = error_token = id_seed;
         terminals[x.first] = tgt::terminal(x.first, id_seed++);
     }
     for (const auto& x: terminal_types) {
-        if (x.second == "$error") { continue; }
+        if (x.second.name == "$error") { continue; }
         token_id_map[x.first] = id_seed;
         terminals[x.first] = tgt::terminal(x.first, id_seed++);
     }
@@ -277,6 +298,9 @@ void make_target_parser(
     for (const auto& x: nonterminal_types) {
         nonterminals[x.first] = tgt::nonterminal(x.first);
     }
+
+    // pending(あとでまとめてEBNFを展開したルールを作成する
+    std::vector<Pending> pending;
 
     // 規則
     tgt::grammar g;
@@ -295,8 +319,17 @@ void make_target_parser(
                 terminal_types,
                 nonterminal_types,
                 terminals,
-                nonterminals);
+                nonterminals,
+                pending);
         }
+    }
+
+    for (const auto& p: pending) {
+        tgt::nonterminal name(p.extended_name);
+        g << (tgt::rule(name));
+        g << (tgt::rule(name) << name << p.element);
+        nonterminals[p.extended_name] = name;
+        nonterminal_types[p.extended_name] = Type{p.source_name, p.extension};
     }
 
     zw::gr::make_lalr_table(

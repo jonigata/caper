@@ -33,8 +33,8 @@ VPATH = ./depend
 
 all:
 	mkdir -p depend
-	make depend -s
-	make $(TARGET)
+	$(MAKE) depend -s
+	$(MAKE) $(TARGET)
 
 depend: $(OBJS:.o=.d)
 

@@ -492,10 +492,10 @@ private:
     struct stack_frame {
         const table_entry*  entry;
         value_type          value;
-        int                 sequence_length;
+        int                 sequence_length = 0;
 
-        stack_frame(const table_entry* e, const value_type& v, int sl)
-            : entry(e), value(v), sequence_length(sl) {}
+        stack_frame(const table_entry* e, const value_type& v)
+            : entry(e), value(v) {}
     };
 
 )",
@@ -508,8 +508,8 @@ private:
         os, R"(
     Stack<stack_frame, StackSize> stack_;
 
-    bool push_stack(int state_index, const value_type& v, int sl = 0) {
-        bool f = stack_.push(stack_frame(entry(state_index), v, sl));
+    bool push_stack(int state_index, const value_type& v) {
+        bool f = stack_.push(stack_frame(entry(state_index), v));
         assert(!error_);
         if (!f) { 
             error_ = true;
@@ -722,7 +722,7 @@ $${debmes:repost_done}
 
     // EBNF support member functions
     bool seq_head(int state_index) {
-        return push_stack(state_index, value_type(), 0);
+        return push_stack(state_index, value_type());
     }
 
     bool seq_trail() {
@@ -974,6 +974,7 @@ $${debmes:state}
                                 stencil(
                                     os, R"(
             // reduce sequence head: (HACK)
+            //      skip the normal reduce action, 
             //      using the fact that 'base' is always 0
             //      therefore goto_target is deterministic
             return seq_head(/*state*/${goto_target});

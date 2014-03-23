@@ -7,7 +7,7 @@
 #include "caper_stencil.hpp"
 #include "caper_format.hpp"
 
-void stencil(
+void stencil_output(
     std::ostream& os,
     const char* t,
     const std::map<std::string, StencilCallback>& m) {

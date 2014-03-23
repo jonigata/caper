@@ -114,14 +114,14 @@ $${use_stl}
 namespace ${namespace_name} {
 
 )",
-        {
-            {"headername", headername},
-            {"debug_include",
-                {options.debug_parser ? "#include <iostream>" : ""}},
-            {"use_stl",
-                {options.dont_use_stl ? "" : "#include <vector>"}},
-            {"namespace_name", options.namespace_name}
-        });
+        
+        {"headername", headername},
+        {"debug_include",
+            {options.debug_parser ? "#include <iostream>" : ""}},
+        {"use_stl",
+            {options.dont_use_stl ? "" : "#include <vector>"}},
+        {"namespace_name", options.namespace_name}
+        );
 
     if (!options.external_token) {
         // token enumeration
@@ -139,32 +139,29 @@ $${labels}
 }
 
 )",
-            {
-                {"tokens", [&](std::ostream& os){
-                        for(const auto& token: tokens) {
-                            stencil(
-                                os, R"(
+            {"tokens", [&](std::ostream& os){
+                    for(const auto& token: tokens) {
+                        stencil(
+                            os, R"(
     ${prefix}${token},
 )",
-                                {
-                                    {"prefix", options.token_prefix},
-                                    {"token", token}
-                                });
-                        }
-                    }},
-                {"labels", [&](std::ostream& os){
-                        for(const auto& token: tokens) {
-                            stencil(
-                                os, R"(
+                            {"prefix", options.token_prefix},
+                            {"token", token}
+                            );
+                    }
+                }},
+            {"labels", [&](std::ostream& os){
+                    for(const auto& token: tokens) {
+                        stencil(
+                            os, R"(
         "${prefix}${token}",
 )",
-                                {
-                                    {"prefix", options.token_prefix},
-                                    {"token", token}
-                                });
-                        }
-                    }}
-            });
+                            {"prefix", options.token_prefix},
+                            {"token", token}
+                            );
+                    }
+                }}
+            );
 
     }
 
@@ -266,8 +263,7 @@ private:
 	   
 };
 
-)",
-        {});
+)");
     } else {
         // bulkmemory version
         stencil(
@@ -388,8 +384,8 @@ private:
 
 };
 
-)",
-            {});
+)"
+            );
     }
 
     // parser class header
@@ -404,20 +400,17 @@ public:
 
     enum Nonterminal {
 )",
-        {
-            {"token_parameter", {
-                    options.external_token ? "class Token, " : ""}},
-            {"default_stack_size", {options.dont_use_stl ? "1024" : "0"}},
-        });
+        {"token_parameter", options.external_token ? "class Token, " : ""},
+        {"default_stack_size", options.dont_use_stl ? "1024" : "0"}
+        );
 
     for (const auto& nonterminal_type: nonterminal_types) {
         stencil(
             os, R"(
         Nonterminal_${nonterminal_name},
 )",
-            {
-                {"nonterminal_name", nonterminal_type.first}
-            });
+            {"nonterminal_name", nonterminal_type.first}
+            );
     }
     
     stencil(
@@ -463,11 +456,10 @@ public:
     bool error() { return error_; }
 
 )",
-        {
-            {"first_state", table.first_state()},
-            {"first_state_handle_error",
-                    table.states()[table.first_state()].handle_error}
-        });
+        {"first_state", table.first_state()},
+        {"first_state_handle_error",
+                table.states()[table.first_state()].handle_error}
+        );
 
     // implementation
     stencil(
@@ -499,9 +491,8 @@ private:
     };
 
 )",
-        {
-            {"token_paremter", {options.external_token ? "Token, " : ""}}
-        });
+        {"token_paremter", options.external_token ? "Token, " : ""}
+        );
 
     // stack operation
     stencil(
@@ -543,26 +534,25 @@ $${pop_stack_implementation}
     }
 
 )",
-        {
-            {"pop_stack_implementation", [&](std::ostream& os) {
-                    if (options.allow_ebnf) {
-                        stencil(
-                            os, R"(
+        {"pop_stack_implementation", [&](std::ostream& os) {
+                if (options.allow_ebnf) {
+                    stencil(
+                        os, R"(
         int nn = int(n);
         while(nn--) {
             stack_.pop(1 + stack_.top().sequence_length);
         }
-)",
-                            {});
-                    } else {
-                        stencil(
-                            os, R"(
+)"
+                        );
+                } else {
+                    stencil(
+                        os, R"(
         stack_.pop( n );
-)",
-                            {});
-                    }
-                }}
-        });
+)"
+                        );
+                }
+            }}
+        );
 
     if (options.recovery) {
         stencil(
@@ -599,54 +589,52 @@ $${debmes:repost_done}
     }
 
 )",
-            {
-                {"recovery_token",
-                    options.token_prefix + options.recovery_token},
-                {"token_eof", options.token_prefix + "eof"},
-                {"debmes:start", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "recover rewinding start: stack depth = " << stack_.depth() << "\n";
+            {"recovery_token", options.token_prefix + options.recovery_token},
+            {"token_eof", options.token_prefix + "eof"},
+            {"debmes:start", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "recover rewinding start: stack depth = " << stack_.depth() << "\n";
 )" :
-                            ""}},
-                {"debmes:failed", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "recover rewinding failed\n";
+                        ""}},
+            {"debmes:failed", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "recover rewinding failed\n";
 )" :
-                            ""}},
-                {"debmes:done", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "recover rewinding done: stack depth = " << stack_.depth() << "\n";
+                        ""}},
+            {"debmes:done", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "recover rewinding done: stack depth = " << stack_.depth() << "\n";
 )":
-                            ""}},
-                {"debmes:post_error_start", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "posting error token\n";
+                        ""}},
+            {"debmes:post_error_start", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "posting error token\n";
 )" :
-                            ""}},
-                {"debmes:post_error_done", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "posting error token done\n";
+                        ""}},
+            {"debmes:post_error_done", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "posting error token done\n";
 )" :
-                            ""}},
-                {"debmes:repost_start", {
-                        options.debug_parser ?
-                            R"(        std::cerr << "reposting original token\n";
+                        ""}},
+            {"debmes:repost_start", {
+                    options.debug_parser ?
+                        R"(        std::cerr << "reposting original token\n";
 )" :
-                            ""}},
-                {"debmes:repost_done", {
-                        options.debug_parser ? 
-                            R"(        std::cerr << "reposting original token done\n";
+                        ""}},
+            {"debmes:repost_done", {
+                    options.debug_parser ? 
+                        R"(        std::cerr << "reposting original token done\n";
 )" :
-                            ""}}
-            });
+                        ""}}
+            );
     } else {
         stencil(
             os, R"(
     void recover(Token, const value_type&) {
     }
 
-)",
-            {});
+)"
+            );
     }
 
     if (options.allow_ebnf) {
@@ -750,8 +738,8 @@ $${debmes:repost_done}
         return stack_.nth(r.beg);
     }
 
-)",
-            {});
+)"
+            );
     }
 
     stencil(
@@ -761,8 +749,8 @@ $${debmes:repost_done}
         return (this->*(stack_top()->entry->gotof))(nonterminal, value_type());
     }
 
-)",
-        {});
+)"
+        );
 
     // member function signature -> index
     std::map<std::vector<std::string>, int> stub_indices;
@@ -804,16 +792,15 @@ $${debmes:repost_done}
                 os, R"(
     bool call_${stub_index}_${sa_name}(Nonterminal nonterminal, int base${args}) {
 )",
-                {
-                    {"stub_index", stub_index},
-                    {"sa_name", sa.name},
-                    {"args", [&](std::ostream& os) {
-                                for (size_t l = 0 ;
-                                     l < sa.args.size() ; l++) {
-                                    os << ", int arg_index" << l;
-                                }
-                            }}
-                });
+                {"stub_index", stub_index},
+                {"sa_name", sa.name},
+                {"args", [&](std::ostream& os) {
+                        for (size_t l = 0 ;
+                             l < sa.args.size() ; l++) {
+                            os << ", int arg_index" << l;
+                        }
+                    }}
+                );
 
             // check sequence conciousness
             std::string get_arg = "get_arg";
@@ -832,19 +819,17 @@ $${debmes:repost_done}
                         os, R"(
         ${arg_type} arg${index}; sa_.downcast(arg${index}, ${get_arg}(base, arg_index${index}));
 )",
-                        {
-                            {"arg_type", make_type_name(arg.type)},
-                            {"get_arg", get_arg},
-                            {"index", l}
-                        });
+                        {"arg_type", make_type_name(arg.type)},
+                        {"get_arg", get_arg},
+                        {"index", l}
+                        );
                 } else {
                     stencil(
                         os, R"(
         ${arg_decl}; 
 )",
-                        {
-                            {"arg_decl", make_arg_decl(arg.type, l)},
-                        });
+                        {"arg_decl", make_arg_decl(arg.type, l)}
+                        );
                 }
             }
 
@@ -858,19 +843,18 @@ $${debmes:repost_done}
     }
 
 )",
-                {
-                    {"nonterminal_type", make_type_name(rule_type)},
-                    {"semantic_action_name", sa.name},
-                    {"args", [&](std::ostream& os) {
-                                bool first = true;
-                                for (size_t l = 0 ;
-                                     l < sa.args.size() ; l++) {
-                                    if (first) { first = false; }
-                                    else { os << ", "; }
-                                    os << "arg" << l;
-                                }
-                            }}
-                });
+                {"nonterminal_type", make_type_name(rule_type)},
+                {"semantic_action_name", sa.name},
+                {"args", [&](std::ostream& os) {
+                        bool first = true;
+                        for (size_t l = 0 ;
+                             l < sa.args.size() ; l++) {
+                            if (first) { first = false; }
+                            else { os << ", "; }
+                            os << "arg" << l;
+                        }
+                    }}
+                );
         }
     }
 
@@ -883,19 +867,17 @@ $${debmes:repost_done}
 $${debmes:state}
         switch(token) {
 )",
-            {
-                {"state_no", state.no},
-                {"debmes:state", [&](std::ostream& os){
-                            if (options.debug_parser) {
-                                stencil(
-                                    os, R"(
+            {"state_no", state.no},
+            {"debmes:state", [&](std::ostream& os){
+                    if (options.debug_parser) {
+                        stencil(
+                            os, R"(
         std::cerr << "state_${state_no} << " << token_label(token) << "\n";
 )",
-                                    {
-                                        {"state_no", state.no}
-                                    });
-                            }}}
-            });
+                            {"state_no", state.no}
+                            );
+                    }}}
+            );
 
         // reduce action cache
         typedef boost::tuple<
@@ -930,10 +912,9 @@ $${debmes:state}
             push_stack(/*state*/ ${dest_index}, value);
             return false;
 )",
-                        {
-                            {"case_tag", case_tag},
-                            {"dest_index", action.dest_index},
-                        });
+                        {"case_tag", case_tag},
+                        {"dest_index", action.dest_index}
+                        );
                     break;
                 case zw::gr::action_reduce: {
                     size_t base = rule.right().size();
@@ -962,9 +943,8 @@ $${debmes:state}
                             os, R"(
         case ${case_tag}:
 )",
-                            {
-                                {"case_tag", case_tag},
-                            });
+                            {"case_tag", case_tag}
+                            );
                         const auto& t = *finder(nonterminal_types, rule_name);
                         if (t.extension != Extension::None) {
                             if (base == 0) {
@@ -979,9 +959,8 @@ $${debmes:state}
             //      therefore goto_target is deterministic
             return seq_head(/*state*/${goto_target});
 )",
-                                    {
-                                        {"goto_target", goto_target}
-                                    });
+                                    {"goto_target", goto_target}
+                                    );
                             } else {
                                 // sequence trailer
                                 stencil(
@@ -989,8 +968,8 @@ $${debmes:state}
             // reduce sequence trailer: (HACK) 
             //      the state to where to go is pulled up to the top of stack
             return seq_trail();
-)",
-                                    {});
+)"
+                                    );
                             }
                         } else {
                             stencil(
@@ -998,10 +977,9 @@ $${debmes:state}
             // reduce
             return call_nothing(Nonterminal_${nonterminal}, /*pop*/ ${base});
 )",
-                                {
-                                    {"base", base},
-                                    {"nonterminal", rule.left().name()}
-                                });
+                                {"base", base},
+                                {"nonterminal", rule.left().name()}
+                                );
                         }
                     }
                 }
@@ -1015,9 +993,8 @@ $${debmes:state}
             accepted_value_ = get_arg(1, 0);
             return false;
 )",
-                        {
-                            {"case_tag", case_tag}
-                        });
+                        {"case_tag", case_tag}
+                        );
                     break;
                 case zw::gr::action_error:
                     stencil(
@@ -1027,9 +1004,8 @@ $${debmes:state}
             error_ = true;
             return false;
 )",
-                        {
-                            {"case_tag", case_tag}
-                        });
+                        {"case_tag", case_tag}
+                        );
                     break;
             }
 
@@ -1057,17 +1033,16 @@ $${debmes:state}
             // reduce
             return call_${index}_${sa_name}(Nonterminal_${nonterminal}, /*pop*/ ${base}${args});
 )",
-                {
-                    {"index", index},
-                    {"sa_name", signature[0]},
-                    {"nonterminal", nonterminal_name},
-                    {"base", base},
-                    {"args", [&](std::ostream& os) {
-                                for(const auto& x: arg_indices) {
-                                    os  << ", " << x;
-                                }
-                            }}
-                });
+                {"index", index},
+                {"sa_name", signature[0]},
+                {"nonterminal", nonterminal_name},
+                {"base", base},
+                {"args", [&](std::ostream& os) {
+                        for(const auto& x: arg_indices) {
+                            os  << ", " << x;
+                        }
+                    }}
+                );
         }
 
         // dispatcher footer / state footer
@@ -1080,25 +1055,24 @@ $${debmes:state}
         }
     }
 
-)",
-            {});
+)"
+            );
 
         // gotof header
         stencil(
             os, R"(
     bool gotof_${state_no}(Nonterminal nonterminal, const value_type& value) {
 )",
-            {
-                {"state_no", state.no}
-            });
+            {"state_no", state.no}
+            );
             
         // gotof dispatcher
         std::stringstream ss;
         stencil(
             ss, R"(
         switch(nonterminal) {
-)",
-            {});
+)"
+            );
         bool output_switch = false;
         std::unordered_set<std::string> generated;
         // TODO: ‚±‚± for (pair: state.goto_table) ‚Å‚æ‚¢‚Ì‚Å‚Í
@@ -1115,21 +1089,19 @@ $${debmes:state}
         // ${rule} is sequence
         case Nonterminal_${nonterminal}: return seq_trail();
 )",
-                    {
                         {"rule", [&](std::ostream& os) { os << rule; }},
-                        {"nonterminal", rule_name},
-                    });
+                        {"nonterminal", rule_name}
+                        );
                 } else {
                     stencil(
                         ss, R"(
         // ${rule}
         case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value);
 )",
-                    {
                         {"rule", [&](std::ostream& os) { os << rule; }},
                         {"nonterminal", rule_name},
                         {"state_index", state_index}
-                    });
+                        );
                 }
                 output_switch = true;
                 generated.insert(rule_name);
@@ -1141,8 +1113,8 @@ $${debmes:state}
             ss, R"(
         default: assert(0); return false;
         }
-)",
-            {});
+)"
+            );
         if (output_switch) {
             os << ss.str();
         } else {
@@ -1150,18 +1122,21 @@ $${debmes:state}
                 os, R"(
         assert(0);
         return true;
-)", {});
+)"
+                );
         }
         stencil(os, R"(
     }
 
-)", {});
+)"
+                );
 
 
     }
 
     // table
-    stencil(os, R"(
+    stencil(
+        os, R"(
     const table_entry* entry(int n) const {
         static const table_entry entries[] = {
 $${entries}
@@ -1170,22 +1145,21 @@ $${entries}
     }
 
 )",
-        {
-            {"entries", [&](std::ostream& os) {
-                    int i = 0;
-                    for (const auto& state: table.states()) {
-                        stencil(
-                            os, R"(
+        {"entries", [&](std::ostream& os) {
+                int i = 0;
+                for (const auto& state: table.states()) {
+                    stencil(
+                        os, R"(
             { &Parser::state_${i}, &Parser::gotof_${i}, ${handle_error} },
 )",
-                            {
-                                {"i", i},
-                                {"handle_error", state.handle_error}
-                            });
-                        ++i;
-                    }                    
-                }}
-        });
+                            
+                        {"i", i},
+                        {"handle_error", state.handle_error}
+                        );
+                    ++i;
+                }                    
+            }}
+        );
 
     // parser class footer
     // namespace footer
@@ -1200,8 +1174,7 @@ $${entries}
 #endif // #ifndef ${headername}_
 
 )",
-        {
-            {"headername", {headername}},
-            {"namespace_name", {options.namespace_name}}
-        });
+        {"headername", {headername}},
+        {"namespace_name", {options.namespace_name}}
+        );
 }

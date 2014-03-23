@@ -4,7 +4,7 @@
 // $Id$
 
 #include <iostream>
-#include "hello0.hpp"
+#include "hello0.ipp"
 
 struct SemanticAction {
     void syntax_error(){}

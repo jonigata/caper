@@ -1,10 +1,8 @@
-// Copyright (C) 2006 Naoyuki Hirayama.
+// 2014/03/22 Naoyuki Hirayama
 // All Rights Reserved.
 
-// $Id$
-
-#include "recovery.hpp"
 #include <iostream>
+#include "list0.ipp"
 
 class unexpected_char : public std::exception {};
 
@@ -17,7 +15,7 @@ public:
 public:
     scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(eof()) {}
 
-    rec::Token get(int& v) {
+    list::Token get(int& v) {
         int c;
         do {
             c = getc();
@@ -25,14 +23,14 @@ public:
 
         // ãLçÜóﬁ
         if (c == eof()) {
-            return rec::token_eof;
+            return list::token_eof;
         } else {
             v = c;
             switch (c) {
-                case '(': return rec::token_LParen;
-                case ')': return rec::token_RParen;
-                case ',': return rec::token_Comma;
-                case '*': return rec::token_Star;
+                case '(': return list::token_LParen;
+                case ')': return list::token_RParen;
+                case ',': return list::token_Comma;
+                case '*': return list::token_Star;
             }
         }
 
@@ -46,7 +44,7 @@ public:
             }
             ungetc(c);
             v = n;
-            return rec::token_Number;
+            return list::token_Number;
         }
 
 
@@ -88,20 +86,16 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    int PackList(int x) {
-        std::cerr << "list: " << x << std::endl;
-        return x;
+    template <class S>
+    int Document(const S& x) {
+        std::cout << "Document: ";
+        for(typename S::const_iterator i = x.begin();i!=x.end();++i) {
+            std::cout << (*i) << ", ";
+        }
+        std::cout << "\n";
+        return 42;
     }
-    int PackListError() {
-        std::cerr << "catching error" << std::endl;
-        return -1;
-    }
-    int MakeList(int n) {
-        return n;
-    }
-    int AddToList(int m, int n) {
-        return m + n;
-    }
+
 };
 
 int main( int, char** )
@@ -113,9 +107,9 @@ int main( int, char** )
     scanner<is_iterator> s(b, e);
 
     SemanticAction sa;
-    rec::Parser<int, SemanticAction> parser(sa);
+    list::Parser<int, SemanticAction> parser(sa);
 
-    rec::Token token;
+    list::Token token;
     for(;;) {
         int v;
         token = s.get( v );
@@ -123,14 +117,14 @@ int main( int, char** )
     }
 
     if (parser.error()) {
-        std::cerr << "error occured: " << rec::token_label(token) << std::endl;
+        std::cerr << "error occured: " << list::token_label(token) << std::endl;
         exit(1);
     }
 
     int v;
     if (parser.accept(v)) {
-        std::cerr << "accepted\n";
-        std::cerr << v << std::endl;
+        std::cout << "accepted\n";
+        std::cout << v << std::endl;
     }
 
     return 0;

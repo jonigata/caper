@@ -1,12 +1,8 @@
-// Copyright (C) 2006 Naoyuki Hirayama.
-// Copyright (C) 2014 Katayama Hirofumi MZ.
+// 2014/03/22 Naoyuki Hirayama
 // All Rights Reserved.
 
-// $Id$
-
-#include "recovery2.hpp"
 #include <iostream>
-#include <cmath>
+#include "list0.ipp"
 
 class unexpected_char : public std::exception {};
 
@@ -19,47 +15,45 @@ public:
 public:
     scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(eof()) {}
 
-    calc::Token get(int& v) {
+    list::Token get(int& v) {
         int c;
         do {
-            c = getch();
-            if (c == '\n') return calc::token_NewLine;
+            c = getc();
         } while (isspace(c));
 
         // ãLçÜóﬁ
         if (c == eof()) {
-            return calc::token_eof;
+            return list::token_eof;
         } else {
             v = c;
             switch (c) {
-                case '-': return calc::token_Minus;
-                case '+': return calc::token_Plus;
-                case '*': return calc::token_Star;
-                case '/': return calc::token_Slash;
-                case '(': return calc::token_LParen;
-                case ')': return calc::token_RParen;
+                case '(': return list::token_LParen;
+                case ')': return list::token_RParen;
+                case ',': return list::token_Comma;
+                case '*': return list::token_Star;
             }
         }
 
         // êÆêî
         if (isdigit(c)) {
             int n = 0;
-            while (c != eof() && isdigit(c)) {
+            while (c != eof()&& isdigit(c)) {
                 n *= 10;
                 n += c - '0';
-                c = getch();
+                c = getc();
             }
-            ungetch(c);
+            ungetc(c);
             v = n;
-            return calc::token_Number;
+            return list::token_Number;
         }
+
 
         std::cerr << char(c) << std::endl;
         throw unexpected_char();
     }
 
 private:
-    char_type getch() {
+    char_type getc() {
         int c;
         if (unget_ != eof()) {
             c = unget_;
@@ -72,7 +66,7 @@ private:
         return c;
     }
 
-    void ungetch(char_type c) {
+    void ungetc(char_type c) {
         if (c != eof()) {
             unget_ = c;
         }
@@ -92,29 +86,16 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    int DoLine1() { return 0; }
-    int DoLine2(int exp) {
-        std::cout << "Exp: " << exp << std::endl;
-        return exp;
+    template <class S>
+    int Document(const S& x) {
+        std::cout << "Document: ";
+        for(typename S::const_iterator i = x.begin();i!=x.end();++i) {
+            std::cout << (*i) << ", ";
+        }
+        std::cout << "\n";
+        return 42;
     }
-    int DoLine3() {
-        std::cout << "catched" << std::endl;
-        return -1;
-    }
 
-    int DoAddExp1(int exp1) { return exp1; }
-    int DoAddExp2(int exp1, int exp2) { return exp1 + exp2; }
-    int DoAddExp3(int exp1, int exp2) { return exp1 - exp2; }
-
-    int DoMulExp1(int exp1) { return exp1; }
-    int DoMulExp2(int exp1, int exp2) { return exp1 * exp2; }
-    int DoMulExp3(int exp1, int exp2) { return exp1 / exp2; }
-
-    int DoUnaryExp1(int exp1) { return exp1; }
-    int DoUnaryExp2(int exp1) { return -exp1; }
-
-    int DoPrimExp1(int num1) { return num1; }
-    int DoPrimExp2(int exp1) { return exp1; }
 };
 
 int main( int, char** )
@@ -126,25 +107,24 @@ int main( int, char** )
     scanner<is_iterator> s(b, e);
 
     SemanticAction sa;
-    calc::Parser<int, SemanticAction> parser(sa);
+    list::Parser<int, SemanticAction> parser(sa);
 
-    calc::Token token;
+    list::Token token;
     for(;;) {
         int v;
         token = s.get( v );
-        std::cout << calc::token_label(token) << std::endl;
         if (parser.post(token, v)) { break; }
     }
 
     if (parser.error()) {
-        std::cerr << "error occured: " << calc::token_label(token) << std::endl;
+        std::cerr << "error occured: " << list::token_label(token) << std::endl;
         exit(1);
     }
 
     int v;
     if (parser.accept(v)) {
-        std::cerr << "accepted\n";
-        std::cerr << v << std::endl;
+        std::cout << "accepted\n";
+        std::cout << v << std::endl;
     }
 
     return 0;

@@ -1,0 +1,71 @@
+.SUFFIXES: .o .c .cpp .hpp .cpg .ipp
+
+CPPFLAGS    = -g -Wall -DLINUX
+CC	    = clang++
+
+.cpp.o:
+	$(CC) $(CPPFLAGS) -c -o $@ $<
+
+%.ipp : %.cpg ../../caper
+	../../caper $< $@
+
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 list0 list1
+
+calc0: calc0.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+calc0.o : calc0.cpp calc0.ipp
+
+calc1: calc1.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+calc1.o : calc1.cpp calc1.ipp
+
+calc2: calc2.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+calc2.o : calc2.cpp calc2.ipp
+
+hello0: hello0.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+hello0.o : hello0.cpp hello0.ipp
+
+hello1: hello1.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+hello1.o : hello1.cpp hello1.ipp
+
+hello2: hello2.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+hello2.o : hello2.cpp hello2.ipp
+
+list0: list0.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+list0.o : list0.cpp list0.ipp
+
+list1: list1.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+list1.o : list1.cpp list1.ipp
+
+recovery: recovery.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+recovery.o : recovery.cpp recovery.ipp
+
+recovery2: recovery2.o
+	$(CC) $(CPPFLAGS) -o $@ $^
+
+recovery2.o : recovery2.cpp recovery2.ipp
+
+clean :
+	rm -f *.o 
+	rm -f *.ipp
+	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 list0 list1
+
+test : calc2.o
+	./calc2 < calc2.input | diff calc2.expected -
+

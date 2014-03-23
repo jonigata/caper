@@ -484,7 +484,7 @@ private:
     struct stack_frame {
         const table_entry*  entry;
         value_type          value;
-        int                 sequence_length = 0;
+        int                 sequence_length;
 
         stack_frame(const table_entry* e, const value_type& v, int sl)
             : entry(e), value(v), sequence_length(sl) {}
@@ -578,7 +578,7 @@ $${debmes:post_error_done}
         // repost original token
         // if it still causes error, discard it;
 $${debmes:repost_start}
-        while ((this->*(stack_top()->entry->state))(token, value));;
+        while ((this->*(stack_top()->entry->state))(token, value));
 $${debmes:repost_done}
         if (!error_) {
             commit_tmp_stack();

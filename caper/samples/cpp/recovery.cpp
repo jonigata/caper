@@ -1,8 +1,10 @@
-// 2014/03/22 Naoyuki Hirayama
+// Copyright (C) 2006 Naoyuki Hirayama.
 // All Rights Reserved.
 
+// $Id$
+
+#include "recovery.ipp"
 #include <iostream>
-#include "list.hpp"
 
 class unexpected_char : public std::exception {};
 
@@ -15,26 +17,26 @@ public:
 public:
     scanner(It b, It e) : b_(b), e_(e), c_(b), unget_(eof()) {}
 
-    list::Token get(int& v) {
+    rec::Token get(int& v) {
         int c;
         do {
             c = getc();
         } while (isspace(c));
 
-        // è¨˜å·é¡
+        // ‹L†—Ş
         if (c == eof()) {
-            return list::token_eof;
+            return rec::token_eof;
         } else {
             v = c;
             switch (c) {
-                case '(': return list::token_LParen;
-                case ')': return list::token_RParen;
-                case ',': return list::token_Comma;
-                case '*': return list::token_Star;
+                case '(': return rec::token_LParen;
+                case ')': return rec::token_RParen;
+                case ',': return rec::token_Comma;
+                case '*': return rec::token_Star;
             }
         }
 
-        // æ•´æ•°
+        // ®”
         if (isdigit(c)) {
             int n = 0;
             while (c != eof()&& isdigit(c)) {
@@ -44,7 +46,7 @@ public:
             }
             ungetc(c);
             v = n;
-            return list::token_Number;
+            return rec::token_Number;
         }
 
 
@@ -86,38 +88,34 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    template <class S>
-    int Document(const S& x) {
-        std::cerr << "Document: ";
-        for(const auto& y: x) {
-            std::cerr << y << ", ";
-        }
-        std::cerr << "\n";
-        return 0;
+    int PackList(int x) {
+        std::cerr << "list: " << x << std::endl;
+        return x;
     }
-
-    int List0() {
-        std::cerr << "list0" << std::endl;
-        return 0;
+    int PackListError() {
+        std::cerr << "catching error" << std::endl;
+        return -1;
     }
-    int List1(int x, int y) {
-        std::cerr << "list1" << x << ", " << y << std::endl;
-        return x + y;
+    int MakeList(int n) {
+        return n;
+    }
+    int AddToList(int m, int n) {
+        return m + n;
     }
 };
 
 int main( int, char** )
 {
-    // ã‚¹ã‚­ãƒ£ãƒŠ
+    // ƒXƒLƒƒƒi
     typedef std::istreambuf_iterator<char> is_iterator;
-    is_iterator b( std::cin );   // å³å€¤ã«ã™ã‚‹ã¨VC++ãŒé “çæ¼¢ãªã“ã¨ã‚’è¨€ã†
+    is_iterator b( std::cin );   // ‘¦’l‚É‚·‚é‚ÆVC++‚ª“Ú’¿Š¿‚È‚±‚Æ‚ğŒ¾‚¤
     is_iterator e;
     scanner<is_iterator> s(b, e);
 
     SemanticAction sa;
-    list::Parser<int, SemanticAction> parser(sa);
+    rec::Parser<int, SemanticAction> parser(sa);
 
-    list::Token token;
+    rec::Token token;
     for(;;) {
         int v;
         token = s.get( v );
@@ -125,7 +123,7 @@ int main( int, char** )
     }
 
     if (parser.error()) {
-        std::cerr << "error occured: " << list::token_label(token) << std::endl;
+        std::cerr << "error occured: " << rec::token_label(token) << std::endl;
         exit(1);
     }
 

@@ -3,7 +3,8 @@
 
 // $Id$
 
-#include "calc1.hpp"
+#include "calc1_ast.hpp"
+#include "calc1.ipp"
 #include <iostream>
 
 class unexpected_char : public std::exception {};

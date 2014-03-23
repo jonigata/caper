@@ -305,11 +305,12 @@ struct SemanticAction {
             : source_index(ai), type(at) {}
     };
     std::string             name;
+    bool                    special;
     std::vector<Argument>   args;
     std::vector<int>        source_indices;
 
     SemanticAction() {}
-    SemanticAction(const std::string& n) : name(n) {}
+    SemanticAction(const std::string& n, bool s) : name(n), special(s) {}
 };
 
 typedef std::map<tgt::rule, SemanticAction>     action_map_type;

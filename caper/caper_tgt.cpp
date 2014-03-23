@@ -252,7 +252,7 @@ void make_target_rule(
     }
 
     if (!choise->action_name.empty()) {
-        SemanticAction sa(choise->action_name);
+        SemanticAction sa(choise->action_name, false);
         for (int k = 0 ; k <= max_index ; k++) {
             sa.args.push_back(args[k]);
             sa.source_indices.push_back(args[k].source_index);
@@ -326,10 +326,17 @@ void make_target_parser(
 
     for (const auto& p: pending) {
         tgt::nonterminal name(p.extended_name);
-        g << (tgt::rule(name));
-        g << (tgt::rule(name) << name << p.element);
+        tgt::rule list0(name);
+        if (p.extension == Extension::Plus) {
+            list0 << p.element;
+        }
+        tgt::rule list1(name); list1 << name << p.element;
+        g << list0;
+        g << list1;
         nonterminals[p.extended_name] = name;
         nonterminal_types[p.extended_name] = Type{p.source_name, p.extension};
+        actions[list0] = SemanticAction { "seq_head", true };
+        actions[list1] = SemanticAction { "seq_trail", true };
     }
 
     zw::gr::make_lalr_table(

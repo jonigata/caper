@@ -117,9 +117,9 @@ namespace ${namespace_name} {
         
         {"headername", headername},
         {"debug_include",
-            {options.debug_parser ? "#include <iostream>" : ""}},
+            {options.debug_parser ? "#include <iostream>\n" : ""}},
         {"use_stl",
-            {options.dont_use_stl ? "" : "#include <vector>"}},
+            {options.dont_use_stl ? "" : "#include <vector>\n"}},
         {"namespace_name", options.namespace_name}
         );
 
@@ -468,7 +468,7 @@ private:
     typedef Parser<${token_paremter}Value, SemanticAction, StackSize> self_type;
 
     typedef bool (self_type::*state_type)(token_type, const value_type&);
-    typedef bool (self_type::*gotof_type)(Nonterminal, const value_type&);
+    typedef int (self_type::*gotof_type)(Nonterminal);
 
     bool            accepted_;
     bool            error_;
@@ -709,17 +709,21 @@ $${debmes:repost_done}
     };
 
     // EBNF support member functions
-    bool seq_head(int state_index) {
-        return push_stack(state_index, value_type());
+    bool seq_head(Nonterminal nonterminal, int base) {
+        int dest = (this->*(stack_nth_top(base)->entry->gotof))(nonterminal);
+        return push_stack(dest, value_type(), base);
     }
 
-    bool seq_trail() {
+    bool seq_trail(Nonterminal, int) {
         stack_.swap_top_and_second();
         stack_top()->sequence_length++;
         return true;
     }
 
     Range seq_get_range(size_t base, size_t index) {
+        // returns beg = end if length = 0 (includes scalar value)
+        // distinguishing 0-length-vector against scalar value is
+        // caller's responsibility
         int n = int(base - index);
         assert(0 < n);
         int prev_actual_index;
@@ -734,10 +738,17 @@ $${debmes:repost_done}
 
     const value_type& seq_get_arg(size_t base, size_t index) {
         Range r = seq_get_range(base, index);
-        assert(r.end - r.beg == 1);
-        return stack_.nth(r.beg);
+        // multiple value appearing here is not supported now
+        assert(r.end - r.beg == 0); 
+        return stack_.nth(r.beg).value;
     }
 
+    stack_frame* stack_nth_top(int n) {
+        Range r = seq_get_range(n + 1, 0);
+        // multiple value appearing here is not supported now
+        assert(r.end - r.beg == 0);
+        return &stack_.nth(r.beg);
+    }
 )"
             );
     }
@@ -746,7 +757,8 @@ $${debmes:repost_done}
         os, R"(
     bool call_nothing(Nonterminal nonterminal, int base) {
         pop_stack(base);
-        return (this->*(stack_top()->entry->gotof))(nonterminal, value_type());
+        int dest_index = (this->*(stack_top()->entry->gotof))(nonterminal);
+        return push_stack(dest_index, value_type());
     }
 
 )"
@@ -762,6 +774,10 @@ $${debmes:repost_done}
         for (const auto& pair: actions) {
             const auto& rule = pair.first;
             const auto& sa = pair.second;
+
+            if (sa.special) {
+                continue;
+            }
 
             const auto& rule_type =
                 *finder(nonterminal_types, rule.left().name());
@@ -839,7 +855,8 @@ $${debmes:repost_done}
         ${nonterminal_type} r = sa_.${semantic_action_name}(${args});
         value_type v; sa_.upcast(v, r);
         pop_stack(base);
-        return (this->*(stack_top()->entry->gotof))(nonterminal, v);
+        int dest_index = (this->*(stack_top()->entry->gotof))(nonterminal);
+        return push_stack(dest_index, v);
     }
 
 )",
@@ -920,7 +937,8 @@ $${debmes:state}
                     size_t base = rule.right().size();
                     const std::string& rule_name = rule.left().name();
 
-                    if (auto k = finder(actions, rule)) {
+                    auto k = finder(actions, rule);
+                    if (k && !(*k).special) {
                         const auto& sa = *k;
 
                         std::vector<std::string> signature;
@@ -945,42 +963,21 @@ $${debmes:state}
 )",
                             {"case_tag", case_tag}
                             );
-                        const auto& t = *finder(nonterminal_types, rule_name);
-                        if (t.extension != Extension::None) {
-                            if (base == 0) {
-                                // sequence head
-                                int goto_target =
-                                    *finder(state.goto_table, rule.left());
-                                stencil(
-                                    os, R"(
-            // reduce sequence head: (HACK)
-            //      skip the normal reduce action, 
-            //      using the fact that 'base' is always 0
-            //      therefore goto_target is deterministic
-            return seq_head(/*state*/${goto_target});
-)",
-                                    {"goto_target", goto_target}
-                                    );
-                            } else {
-                                // sequence trailer
-                                stencil(
-                                    os, R"(
-            // reduce sequence trailer: (HACK) 
-            //      the state to where to go is pulled up to the top of stack
-            return seq_trail();
-)"
-                                    );
-                            }
-                        } else {
-                            stencil(
-                                os, R"(
-            // reduce
-            return call_nothing(Nonterminal_${nonterminal}, /*pop*/ ${base});
-)",
-                                {"base", base},
-                                {"nonterminal", rule.left().name()}
-                                );
+                        std::string funcname = "call_nothing";
+                        if (k) {
+                            const auto& sa = *k;
+                            assert(sa.special);
+                            funcname = sa.name;
                         }
+                        stencil(
+                            os, R"(
+            // reduce
+            return ${funcname}(Nonterminal_${nonterminal}, /*pop*/ ${base});
+)",
+                            {"funcname", funcname},
+                            {"nonterminal", rule.left().name()},
+                            {"base", base}
+                            );
                     }
                 }
                     break;
@@ -1061,7 +1058,7 @@ $${debmes:state}
         // gotof header
         stencil(
             os, R"(
-    bool gotof_${state_no}(Nonterminal nonterminal, const value_type& value) {
+    int gotof_${state_no}(Nonterminal nonterminal) {
 )",
             {"state_no", state.no}
             );
@@ -1082,27 +1079,15 @@ $${debmes:state}
 
             if (auto k = finder(state.goto_table, rule.left())) {
                 int state_index = *k;
-                const auto& t = *finder(nonterminal_types, rule_name);
-                if (t.extension != Extension::None) {
-                    stencil(
-                        ss, R"(
-        // ${rule} is sequence
-        case Nonterminal_${nonterminal}: return seq_trail();
-)",
-                        {"rule", [&](std::ostream& os) { os << rule; }},
-                        {"nonterminal", rule_name}
-                        );
-                } else {
-                    stencil(
-                        ss, R"(
+                stencil(
+                    ss, R"(
         // ${rule}
-        case Nonterminal_${nonterminal}: return push_stack(/*state*/ ${state_index}, value);
+        case Nonterminal_${nonterminal}: return ${state_index};
 )",
-                        {"rule", [&](std::ostream& os) { os << rule; }},
-                        {"nonterminal", rule_name},
-                        {"state_index", state_index}
-                        );
-                }
+                    {"rule", [&](std::ostream& os) { os << rule; }},
+                    {"nonterminal", rule_name},
+                    {"state_index", state_index}
+                    );
                 output_switch = true;
                 generated.insert(rule_name);
             }

@@ -7,9 +7,9 @@ CC	    = clang++
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
 %.ipp : %.cpg ../../caper
-	../../caper $< $@
+	../../caper $< $@ --debug
 
-all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 list0 list1 rawlist0 rawlist1
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 list0 list1
 
 ../../caper:
 	cd ../..; $(MAKE)
@@ -80,5 +80,5 @@ clean :
 	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 list0 list1 rawlist0 rawlist1
 
 test : calc2.o
-	./calc2 < calc2.input | diff calc2.expected -
+	cd ../test; $(MAKE)
 

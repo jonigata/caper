@@ -326,17 +326,28 @@ void make_target_parser(
 
     for (const auto& p: pending) {
         tgt::nonterminal name(p.extended_name);
-        tgt::rule list0(name);
-        if (p.extension == Extension::Plus) {
-            list0 << p.element;
-        }
-        tgt::rule list1(name); list1 << name << p.element;
-        g << list0;
-        g << list1;
         nonterminals[p.extended_name] = name;
-        nonterminal_types[p.extended_name] = Type{p.source_name, p.extension};
-        actions[list0] = SemanticAction { "seq_head", true };
-        actions[list1] = SemanticAction { "seq_trail", true };
+        nonterminal_types[p.extended_name] =
+            Type{p.source_name, p.extension};
+
+        if (p.extension == Extension::Question) {
+            tgt::rule list0(name);
+            tgt::rule list1(name); list1 << p.element;
+            g << list0;
+            g << list1;
+            actions[list0] = SemanticAction { "opt_nothing", true };
+            actions[list1] = SemanticAction { "opt_just", true };
+        } else {
+            tgt::rule list0(name);
+            if (p.extension == Extension::Plus) {
+                list0 << p.element;
+            }
+            tgt::rule list1(name); list1 << name << p.element;
+            g << list0;
+            g << list1;
+            actions[list0] = SemanticAction { "seq_head", true };
+            actions[list1] = SemanticAction { "seq_trail", true };
+        }
     }
 
     zw::gr::make_lalr_table(

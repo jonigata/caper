@@ -22,7 +22,7 @@ std::string make_type_name(const Type& x) {
         case Extension::Plus:
             return "Sequence<" + x.name + ">";
         case Extension::Question:
-            return "Option<" + x.name + ">";
+            return "Optional<" + x.name + ">";
         default:
             assert(0);
             return "";
@@ -37,10 +37,9 @@ std::string make_arg_decl(const Type& x, size_t l) {
             return y;
         case Extension::Star:
         case Extension::Plus:
+        case Extension::Question:
             return
                 y + "(sa_, stack_, seq_get_range(base, arg_index" + sl + "))";
-        case Extension::Question:
-            return y + "()";
         default:
             assert(0);
             return "";
@@ -649,6 +648,34 @@ $${debmes:repost_done}
     };
 
     template <class T>
+    class Optional {
+    public:
+        typedef Stack<stack_frame, StackSize> stack_type;
+
+    public:
+        Optional(SemanticAction& sa, stack_type& s, const Range& r)
+            : sa_(&sa), s_(&s), p_(r.beg == r.end ? -1 : r.beg){}
+
+        operator bool() const {
+            return 0 <= p_;
+        }
+        bool operator!() const {
+            return !bool(*this);
+        }
+        T operator*() const {
+            value_type v;
+            sa_->downcast(v, s_->nth(p_).value);
+            return v;
+        }
+
+    private:
+        SemanticAction* sa_;
+        stack_type*     s_;
+        int             p_;
+
+    };
+
+    template <class T>
     class Sequence {
     public:
         typedef Stack<stack_frame, StackSize> stack_type;
@@ -710,6 +737,8 @@ $${debmes:repost_done}
 
     // EBNF support member functions
     bool seq_head(Nonterminal nonterminal, int base) {
+        // case '*': base == 0
+        // case '+': base == 1
         int dest = (this->*(stack_nth_top(base)->entry->gotof))(nonterminal);
         return push_stack(dest, value_type(), base);
     }
@@ -718,6 +747,18 @@ $${debmes:repost_done}
         stack_.swap_top_and_second();
         stack_top()->sequence_length++;
         return true;
+    }
+
+    bool opt_nothing(Nonterminal nonterminal, int base) {
+        // same as head of '*'
+        assert(base == 0);
+        return seq_head(nonterminal, base);
+    }
+
+    bool opt_just(Nonterminal nonterminal, int base) {
+        // same as head of '+'
+        assert(base == 1);
+        return seq_head(nonterminal, base);
     }
 
     Range seq_get_range(size_t base, size_t index) {

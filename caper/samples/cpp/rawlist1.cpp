@@ -2,7 +2,7 @@
 // All Rights Reserved.
 
 #include <iostream>
-#include "list1.ipp"
+#include "rawlist0.ipp"
 
 class unexpected_char : public std::exception {};
 
@@ -86,14 +86,14 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    template <class S>
-    int Document(const S& x) {
-        std::cout << "Document: ";
-        for(typename S::const_iterator i = x.begin();i!=x.end();++i) {
-            std::cout << (*i) << ", ";
-        }
-        std::cout << "\n";
-        return 42;
+    int Document(int n) {
+        return n;
+    }
+    int MakeList(int n) {
+        return n;
+    }
+    int AddToList(int m, int n) {
+        return m + n;
     }
 
 };

@@ -75,7 +75,6 @@ struct Reserved {
 struct Module;
 struct BaseDef;
 struct AtomDef;
-struct Atoms;
 struct TypeDef;
 struct ClassHeaderDef;
 struct ClassFooterDef;
@@ -183,25 +182,23 @@ struct Atom {
         Atom( const Identifier& name, const Identifier& type ){}
 };
 
-struct Atoms {
-        std::vector< Atom >   elements;
-
-        Atoms(){}
-        Atoms( const std::vector< Atom >& x ) : elements( x ) {}
-};
-
 struct AtomDef {
-        Atoms   atoms;
+    std::vector<Atom>   atoms;
 
-        AtomDef(){}
-        AtomDef( const Atoms& x ) : atoms( x ) {}
+    AtomDef() {}
+    template <class T>
+    AtomDef(const T& x) {
+        for (const auto& y: x) {
+            atoms.push_back(y);
+        }
+    }
 };
 
 struct BaseDef {
-        Identifier name;
+    Identifier name;
 
-        BaseDef(){}
-        BaseDef( const Identifier& x ) : name( x ) {}
+    BaseDef() {}
+    BaseDef(const Identifier& x) : name(x) {}
 };
 
 struct Module {
@@ -227,7 +224,6 @@ typedef boost::variant<
         Module,
         Declaration,
         AtomDef,
-        Atoms,
         Atom,
         TypeDef,
         TypeDefRight,

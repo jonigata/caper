@@ -233,107 +233,77 @@ struct SemanticAction {
     Module MakeModule(const T& x) {
         return Module(x);
     }
-    Declaration MakeBaseDef( const Identifier& y )
-    {
-        return BaseDef( y );
+    Declaration MakeBaseDef(const Identifier& y) {
+        return BaseDef(y);
     }
-    Declaration MakeAtomDef( const Atoms& x )
-    {
-        return AtomDef( x );
+    template <class T>
+    Declaration MakeAtomDef(const T& x){
+        return AtomDef(x);
     }
-    Atoms MakeAtoms0( const Atom& x )
-    {
-        Atoms z;
-        z.elements.push_back( x );
-        return z;
-    }
-    Atoms MakeAtoms1( const Atoms& x, const Atom& y )
-    {
-        Atoms z = x;
-        z.elements.push_back( y );
-        return z;
-    }
-    Atom MakeAtom0( const Identifier& x )
-    {
+    Atom MakeAtom0(const Identifier& x) {
         Atom z;
         z.name = x;
         return z;
     }
-    Atom MakeAtom1( const Identifier& x, const Identifier& y )
-    {
+    Atom MakeAtom1(const Identifier& x, const Identifier& y) {
         Atom z;
         z.name = x;
         z.type = y;
         return z;
     }
-    Declaration MakeClassHeaderDef( const BulkText& x )
-    {
-        return ClassHeaderDef( x );
+    Declaration MakeClassHeaderDef(const BulkText& x) {
+        return ClassHeaderDef(x);
     }
-    Declaration MakeClassFooterDef( const BulkText& x )
-    {
-        return ClassFooterDef( x );
+    Declaration MakeClassFooterDef(const BulkText& x) {
+        return ClassFooterDef(x);
     }
-    Declaration MakeModuleHeaderDef( const BulkText& x )
-    {
-        return ModuleHeaderDef( x );
+    Declaration MakeModuleHeaderDef(const BulkText& x) {
+        return ModuleHeaderDef(x);
     }
-    Declaration MakeModuleFooterDef( const BulkText& x )
-    {
-        return ModuleFooterDef( x );
+    Declaration MakeModuleFooterDef(const BulkText& x) {
+        return ModuleFooterDef(x);
     }
-    Declaration MakeTypeDef( const Identifier& x, const TypeDefRight& y )
-    {
-        return TypeDef( x, y );
+    Declaration MakeTypeDef(const Identifier& x, const TypeDefRight& y) {
+        return TypeDef(x, y);
     }
-    TypeDefRight MakeScalor( const Identifier& x, const Identifier& y )
-    {
-        return Scalor( x, y );
+    TypeDefRight MakeScalor(const Identifier& x, const Identifier& y) {
+        return Scalor(x, y);
     }
-    TypeDefRight MakeList( const Identifier& x, const Identifier& y )
-    {
-        return List( x, y );
-    }                
-    TypeDefRight MakeVariant( const Variant& x )
-    {
+    TypeDefRight MakeList(const Identifier& x, const Identifier& y) {
+        return List(x, y);
+    }
+    TypeDefRight MakeVariant(const Variant& x) {
         return x;
-    }                
-    Variant MakeVariant0( const Identifier& x )
-    {
+    }
+    Variant MakeVariant0(const Identifier& x) {
         Variant z;
-        z.choises.push_back( x );
+        z.choises.push_back(x);
         return z;
     }
-    Variant MakeVariant1( const Variant& x, const Identifier& y )
-    {
+    Variant MakeVariant1(const Variant& x, const Identifier& y) {
         Variant z = x;
-        z.choises.push_back( y );
+        z.choises.push_back(y);
         return z;
     }
-    TypeDefRight MakeTuple( const Tuple& x )
-    {
+    TypeDefRight MakeTuple(const Tuple& x) {
         return x;
-    }                
-    Tuple MakeTuple0( const TupleItem& x, const TupleItem& y )
-    {
+    }
+    Tuple MakeTuple0(const TupleItem& x, const TupleItem& y) {
         Tuple z;
-        z.elements.push_back( x );
-        z.elements.push_back( y );
+        z.elements.push_back(x);
+        z.elements.push_back(y);
         return z;
     }
-    Tuple MakeTuple1( const Tuple& x, const TupleItem& y )
-    {
+    Tuple MakeTuple1(const Tuple& x, const TupleItem& y) {
         Tuple z = x;
-        z.elements.push_back( y );
+        z.elements.push_back(y);
         return z;
     }
-    TupleItem MakeTupleItem0( const Identifier& x, const Identifier& y )
-    {
-        return Scalor( x, y );
+    TupleItem MakeTupleItem0(const Identifier& x, const Identifier& y) {
+        return Scalor(x, y);
     }
-    TupleItem MakeTupleItem1( const Identifier& x, const Identifier& y )
-    {
-        return List( x, y );
+    TupleItem MakeTupleItem1(const Identifier& x, const Identifier& y) {
+        return List(x, y);
     }
 };
 
@@ -349,8 +319,8 @@ struct IdentifierCollector : public boost::static_visitor<void> {
 
     template <class T>
     void apply_to_vector(const std::vector<T>& x) const {
-        for (typename std::vector<T>::const_iterator i = x.begin(); i != x.end(); ++i) {
-            boost::apply_visitor(IdentifierCollector(types, atoms), *i);
+        for (const auto& y: x) {
+            boost::apply_visitor(IdentifierCollector(types, atoms), y);
         }
     }
         
@@ -358,16 +328,13 @@ struct IdentifierCollector : public boost::static_visitor<void> {
         apply_to_vector(x.declarations);
     }
 
-    void operator()( const TypeDef& x ) const
-    {
-        types.insert( x.name.s );
+    void operator()(const TypeDef& x) const {
+        types.insert(x.name.s);
     }
 
-    void operator()( const AtomDef& x ) const
-    {
-        for( std::vector< Atom >::const_iterator i = x.atoms.elements.begin() ;
-             i != x.atoms.elements.end() ; ++i ) {
-            atoms.insert( (*i).name.s );
+    void operator()(const AtomDef& x) const {
+        for (const auto& y: x.atoms) {
+            atoms.insert(y.name.s);
         }
     }
 };

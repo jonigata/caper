@@ -75,6 +75,7 @@ public:
             case '*': v = value(b, Operator('*')); return token_star;
             case '+': v = value(b, Operator('+')); return token_plus;
             case '?': v = value(b, Operator('?')); return token_question;
+            case '/': v = value(b, Operator('/')); return token_slash;
             case eof: v = value(b, Operator('$')); return token_eof;
         }
 

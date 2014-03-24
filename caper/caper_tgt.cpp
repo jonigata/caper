@@ -170,6 +170,7 @@ struct Pending {
     Extension   extension;
     tgt::symbol element;
     std::string source_name;
+    tgt::symbol skip;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -220,9 +221,14 @@ void make_target_rule(
             max_index = (std::max)(max_index, term->argument_index);
         }
 
-        tgt::symbol s =
+        tgt::symbol symbol =
             find_symbol(term->item->name, terminals, nonterminals);
         if (term->item->extension != Extension::None) {
+            tgt::symbol skip;
+            if (term->item->extension == Extension::Slash) {
+                skip = find_symbol(term->item->skip, terminals, nonterminals);
+            }
+
             std::string extended_name =
                 make_extended_name(
                     term->item->name,
@@ -230,10 +236,15 @@ void make_target_rule(
                     nonterminals);
             r << tgt::nonterminal(extended_name);
             Pending p {
-                extended_name, term->item->extension, s ,term->item->name};
+                extended_name,
+                    term->item->extension,
+                    symbol,
+                    term->item->name,
+                    skip
+                    };
             pending.push_back(p);
         } else {
-            r << s;
+            r << symbol;
         }
         source_index++;
     }
@@ -337,6 +348,15 @@ void make_target_parser(
             g << list1;
             actions[list0] = SemanticAction { "opt_nothing", true };
             actions[list1] = SemanticAction { "opt_just", true };
+        } else if (p.extension == Extension::Slash) {
+            assert(!p.skip.is_epsilon());
+            tgt::rule list0(name); list0 << p.element;
+            tgt::rule list1(name); list1 << name << p.skip << p.element;
+            g << list0;
+            g << list1;
+            actions[list0] = SemanticAction { "seq_head", true };
+            actions[list1] = SemanticAction { "seq_trail2", true };
+            
         } else {
             tgt::rule list0(name);
             if (p.extension == Extension::Plus) {
@@ -356,32 +376,4 @@ void make_target_parser(
         error_token,
         sr_conflict_reporter(),
         rr_conflict_reporter());
-}
-
-void expand_ebnf(const GenerateOptions& options, const value_type& ast) {
-    auto doc = get_node<Document>(ast);
-
-    for (const auto& rule: doc->rules->rules) {
-        for (const auto& choise: rule->choises->choises) {
-            for (const auto& term: choise->elements) {
-                switch (term->item->extension) {
-                    case Extension::None:
-                        break;
-                    case Extension::Star:
-                        if (!options.allow_ebnf) {
-                            throw unallowed_ebnf(term->range.beg);
-                        }
-                    case Extension::Plus:
-                        if (!options.allow_ebnf) {
-                            throw unallowed_ebnf(term->range.beg);
-                        }
-                    case Extension::Question:
-                        if (!options.allow_ebnf) {
-                            throw unallowed_ebnf(term->range.beg);
-                        }
-                        break;
-                }
-            }
-        }
-    }
 }

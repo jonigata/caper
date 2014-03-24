@@ -414,6 +414,18 @@ void make_cpg_parser(cpg::parser& p) {
             return Value(p);
         },
         token_identifier, token_question);
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args),
+                get_symbol<Identifier>(args[0]),
+                Extension::Slash,
+                get_symbol<Identifier>(args[2]));
+            return Value(p);
+        },
+        token_identifier, token_slash, token_identifier);
 
 
     // parsing table�̍쐬

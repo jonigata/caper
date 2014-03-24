@@ -20,6 +20,7 @@ std::string make_type_name(const Type& x) {
             return x.name;
         case Extension::Star:
         case Extension::Plus:
+        case Extension::Slash:
             return "Sequence<" + x.name + ">";
         case Extension::Question:
             return "Optional<" + x.name + ">";
@@ -38,6 +39,7 @@ std::string make_arg_decl(const Type& x, size_t l) {
         case Extension::Star:
         case Extension::Plus:
         case Extension::Question:
+        case Extension::Slash:
             return
                 y + "(sa_, stack_, seq_get_range(base, arg_index" + sl + "))";
         default:
@@ -743,7 +745,19 @@ $${debmes:repost_done}
         return push_stack(dest, value_type(), base);
     }
 
-    bool seq_trail(Nonterminal, int) {
+    bool seq_trail(Nonterminal, int base) {
+        // '*', '+' trailer
+        assert(base == 2);
+        stack_.swap_top_and_second();
+        stack_top()->sequence_length++;
+        return true;
+    }
+
+    bool seq_trail2(Nonterminal, int base) {
+        // '/' trailer
+        assert(base == 3);
+        stack_.swap_top_and_second();
+        pop_stack(1); // erase delimiter
         stack_.swap_top_and_second();
         stack_top()->sequence_length++;
         return true;

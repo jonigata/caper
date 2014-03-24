@@ -24,6 +24,7 @@ enum class Extension {
     Star,
     Plus,
     Question,
+    Slash,
 };
 
 inline const char* extension_label(Extension e) {
@@ -129,9 +130,13 @@ typedef Value value_type;
 struct Item : public Node {
     std::string name;
     Extension   extension;
+    std::string skip;
 
     Item(const Range& r, const std::string& n, Extension extension)
         : Node(r), name(n), extension(extension) {}
+    Item(const Range& r,
+         const std::string& n, Extension extension, const std::string& s)
+        : Node(r), name(n), extension(extension), skip(s) {}
 };
 
 struct Term : public Node {

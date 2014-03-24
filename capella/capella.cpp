@@ -229,21 +229,9 @@ struct SemanticAction {
     template < class T >
     void upcast( Value& x, const T& y ) { x.data = Node( y ); }
 
-    Module MakeModule( const Declarations& x )
-    {
-        return Module( x );
-    }
-    Declarations MakeDeclarations0( const Declaration& x )
-    {
-        std::vector< Declaration > v;
-        v.push_back( x );
-        return Declarations( v );
-    }
-    Declarations MakeDeclarations1( const Declarations& x, const Declaration& y )
-    {
-        Declarations z = x;
-        z.elements.push_back( y );
-        return z;
+    template <class T>
+    Module MakeModule(const T& x) {
+        return Module(x);
     }
     Declaration MakeBaseDef( const Identifier& y )
     {
@@ -359,17 +347,15 @@ struct IdentifierCollector : public boost::static_visitor<void> {
     template < class T >
     void operator()( const T& ) const {}
 
-    template < class T >
-    void apply_to_vector( const std::vector<T>& x ) const
-    {
-        for( typename std::vector<T>::const_iterator i = x.begin() ; i != x.end() ; ++i ) {
-            boost::apply_visitor( IdentifierCollector( types, atoms ), *i );
+    template <class T>
+    void apply_to_vector(const std::vector<T>& x) const {
+        for (typename std::vector<T>::const_iterator i = x.begin(); i != x.end(); ++i) {
+            boost::apply_visitor(IdentifierCollector(types, atoms), *i);
         }
     }
         
-    void operator()( const Module& x ) const
-    {
-        apply_to_vector( x.declarations.elements  );
+    void operator()(const Module& x) const {
+        apply_to_vector(x.declarations);
     }
 
     void operator()( const TypeDef& x ) const

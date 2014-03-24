@@ -73,7 +73,6 @@ struct Reserved {
 ////////////////////////////////////////////////////////////////
 // AST nodes
 struct Module;
-struct Declarations;
 struct BaseDef;
 struct AtomDef;
 struct Atoms;
@@ -205,18 +204,16 @@ struct BaseDef {
         BaseDef( const Identifier& x ) : name( x ) {}
 };
 
-struct Declarations {
-        std::vector< Declaration > elements;
-
-        Declarations(){}
-        Declarations( const std::vector< Declaration >& x ) : elements( x ) {}
-};
-
 struct Module {
-        Declarations declarations;
+    std::vector<Declaration> declarations;
 
-        Module(){}
-        Module( const Declarations& x ) : declarations( x ) {}
+    Module() {}
+    template <class T>
+    Module(const T& x) {
+        for (const auto& y: x) {
+            declarations.push_back(y);
+        }
+    }
 };
 
 ////////////////////////////////////////////////////////////////
@@ -228,7 +225,6 @@ typedef boost::variant<
         BulkText,
         Reserved,
         Module,
-        Declarations,
         Declaration,
         AtomDef,
         Atoms,

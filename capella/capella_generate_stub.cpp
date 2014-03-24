@@ -34,7 +34,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
 		
 		void operator()( const Module& x ) const
 		{
-				apply_to_vector( x.declarations.elements  );
+				apply_to_vector( x.declarations  );
 		}
 
 		void operator()( const ClassHeaderDef& x ) const

@@ -19,19 +19,19 @@ class StencilCallback {
 public:
     StencilCallback() {}
     StencilCallback(bool n) {
-        f_ = [&](std::ostream& os){ os << (n ? "true" : "false"); };
+        f_ = [=](std::ostream& os){ os << (n ? "true" : "false"); };
     }
     StencilCallback(int n) {
-        f_ = [&](std::ostream& os){ os << std::to_string(n); };
+        f_ = [=](std::ostream& os){ os << std::to_string(n); };
     }
     StencilCallback(size_t n) {
-        f_ = [&](std::ostream& os){ os << std::to_string(n); };
+        f_ = [=](std::ostream& os){ os << std::to_string(n); };
     }
     StencilCallback(const char* s) {
-        f_ = [&](std::ostream& os){ os << s; };
+        f_ = [=](std::ostream& os){ os << s; };
     }
     StencilCallback(const std::string& s) {
-        f_ = [&](std::ostream& os){ os << s; };
+        f_ = [=](std::ostream& os){ os << s; };
     }
     template <class F>
     StencilCallback(F f) {

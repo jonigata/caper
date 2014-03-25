@@ -72,13 +72,11 @@ void generate_cpp(
     const std::string&                  src_filename,
     std::ostream&                       os,
     const GenerateOptions&              options,
-    const std::map<std::string, Type>&  terminal_types,
+    const std::map<std::string, Type>&,
     const std::map<std::string, Type>&  nonterminal_types,
     const std::vector<std::string>&     tokens,
     const action_map_type&              actions,
     const tgt::parsing_table&           table) {
-
-    const char* ind1 = "    ";
 
 #ifdef _WINDOWS
     char basename[_MAX_PATH];
@@ -190,7 +188,8 @@ public:
         stack_.insert(stack_.end(), tmp_.begin(), tmp_.end());
     }
     bool push(const T& f) {
-        if (StackSize != 0 && StackSize <= stack_.size()+ tmp_.size()) {
+        if (StackSize != 0 &&
+            int(StackSize) <= int(stack_.size() + tmp_.size())) {
             return false;
         }
         tmp_.push_back(f);
@@ -1073,7 +1072,13 @@ $${debmes:state}
             const std::vector<int>& arg_indices = key.get<3>();
 
             for (size_t j = 0 ; j < cases.size() ; j++){
-                os << ind1 << ind1 << "case " << cases[j] << ":\n";
+                // fall through, be aware when port to other language
+                stencil(
+                    os, R"(
+        case ${case}:
+)",
+                    {"case", cases[j]}
+                    );
             }
 
             int index = stub_indices[signature];

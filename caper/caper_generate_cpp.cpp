@@ -1126,26 +1126,15 @@ $${debmes:state}
 )"
             );
         bool output_switch = false;
-        std::unordered_set<std::string> generated;
-        // TODO: ‚±‚± for (pair: state.goto_table) ‚Å‚æ‚¢‚Ì‚Å‚Í
-        for(const auto& rule: table.grammar()) {
-            const std::string& rule_name = rule.left().name();
-            if (0 < generated.count(rule_name)) { continue; }
-
-            if (auto k = finder(state.goto_table, rule.left())) {
-                int state_index = *k;
-                stencil(
-                    ss, R"(
-        // ${rule}
+        for (const auto& pair: state.goto_table) {
+            stencil(
+                ss, R"(
         case Nonterminal_${nonterminal}: return ${state_index};
 )",
-                    {"rule", [&](std::ostream& os) { os << rule; }},
-                    {"nonterminal", rule_name},
-                    {"state_index", state_index}
-                    );
-                output_switch = true;
-                generated.insert(rule_name);
-            }
+                {"nonterminal", pair.first.name()},
+                {"state_index", pair.second}
+                );
+            output_switch = true;
         }
 
         // gotof footer

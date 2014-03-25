@@ -1,6 +1,6 @@
 .SUFFIXES: .o .c .cpp .hpp .cpg .ipp
 
-CPPFLAGS    = -g -Wall -DLINUX
+CPPFLAGS    = -g -Wall -DLINUX -std=c++11
 CC	    = clang++
 
 .cpp.o:

@@ -866,8 +866,7 @@ $${debmes:repost_done}
                 {"stub_index", stub_index},
                 {"sa_name", sa.name},
                 {"args", [&](std::ostream& os) {
-                        for (size_t l = 0 ;
-                             l < sa.args.size() ; l++) {
+                        for (size_t l = 0 ; l < sa.args.size() ; l++) {
                             os << ", int arg_index" << l;
                         }
                     }}
@@ -919,8 +918,7 @@ $${debmes:repost_done}
                 {"semantic_action_name", sa.name},
                 {"args", [&](std::ostream& os) {
                         bool first = true;
-                        for (size_t l = 0 ;
-                             l < sa.args.size() ; l++) {
+                        for (size_t l = 0 ; l < sa.args.size() ; l++) {
                             if (first) { first = false; }
                             else { os << ", "; }
                             os << "arg" << l;

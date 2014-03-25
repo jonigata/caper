@@ -27,7 +27,8 @@ public:
     StencilCallback(size_t n) {
         f_ = [=](std::ostream& os){ os << std::to_string(n); };
     }
-    StencilCallback(const char* s) {
+    StencilCallback(const char* ss) {
+        std::string s(ss);
         f_ = [=](std::ostream& os){ os << s; };
     }
     StencilCallback(const std::string& s) {

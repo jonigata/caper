@@ -1,6 +1,6 @@
 .SUFFIXES: .o .c .cpp .d
 #CC		= g++
-#CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11 -pg -fpermissive
+#CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11 -pg
 CC		= clang++
 CPPFLAGS	= -O3 -std=c++11
 TARGET		= caper

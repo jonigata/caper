@@ -17,51 +17,21 @@
 
 class StencilCallback {
 public:
-    struct OutputBool {
-        OutputBool(bool x) : x_(x){}
-        void operator()(std::ostream& os) const {
-            os << (x_ ? "true" : "false");
-        }
-        bool x_;
-    };
-    struct OutputInt {
-        OutputInt(int x) : x_(x){}
-        void operator()(std::ostream& os) const {
-            os << std::to_string(x_);
-        }
-        int x_;
-    };
-    struct OutputSizet {
-        OutputSizet(size_t x) : x_(x){}
-        void operator()(std::ostream& os) const {
-            os << std::to_string(x_);
-        }
-        size_t x_;
-    };
-    struct OutputString {
-        OutputString(const std::string& x) : x_(x){}
-        void operator()(std::ostream& os) const {
-            os << x_;
-        }
-        std::string x_;
-    };
-    
-public:
     StencilCallback() {}
     StencilCallback(bool n) {
-        f_ = OutputBool(n);
+        f_ = [&](std::ostream& os){ os << (n ? "true" : "false"); };
     }
     StencilCallback(int n) {
-        f_ = OutputInt(n);
+        f_ = [&](std::ostream& os){ os << std::to_string(n); };
     }
     StencilCallback(size_t n) {
-        f_ = OutputSizet(n);
+        f_ = [&](std::ostream& os){ os << std::to_string(n); };
     }
     StencilCallback(const char* s) {
-        f_ = OutputString(s);
+        f_ = [&](std::ostream& os){ os << s; };
     }
     StencilCallback(const std::string& s) {
-        f_ = OutputString(s);
+        f_ = [&](std::ostream& os){ os << s; };
     }
     template <class F>
     StencilCallback(F f) {

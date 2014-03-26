@@ -1,0 +1,12 @@
+%token Number<int> LParen RParen Comma Star;
+%namespace opt;
+%dont_use_stl;
+%recover error;
+%allow_ebnf;
+
+Document<int> : [Document] LParen Optional(0) RParen
+              ;
+
+Optional<int> : [Nothing]
+              | [Just] Number(0)
+              ;

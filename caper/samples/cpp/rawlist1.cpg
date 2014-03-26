@@ -1,0 +1,12 @@
+%token Number<int> LParen RParen Comma Star;
+%namespace list;
+%dont_use_stl;
+%recover error;
+%allow_ebnf;
+
+Document<int> : [Document] LParen List(0) RParen
+              ;
+
+List<int> : [MakeList] Number(0)
+          | [AddToList] List(0) Number(1)
+          ;

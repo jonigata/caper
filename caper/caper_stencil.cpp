@@ -5,8 +5,9 @@
 #include <cassert>
 #include <exception>
 #include "caper_stencil.hpp"
+#include "caper_format.hpp"
 
-void stencil(
+void stencil_output(
     std::ostream& os,
     const char* t,
     const std::map<std::string, StencilCallback>& m) {
@@ -27,7 +28,7 @@ void stencil(
             }
             if (c != '{') {
                 throw std::runtime_error(
-                    "unexpected char: " + std::string(char(c), 1));
+                    format("stencil: unexpected char: %c", char(c)));
             }
             assert(c == '{');
             std::stringstream k;

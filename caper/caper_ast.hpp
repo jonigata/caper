@@ -18,6 +18,26 @@ struct Range {
 };
 
 ////////////////////////////////////////////////////////////////
+// extension(EBNF)
+enum class Extension {
+    None,
+    Star,
+    Plus,
+    Question,
+    Slash,
+};
+
+inline const char* extension_label(Extension e) {
+    static const char* labels[] = {
+        "",
+        "*",
+        "+",
+        "?",
+    };
+    return labels[int(e)];
+}
+
+////////////////////////////////////////////////////////////////
 // Nil
 struct Nil {
 };
@@ -107,23 +127,35 @@ typedef Value value_type;
 
 ////////////////////////////////////////////////////////////////
 // concrete Node
-struct Term : public Node {
-    std::string     name;
-    int             index;
+struct Item : public Node {
+    std::string name;
+    Extension   extension;
+    std::string skip;
 
-    Term(const Range& r, const std::string& as, int ai)
-        : Node(r), name(as), index(ai) {}
+    Item(const Range& r, const std::string& n, Extension extension)
+        : Node(r), name(n), extension(extension) {}
+    Item(const Range& r,
+         const std::string& n, Extension extension, const std::string& s)
+        : Node(r), name(n), extension(extension), skip(s) {}
+};
+
+struct Term : public Node {
+    std::shared_ptr<Item>   item;
+    int                     argument_index;
+
+    Term(const Range& r, std::shared_ptr<Item> p, int ai)
+        : Node(r), item(p), argument_index(ai) {}
 };
 
 struct Choise : public Node {
     typedef std::vector<std::shared_ptr<Term>>
         elements_type;
 
-    std::string     name;
+    std::string     action_name;
     elements_type   elements;
 
     Choise(const Range& r, const std::string& as, const elements_type& ae)
-        : Node(r), name(as), elements(ae) {}
+        : Node(r), action_name(as), elements(ae) {}
 };
 
 struct Choises : public Node {
@@ -190,6 +222,10 @@ struct ExternalTokenDecl : public Declaration {
     ExternalTokenDecl(const Range& r) : Declaration(r) {}
 };
 
+struct AllowEBNF : public Declaration {
+    AllowEBNF(const Range& r) : Declaration(r) {}
+};
+
 struct NamespaceDecl : public Declaration {
     std::string     name;
 
@@ -247,6 +283,7 @@ struct GenerateOptions {
     bool            debug_parser    = false;
     std::string     token_prefix    = "token_";
     bool            external_token  = false;
+    bool            allow_ebnf      = false;
     std::string     access_modifier = "";
     std::string     namespace_name  = "caper_parser";
     bool            dont_use_stl    = false;
@@ -254,23 +291,34 @@ struct GenerateOptions {
     std::string     recovery_token  = "error";
 };
 
-struct semantic_action_argument {
-    int             src_index = -1;
-    std::string     type;
+struct Type {
+    std::string name;
+    Extension   extension   = Extension::None;
 
-    semantic_action_argument(){}
-    semantic_action_argument(int ai, const std::string& at)
-        : src_index(ai), type(at) {}
-};
-struct semantic_action {
-    std::string                                 name;
-    std::map<size_t, semantic_action_argument>  args;
-
-    semantic_action() {}
-    semantic_action(const std::string& n) : name(n) {}
+    Type(){}
+    Type(const std::string& n, Extension e)
+        : name(n), extension(e) {}
 };
 
-typedef std::map<tgt::rule, semantic_action>    action_map_type;
+struct SemanticAction {
+    struct Argument {
+        int     source_index = -1;
+        Type    type;
+
+        Argument(){}
+        Argument(int ai, const Type& at)
+            : source_index(ai), type(at) {}
+    };
+    std::string             name;
+    bool                    special;
+    std::vector<Argument>   args;
+    std::vector<int>        source_indices;
+
+    SemanticAction() {}
+    SemanticAction(const std::string& n, bool s) : name(n), special(s) {}
+};
+
+typedef std::map<tgt::rule, SemanticAction>     action_map_type;
 typedef std::set<std::string>                   symbol_set_type;
 typedef std::map<std::string, std::string>      symbol_map_type;
 

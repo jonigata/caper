@@ -352,22 +352,28 @@ make_lalr_table(
                 }
             }
 
-            if (add_action) {
-                if (!(x.rule() == g.root_rule())) {
-                    // b)項[A→α・, a]がJiの要素であり、
-                    // A≠Sならば、action[i, a]に
-                    // "reduce A→α"を入れる。
+            if (!add_action) { continue; }
 
-                    s.action_table[x.lookahead().token()] = action_type(
-                        action_reduce, 0xdeadbeaf, x.rule());
-                } else {
-                    // c)項[S'→S・, $]がJiの要素ならば、
-                    // action[i, $]に"accept"を入れる。
+            if (x.rule() == g.root_rule()) {
+                // c)項[S'→S・, $]がJiの要素ならば、
+                // action[i, $]に"accept"を入れる。
 
-                    s.action_table[Traits::eof()] = action_type(
-                        action_accept, 0xdeadbeaf, g.root_rule());
-                }
-            }
+                s.action_table[Traits::eof()] = action_type(
+                    action_accept, 0xdeadbeaf, g.root_rule());
+            } else if (!x.rule().is_ebnf_expanded()) {
+                // b)項[A→α・, a]がJiの要素であり、
+                // A≠Sならば、action[i, a]に
+                // "reduce A→α"を入れる。
+
+                s.action_table[x.lookahead().token()] = action_type(
+                    action_reduce, 0xdeadbeaf, x.rule());
+            } else {
+                // bの亜種
+                // EBNF展開によって生成されたルールである場合、
+                // reduce時に代わりにpopしない
+
+
+            }                    
         }
 
         // 状態iに対する行き先関数は、

@@ -19,6 +19,7 @@ public:
         dirdic_["token"] = token_directive_token;
         dirdic_["token_prefix"] = token_directive_token_prefix;
         dirdic_["external_token"] = token_directive_external_token;
+        dirdic_["allow_ebnf"] = token_directive_allow_ebnf;
         dirdic_["namespace"] = token_directive_namespace;
         dirdic_["recover"] = token_directive_recover;
         dirdic_["access_modifier"] = token_directive_access_modifier;
@@ -81,6 +82,10 @@ public:
             case ')': v = value(b, Operator(')')); return token_rparen;
             case '[': v = value(b, Operator('[')); return token_lbracket;
             case ']': v = value(b, Operator(']')); return token_rbracket;
+            case '*': v = value(b, Operator('*')); return token_star;
+            case '+': v = value(b, Operator('+')); return token_plus;
+            case '?': v = value(b, Operator('?')); return token_question;
+            case '/': v = value(b, Operator('/')); return token_slash;
             case eof: v = value(b, Operator('$')); return token_eof;
         }
 

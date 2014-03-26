@@ -522,7 +522,7 @@ make_lr0_closure(
 
     std::unordered_set<const std::string*> added;
 
-    std::size_t J_size;
+    size_t J_size;
     do {
         core_set_type new_cores;
 
@@ -698,7 +698,7 @@ make_lr0_collection(
     make_lr0_closure(s, g);
     C.insert(s);
 
-    std::size_t C_size;
+    size_t C_size;
     do {
         lr0_collection_type new_collection; // ë}ì¸Ç∑ÇÈçÄèWçá
 

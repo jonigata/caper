@@ -3,29 +3,20 @@
        List Optional LParen RParen LChevron RChevron Pipe Equal Comma Semicolon Colon;
 %namespace capella;
 %dont_use_stl;
+%allow_ebnf;
 
 Module<Module>
-        : [MakeModule] Declarations(0)
+        : [MakeModule] Declaration*(0)
         ;
         
-Declarations<Declarations>
-        : [MakeDeclarations0] Declaration(0)
-        | [MakeDeclarations1] Declarations(0) Declaration(1)
-        ;
-
 Declaration<Declaration>
         : [MakeBaseDef] BaseDef Equal Identifier(0) Semicolon
-        | [MakeAtomDef] AtomDef Equal Atoms(0) Semicolon
+        | [MakeAtomDef] AtomDef Equal Atom/Comma(0) Semicolon
         | [MakeTypeDef] TypeDef Identifier(0) Equal TypeDefRight(1) Semicolon
         | [MakeClassHeaderDef] ClassHeaderDef Equal BulkText(0)
         | [MakeClassFooterDef] ClassFooterDef Equal BulkText(0)
         | [MakeModuleHeaderDef] ModuleHeaderDef Equal BulkText(0)
         | [MakeModuleFooterDef] ModuleFooterDef Equal BulkText(0)
-        ;
-
-Atoms<Atoms>
-        : [MakeAtoms0] Atom(0)
-        | [MakeAtoms1] Atoms(0) Comma Atom(1)
         ;
 
 Atom<Atom>

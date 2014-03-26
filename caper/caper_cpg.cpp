@@ -77,8 +77,7 @@ void make_cpg_parser(cpg::parser& p) {
         "Declarations",         
         [](const arguments_type& args) -> Value {
             auto p = get_node<Declarations>(args[0]);
-            p->declarations.push_back(
-                get_node<Declaration>(args[1]));
+            p->declarations.push_back(get_node<Declaration>(args[1]));
             return Value(p);
         },
         "Declarations", "Declaration");
@@ -105,6 +104,13 @@ void make_cpg_parser(cpg::parser& p) {
             return Value(args[0]);
         },
         "ExternalTokenDecl", token_semicolon);
+    make_rule(
+        g, p,
+        "Declaration", 
+        [](const arguments_type& args) -> Value {
+            return Value(args[0]);
+        },
+        "AllowEBNF", token_semicolon);
     make_rule(
         g, p,
         "Declaration", 
@@ -202,6 +208,16 @@ void make_cpg_parser(cpg::parser& p) {
         },
         token_directive_external_token);
 
+    // ..%allow_ebnf宣言
+    make_rule(
+        g, p,
+        "AllowEBNF",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<AllowEBNF>(range(args));
+            return Value(p);
+        },
+        token_directive_allow_ebnf);
+
     // ..%namespace宣言
     make_rule(
         g, p,
@@ -261,7 +277,7 @@ void make_cpg_parser(cpg::parser& p) {
         g, p,
         "Entries",
         [](const arguments_type& args) -> Value {
-            std::shared_ptr<Rules> p(get_node<Rules>(args[0]));
+            auto p(get_node<Rules>(args[0]));
             p->rules.push_back(get_node<Rule>(args[1]));
             return Value(p);
         },
@@ -297,7 +313,7 @@ void make_cpg_parser(cpg::parser& p) {
         g, p,
         "Derivations",
         [](const arguments_type& args) -> Value {
-            std::shared_ptr<Choises> q = get_node<Choises>(args[0]);
+            auto q = get_node<Choises>(args[0]);
             q->choises.push_back(get_node<Choise>(args[2]));
             return Value(q);
         },
@@ -328,7 +344,7 @@ void make_cpg_parser(cpg::parser& p) {
         g, p,
         "Derivation",
         [](const arguments_type& args) -> Value {
-            std::shared_ptr<Choise> q = get_node<Choise>(args[0]);
+            auto q = get_node<Choise>(args[0]);
             q->elements.push_back(get_node<Term>(args[1]));
 
             return Value(q);
@@ -341,21 +357,76 @@ void make_cpg_parser(cpg::parser& p) {
         "Term",
         [](const arguments_type& args) -> Value {
             auto p = std::make_shared<Term>(
-                range(args), get_symbol<Identifier>(args[0]), -1);
+                range(args), get_node<Item>(args[0]), -1);
             return Value(p);
         },
-        token_identifier);
+        "Item");
     make_rule(
         g, p,
         "Term",
         [](const arguments_type& args) -> Value {
             auto p = std::make_shared<Term>(
                 range(args),
-                get_symbol<Identifier>(args[0]),
+                get_node<Item>(args[0]),
                 boost::get<Integer>(args[2].data).n);
             return Value(p);
         },
-        token_identifier, token_lparen, token_integer, token_rparen);
+        "Item", token_lparen, token_integer, token_rparen);
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args), get_symbol<Identifier>(args[0]),
+                Extension::None);
+            return Value(p);
+        },
+        token_identifier);
+
+    // ...EBNF拡張
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args), get_symbol<Identifier>(args[0]),
+                Extension::Star);
+            return Value(p);
+        },
+        token_identifier, token_star);
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args), get_symbol<Identifier>(args[0]),
+                Extension::Plus);
+            return Value(p);
+        },
+        token_identifier, token_plus);
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args), get_symbol<Identifier>(args[0]),
+                Extension::Question);
+            return Value(p);
+        },
+        token_identifier, token_question);
+    make_rule(
+        g, p,
+        "Item",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Item>(
+                range(args),
+                get_symbol<Identifier>(args[0]),
+                Extension::Slash,
+                get_symbol<Identifier>(args[2]));
+            return Value(p);
+        },
+        token_identifier, token_slash, token_identifier);
+
 
     // parsing tableの作成
     cpg::parsing_table table;
@@ -363,93 +434,3 @@ void make_cpg_parser(cpg::parser& p) {
 
     p.reset(table);
 }
-
-////////////////////////////////////////////////////////////////
-// collect_informations
-void collect_informations(
-    GenerateOptions&    options,
-    symbol_map_type&    terminal_types,
-    symbol_map_type&    nonterminal_types,
-    const value_type&   ast) {
-    symbol_set_type methods;        // アクション名(重複(不可)のチェック)
-    symbol_set_type known;          // 確定識別子名
-    symbol_set_type unknown;        // 未確定識別子名
-
-    auto doc = get_node<Document>(ast);
-
-    std::string recover_token = "";
-
-    // 宣言
-    std::shared_ptr<Declarations> declarations = doc->declarations;
-    for(const auto& x: declarations->declarations) {
-        if (auto tokendecl = downcast<TokenDecl>(x)) {
-            // %token宣言
-            for (const auto& y: tokendecl->elements) {
-                //std::cerr << "token: " <<y->name << std::endl;
-                if (0 < known.count(y->name)) {
-                    throw duplicated_symbol(tokendecl->range.beg,y->name);
-                }
-                known.insert(y->name);
-                terminal_types[y->name] =y->type.s;
-            }
-        }
-        if (auto tokenprefixdecl = downcast<TokenPrefixDecl>(x)) {
-            // %token_prefix宣言
-            options.token_prefix = tokenprefixdecl->prefix;
-        }
-        if (auto externaltokendecl = downcast<ExternalTokenDecl>(x)) {
-            // %external_token宣言
-            options.external_token = true;
-        }
-        if (auto namespacedecl = downcast<NamespaceDecl>(x)) {
-            // %namespace宣言
-            options.namespace_name = namespacedecl->name;
-        }
-        if (auto recoverdecl = downcast<RecoverDecl>(x)) {
-            if (0 < known.count(recoverdecl->name)) {
-                throw duplicated_symbol(
-                    recoverdecl->range.beg, recoverdecl->name);
-            }
-            known.insert(recoverdecl->name);
-            terminal_types[recoverdecl->name] = "$error";
-            options.recovery = true;
-            options.recovery_token = recoverdecl->name;
-        }
-        if (auto accessmodifierdecl = downcast<AccessModifierDecl>(x)) {
-            options.access_modifier = accessmodifierdecl->modifier;
-        }
-        if (auto dontusestldecl = downcast<DontUseSTLDecl>(x)) {
-            // %dont_use_stl宣言
-            options.dont_use_stl = true;
-        }
-    }
-
-    // 規則
-    for (const auto& rule: doc->rules->rules) {
-        if (known.find(rule->name) != known.end()) {
-            throw duplicated_symbol(rule->range.beg, rule->name);
-        }
-        known.insert(rule->name);
-        nonterminal_types[rule->name] = rule->type.s;
-
-        for (const auto& choise: rule->choises->choises) {
-            if (methods.find(choise->name) != methods.end()) {
-                // 重複
-                // TODO: 例外
-            }
-            methods.insert(choise->name);
-
-            for(const auto& term: choise->elements) {
-                unknown.insert(term->name);
-            }
-        }
-    }
-
-    // 未確定識別子が残っていたらエラー
-    for (const auto& x: unknown) {
-        if (known.count(x) == 0) {
-            throw undefined_symbol(-1, x);
-        }
-    }
-}
-

@@ -5,7 +5,7 @@
 
 #include <string>
 #include <iostream>
-#include "hello2.hpp"
+#include "hello2.ipp"
 
 struct SemanticAction {
     void syntax_error(){}

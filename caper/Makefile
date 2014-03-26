@@ -1,6 +1,6 @@
 .SUFFIXES: .o .c .cpp .d
 #CC		= g++
-#CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11 -pg
+#CPPFLAGS	= -O9 --input-charset=cp932 -std=c++11 -pg -fpermissive
 CC		= clang++
 CPPFLAGS	= -O3 -std=c++11
 TARGET		= caper
@@ -33,8 +33,8 @@ VPATH = ./depend
 
 all:
 	mkdir -p depend
-	make depend -s
-	make $(TARGET)
+	$(MAKE) depend -s
+	$(MAKE) $(TARGET)
 
 depend: $(OBJS:.o=.d)
 

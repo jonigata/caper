@@ -1,8 +1,8 @@
 // 2014/03/22 Naoyuki Hirayama
 // All Rights Reserved.
 
-#include "list.hpp"
 #include <iostream>
+#include "list0.ipp"
 
 class unexpected_char : public std::exception {};
 
@@ -21,7 +21,7 @@ public:
             c = getc();
         } while (isspace(c));
 
-        // è¨˜å·é¡
+        // ‹L†—Ş
         if (c == eof()) {
             return list::token_eof;
         } else {
@@ -34,7 +34,7 @@ public:
             }
         }
 
-        // æ•´æ•°
+        // ®”
         if (isdigit(c)) {
             int n = 0;
             while (c != eof()&& isdigit(c)) {
@@ -86,21 +86,23 @@ struct SemanticAction {
     void downcast(int& x, int y) { x = y; }
     void upcast(int& x, int y) { x = y; }
 
-    int List0() {
-        std::cerr << "list0" << std::endl;
-        return 0;
+    template <class S>
+    int Document(const S& x) {
+        std::cout << "Document: ";
+        for(typename S::const_iterator i = x.begin();i!=x.end();++i) {
+            std::cout << (*i) << ", ";
+        }
+        std::cout << "\n";
+        return 42;
     }
-    int List1(int x, int y) {
-        std::cerr << "list1" << x << ", " << y << std::endl;
-        return x + y;
-    }
+
 };
 
 int main( int, char** )
 {
-    // ã‚¹ã‚­ãƒ£ãƒŠ
+    // ƒXƒLƒƒƒi
     typedef std::istreambuf_iterator<char> is_iterator;
-    is_iterator b( std::cin );   // å³å€¤ã«ã™ã‚‹ã¨VC++ãŒé “çæ¼¢ãªã“ã¨ã‚’è¨€ã†
+    is_iterator b( std::cin );   // ‘¦’l‚É‚·‚é‚ÆVC++‚ª“Ú’¿Š¿‚È‚±‚Æ‚ğŒ¾‚¤
     is_iterator e;
     scanner<is_iterator> s(b, e);
 
@@ -121,8 +123,8 @@ int main( int, char** )
 
     int v;
     if (parser.accept(v)) {
-        std::cerr << "accepted\n";
-        std::cerr << v << std::endl;
+        std::cout << "accepted\n";
+        std::cout << v << std::endl;
     }
 
     return 0;

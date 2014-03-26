@@ -3,7 +3,8 @@
 
 // $Id$
 
-#include "calc2.hpp"
+#include "calc2_ast.hpp"
+#include "calc2.ipp"
 #include <string>
 #include <iostream>
 

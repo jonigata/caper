@@ -60,11 +60,11 @@ public:
                 goto retry;
             } else if (k == '*') {
                 // C style comment /*...*/
-                for (k = sgetc(); k != eof; k = sgetc()) {
-                    if (k == '*') {
-                        k = sgetc();
-                        if (k == eof) break;
-                        if (k == '/') goto retry;
+                for (c = sgetc(); c != eof; c = sgetc()) {
+                    if (c == '*') {
+                        c = sgetc();
+                        if (c == eof) break;
+                        if (c == '/') goto retry;
                     }
                 }
             } else {

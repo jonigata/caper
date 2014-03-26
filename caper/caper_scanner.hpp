@@ -54,9 +54,19 @@ public:
         if (c == '/') {
             int k = sgetc();
             if (k == '/') {
+                // C++ comment //...
                 while ((k = sgetc()) != '\n')
                     ;
                 goto retry;
+            } else if (k == '*') {
+                // C style comment /*...*/
+                for (k = sgetc(); k != eof; k = sgetc()) {
+                    if (k == '*') {
+                        k = sgetc();
+                        if (k == eof) break;
+                        if (k == '/') goto retry;
+                    }
+                }
             } else {
                 sungetc(k);
             }

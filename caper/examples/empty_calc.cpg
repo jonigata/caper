@@ -3,23 +3,25 @@
 %dont_use_stl;
 
 S<int>
-       : [DoS] Empty0 Empty1 Expr
-       ;
+	: [DoS] Empty0 Empty1 Expr
+	;
 
 Empty0<int>
-       : [DoEmpty0]
-       ;
+	: [DoEmpty0]
+	;
 
 Empty1<int>
-       : [DoEmpty1]
-       ;
+	: [DoEmpty1]
+	;
 
-Expr<int> : [Identity] Term(0)
-         | [MakeAdd] Expr(0) Add Term(1)
-         | [MakeSub] Expr(0) Sub Term(1)
-         ;
+Expr<int> 
+	: [Identity] Term(0)
+	| [MakeAdd] Expr(0) Add Term(1)
+	| [MakeSub] Expr(0) Sub Term(1)
+	;
 
-Term<int> : [Identity] Number(0)
-         | [MakeMul] Term(0) Mul Number(1)
-         | [MakeDiv] Term(0) Div Number(1)
-         ;
+Term<int> 
+	: [Identity] Number(0)
+	| [MakeMul] Term(0) Mul Number(1)
+	| [MakeDiv] Term(0) Div Number(1)
+	;

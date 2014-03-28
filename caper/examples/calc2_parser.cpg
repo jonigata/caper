@@ -2,12 +2,14 @@
 %namespace calc;
 %dont_use_stl;
 
-Expr<Expr> : [MakeExpr] Term(0)
-	   | [MakeAdd] Expr(0) Add Term(1)
-	   | [MakeSub] Expr(0) Sub Term(1)
-	   ;
+Expr<Expr> 
+	: [MakeExpr] Term(0)
+	| [MakeAdd] Expr(0) Add Term(1)
+	| [MakeSub] Expr(0) Sub Term(1)
+	;
 
-Term<Term> : [MakeTerm] Number(0)
-	   | [MakeMul] Term(0) Mul Number(1)
-	   | [MakeDiv] Term(0) Div Number(1)
-	   ;
+Term<Term> 
+	: [MakeTerm] Number(0)
+	| [MakeMul] Term(0) Mul Number(1)
+	| [MakeDiv] Term(0) Div Number(1)
+	;

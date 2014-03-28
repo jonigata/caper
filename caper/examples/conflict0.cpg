@@ -2,9 +2,11 @@
 %namespace conflict;
 %dont_use_stl;
 
-a<int> : [] A b C
-       ;
+a<int> 
+	: [] A b C
+	;
 
-b<int> : []
-       | [] C
-       ;
+b<int> 
+	: []
+	| [] C
+	;

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ja">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="./calc0.ijs" type="text/javascript"></script>
+  <script>
+    function scanner(s) {
+        s.match(/^\s*/);
+        s = RegExp.rightContext;
+        console.log(s);
+    
+        var tokens = calc.Tokens;
+        if (s.length == 0) {
+            return [tokens.token_eof, null, ""];
+        }
+    
+        switch(s[0]) {
+        case '+': return [tokens.token_Add, null, s.substr(1)];
+        case '-': return [tokens.token_Sub, null, s.substr(1)];
+        case '*': return [tokens.token_Mul, null, s.substr(1)];
+        case '/': return [tokens.token_Div, null, s.substr(1)];
+        }
+        if (s.match(/^\d+/)) {
+            s = RegExp.rightContext;
+            return [tokens.token_Number, RegExp.lastMatch - 0, s];
+        }
+        throw "unknwon char";
+    }
+
+    function parse(s) {
+        var sa = {
+            Identity: function(a) {
+                console.log('Identity');
+                return a;
+            },
+            MakeAdd: function(a, b) {
+                console.log('MakeAdd');
+                return a + b;
+            },
+            MakeSub: function(a, b) {
+                console.log('MakeSub');
+                return a - b;
+            },
+            MakeMul: function(a, b) {
+                console.log('MakeMul');
+                return a * b;
+            },
+            MakeDiv: function(a, b) {
+                console.log('MakeDiv');
+                return a / b;
+            },
+        };
+        var parser = new calc.Parser(sa);
+
+        while(true) {
+            var a = scanner(s);
+            $('#console').append(
+                calc.getTokenLabel(a[0]) + ", " + a[1] + ", " + a[2] + "\n");
+            if (parser.post(a[0], a[1])) {
+                break;
+            }
+            s = a[2];
+        }
+        $('#console').append("result: " + parser.acceptedValue + "\n");
+    }
+
+    $(function() {
+        $('#submit').click(function() { parse($('#expr').val())});
+    });
+
+  </script>
+  
+  <body>
+    expr: <input id="expr" type="text">
+    <button id="submit">run</button>
+
+    <div>
+      <pre id="console"></pre>
+    </div>
+  </body>
+</html>

@@ -847,7 +847,7 @@ public:
     int     first_state() const { return first_; }
 
     const states_type& states() const { return states_; }
-    const grammar_type& grammar() const { return grammar_; }
+    const grammar_type& get_grammar() const { return grammar_; }
 
     void first_state(int s) {
         enunique();

@@ -343,7 +343,7 @@ void generate_csharp(
 
                 bool output_switch = false;
                 std::set<size_t> generated;
-                for( const auto& rule: table.grammar() ) {
+                for( const auto& rule: table.get_grammar() ) {
                         size_t nonterminal_index = std::distance(
                                 nonterminal_types.begin(),
                                 nonterminal_types.find( rule.left().name() ) );

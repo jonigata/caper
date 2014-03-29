@@ -341,7 +341,7 @@ void generate_d(
                 ss << indent << indent << "switch(nonterminal_index){" << endl;
                 bool output_switch = false;
                 std::set<size_t> generated;
-                for(const auto& rule: table.grammar()) {
+                for(const auto& rule: table.get_grammar()) {
                         size_t nonterminal_index = std::distance(
                                 nonterminal_types.begin(),
                                 nonterminal_types.find( rule.left().name() ) );

@@ -186,6 +186,7 @@ public:
         // expect not to throw
         stack_.erase(stack_.begin()+ gap_, stack_.end());
         stack_.insert(stack_.end(), tmp_.begin(), tmp_.end());
+        tmp_.clear();
     }
     bool push(const T& f) {
         if (StackSize != 0 &&
@@ -226,6 +227,8 @@ public:
 	   
     void clear() {
         stack_.clear();
+        tmp_.clear();
+        gap_ = 0; 
     }
 	   
     bool empty() const {
@@ -456,9 +459,7 @@ public:
     bool error() { return error_; }
 
 )",
-        {"first_state", table.first_state()},
-        {"first_state_handle_error",
-                table.states()[table.first_state()].handle_error}
+        {"first_state", table.first_state()}
         );
 
     // implementation

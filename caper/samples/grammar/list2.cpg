@@ -1,0 +1,8 @@
+%token Number<int> LParen RParen Comma Star;
+%namespace list;
+%dont_use_stl;
+%recover error;
+%allow_ebnf;
+
+Document<int> : [Document] LParen Number/Comma(0) RParen
+              ;

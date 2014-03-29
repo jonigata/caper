@@ -6,7 +6,7 @@ CC	    = clang++
 .cpp.o:
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
-%.ipp : %.cpg ../../caper
+%.ipp : ../grammar/%.cpg ../../caper
 	../../caper $< $@ --debug
 
 all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 

@@ -85,17 +85,18 @@ $${tokens}
     };
     exports.Tokens = Tokens;
 
-    exports.getTokenLabel = function(t) {
+    var getTokenLabel = function(t) {
         var labels = [
 $${labels}
             null
         ];
         return labels[t];
     };
+    exports.getTokenLabel = getTokenLabel;
 
 )",
             {"tokens", [&](std::ostream& os){
-                    int index = 1;
+                    int index = 0;
                     for(const auto& token: tokens) {
                         stencil(
                             os, R"(
@@ -165,12 +166,12 @@ $${labels}
 
     Stack.prototype = {
         rollbackTmp : function() {
-            this.gap = this.stack.size();
+            this.gap = this.stack.length;
             this.tmp = [];
         },
         commitTmp : function() {
-            this.stack.sprice(this.gap, this.stack.length - this.gap);
-            this.stack = this.concat(this.tmp);
+            this.stack.splice(this.gap, this.stack.length - this.gap);
+            this.stack = this.stack.concat(this.tmp);
             this.tmp = [];
         },
         push : function(x) {
@@ -273,7 +274,7 @@ $${entries}
                 for (const auto& state: table.states()) {
                     stencil(
                         os, R"(
-            [ this.state${i}, this.gotof${i}, ${handle_error} ],
+            { state: this.state${i}, gotof: this.gotof${i}, handle_error: ${handle_error} },
 )",
                             
                         {"i", i},
@@ -299,7 +300,7 @@ $${entries}
             this.acceptedValue = null;
             this.clearStack();
             this.rollbackTmpStack();
-            if (this.pushStack(${first_state}, null)) {
+            if (this.pushStack(${first_state}, null, 0)) {
                 this.commitTmpStack();
             } else {
                 this.sa.stackOverflow();
@@ -309,7 +310,7 @@ $${entries}
         post : function(token, value) {
             this.rollbackTmpStack();
             this.error = false;
-            while ((this.stackTop().entry.state[token])(this, value));
+            while (this.stackTop().entry.state.apply(this, [token, value]));
             if (!this.error) {
                 this.commitTmpStack();
             } else {
@@ -382,13 +383,13 @@ $${debmes:failed}
 $${debmes:done}
             // post error_token;
 $${debmes:post_error_start}
-            while ((this.stackTop().entry.state)(${recovery_token}, null));
+            while (this.stackTop().entry.state.apply(this, [${recovery_token}, null]));
 $${debmes:post_error_done}
             this.commitTmpStack();
             // repost original token
             // if it still causes error, discard it;
 $${debmes:repost_start}
-            while ((this.stackTop().entry.state)(token, value));
+            while (this.stackTop().entry.state.apply(this, [token, value]));
 $${debmes:repost_done}
             if (!this.error) {
                 this.commitTmpStack();
@@ -454,7 +455,7 @@ $${debmes:repost_done}
         seqHead : function(nonterminal, base) {
             // case '*': base == 0
             // case '+': base == 1
-            var dest = (this.stackNthTop(base).entry.gotof)(nonterminal);
+            var dest = this.stackNthTop(base).entry.gotof.apply(this, [nonterminal]);
             return this.pushStack(dest, null, base);
         },
         seqTrail : function(nonterminal, base) {
@@ -515,8 +516,8 @@ $${debmes:repost_done}
         os, R"(
         call_nothing : function(nonterminal, base) {
             this.popStack(base);
-            var destIndex = (this.stackTop().entry.gotof)(nonterminal);
-            return this.pushStack(destIndex, null);
+            var destIndex = this.stackTop().entry.gotof.apply(this, [nonterminal]);
+            return this.pushStack(destIndex, null, 0);
         },
 
 )"
@@ -607,8 +608,8 @@ $${debmes:repost_done}
                 os, R"(
             var v = this.sa.${semantic_action_name}(${args});
             this.popStack(base);
-            var destIndex = (this.stackTop().entry.gotof)(nonterminal);
-            return this.pushStack(destIndex, v);
+            var destIndex = this.stackTop().entry.gotof.apply(this, [nonterminal]);
+            return this.pushStack(destIndex, v, 0);
         },
 
 )",
@@ -639,7 +640,7 @@ $${debmes:state}
                     if (options.debug_parser) {
                         stencil(
                             os, R"(
-            console.log("state${state_no}" + token_label(token));
+            console.log("state${state_no} << " + getTokenLabel(token));
 )",
                             {"state_no", state.no}
                             );
@@ -677,7 +678,7 @@ $${debmes:state}
                         os, R"(
             case ${case_tag}:
                 // shift
-                this.pushStack(/*state*/ ${dest_index}, value);
+                this.pushStack(/*state*/ ${dest_index}, value, 0);
                 return false;
 )",
                         {"case_tag", case_tag},
@@ -714,16 +715,16 @@ $${debmes:state}
 )",
                             {"case_tag", case_tag}
                             );
-                        std::string funcname = "call_nothing";
+                        std::string funcname = "this.call_nothing";
                         if (k) {
                             const auto& sa = *k;
                             assert(sa.special);
-                            funcname = sa.name;
+                            funcname = "sa." + sa.name;
                         }
                         stencil(
                             os, R"(
                 // reduce
-                return ${funcname}(${nonterminal}, /*pop*/ ${base});
+                return ${funcname}(Nonterminals.${nonterminal}, /*pop*/ ${base});
 )",
                             {"funcname", funcname},
                             {"nonterminal", rule.left().name()},

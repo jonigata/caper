@@ -775,7 +775,7 @@ $${debmes:state}
                 // fall through, be aware when port to other language
                 stencil(
                     os, R"(
-            case Nonterminals.${case}:
+            case ${case}:
 )",
                     {"case", cases[j]}
                     );

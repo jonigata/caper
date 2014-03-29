@@ -4,12 +4,5 @@
 %recover error;
 %allow_ebnf;
 
-<<<<<<< HEAD:caper/samples/cpp/list0.cpg
 Document<int> : [Document] LParen Number*(0) RParen
               ;
-=======
-List<int> 
-	: [List0] 
-	| [List1] List(0) Number(1)
-	;
->>>>>>> 37472225de8e3383cdd6e4c3fd0d9fbb7439e55e:caper/examples/list.cpg

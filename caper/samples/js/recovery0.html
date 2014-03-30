@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+  <script src="./recovery0.ijs" type="text/javascript"></script>
+  <script>
+    var sa = {
+        syntaxError: function() {},
+        Greet: function() {
+            console.log("Guten Tag Welt");
+        },
+        PackListError : function(){
+            console.log("catch error");
+        }
+    };
+    var x = new rec.Parser(sa);
+    x.post(rec.Token.token_LParen, 1);
+    x.post(rec.Token.token_Comma, 2);
+    x.post(rec.Token.token_Comma, 3);
+    x.post(rec.Token.token_Comma, 4);
+    x.post(rec.Token.token_RParen, 5);
+    x.post(rec.Token.token_eof, 6);
+  </script>
+  
+  <body>
+    
+  </body>
+</html>

@@ -3,7 +3,7 @@
 %.ijs : ../grammar/%.cpg ../../caper
 	../../caper $< $@ --debug -js
 
-all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
 
 ../../caper:
 	cd ../..; $(MAKE)
@@ -36,13 +36,13 @@ list2: list2.ijs
 
 optional: optional.ijs
 
-recovery: recovery.ijs
+recovery0: recovery0.ijs
 
-recovery2: recovery2.ijs
+recovery1: recovery1.ijs
 
 clean :
 	rm -f *.ijs
-	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional
+	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional
 
 test : calc2.o
 	cd ../test; $(MAKE)

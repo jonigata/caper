@@ -79,11 +79,11 @@ var ${namespace_name} = (function() {
         // token enumeration
         stencil(
             os, R"(
-    var Tokens = {
+    var Token = {
 $${tokens}
         null : null
     };
-    exports.Tokens = Tokens;
+    exports.Token = Token;
 
     var getTokenLabel = function(t) {
         var labels = [
@@ -127,7 +127,7 @@ $${labels}
     // nonterminal
     stencil(
         os, R"(
-    var Nonterminals = {
+    var Nonterminal = {
 )"
         );
     {
@@ -274,7 +274,7 @@ $${entries}
                 for (const auto& state: table.states()) {
                     stencil(
                         os, R"(
-            { state: this.state${i}, gotof: this.gotof${i}, handle_error: ${handle_error} },
+            { state: this.state${i}, gotof: this.gotof${i}, handleError: ${handle_error} },
 )",
                             
                         {"i", i},
@@ -383,7 +383,7 @@ $${debmes:failed}
 $${debmes:done}
             // post error_token;
 $${debmes:post_error_start}
-            while (this.stackTop().entry.state.apply(this, [${recovery_token}, null]));
+            while (this.stackTop().entry.state.apply(this, [Token.${recovery_token}, null]));
 $${debmes:post_error_done}
             this.commitTmpStack();
             // repost original token
@@ -394,7 +394,7 @@ $${debmes:repost_done}
             if (!this.error) {
                 this.commitTmpStack();
             }
-            if (token != ${token_eof}) {
+            if (token != Token.${token_eof}) {
                 this.error = false;
             }
         },
@@ -404,7 +404,7 @@ $${debmes:repost_done}
             {"token_eof", options.token_prefix + "eof"},
             {"debmes:start", {
                     options.debug_parser ?
-                        R"(        console.log("recover rewinding start: stack depth = " + stack_.depth());
+                        R"(        console.log("recover rewinding start: stack depth = " + this.stack.depth());
 )" :
                         ""}},
             {"debmes:failed", {
@@ -414,7 +414,7 @@ $${debmes:repost_done}
                         ""}},
             {"debmes:done", {
                     options.debug_parser ?
-                        R"(        console.log("recover rewinding done: stack depth = " + stack_.depth());
+                        R"(        console.log("recover rewinding done: stack depth = " + this.stack.depth());
 )" :
                         ""}},
             {"debmes:post_error_start", {
@@ -669,7 +669,7 @@ $${debmes:state}
 
             // action header 
             std::string case_tag =
-                "Tokens." + options.token_prefix + tokens[token];
+                "Token." + options.token_prefix + tokens[token];
 
             // action
             switch (action.type) {
@@ -724,7 +724,7 @@ $${debmes:state}
                         stencil(
                             os, R"(
                 // reduce
-                return ${funcname}(Nonterminals.${nonterminal}, /*pop*/ ${base});
+                return ${funcname}(Nonterminal.${nonterminal}, /*pop*/ ${base});
 )",
                             {"funcname", funcname},
                             {"nonterminal", rule.left().name()},
@@ -786,7 +786,7 @@ $${debmes:state}
             stencil(
                 os, R"(
                 // reduce
-                return this.call_${index}_${sa_name}(Nonterminals.${nonterminal}, /*pop*/ ${base}${args});
+                return this.call_${index}_${sa_name}(Nonterminal.${nonterminal}, /*pop*/ ${base}${args});
 )",
                 {"index", index},
                 {"sa_name", signature[0]},
@@ -832,7 +832,7 @@ $${debmes:state}
         for (const auto& pair: state.goto_table) {
             stencil(
                 ss, R"(
-            case Nonterminals.${nonterminal}: return ${state_index};
+            case Nonterminal.${nonterminal}: return ${state_index};
 )",
                 {"nonterminal", pair.first.name()},
                 {"state_index", pair.second}

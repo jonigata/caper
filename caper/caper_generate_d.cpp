@@ -336,8 +336,8 @@ private:
         os, R"(
     Stack!(StackFrame) _stack;
 
-    bool pushStack(int state_index, ValueType v, int sl = 0) {
-	bool f = _stack.push(StackFrame(entry(state_index), v, sl));
+    bool pushStack(int stateIndex, ValueType v, int sl = 0) {
+	bool f = _stack.push(StackFrame(entry(stateIndex), v, sl));
         assert(!_error);
         if (!f) { 
             _error = true;
@@ -354,7 +354,7 @@ $${pop_stack_implementation}
         return _stack.top();
     }
 
-    ValueType* getArg(size_t base, size_t index) {
+    ValueType* getArg(uint base, uint index) {
         return &_stack.getArg(base, index).value;
     }
 
@@ -612,7 +612,7 @@ $${debmes:repost_done}
         return seq_head(nonterminal, base);
     }
 
-    Range seq_get_range(size_t base, size_t index) {
+    Range seq_get_range(uint base, uint index) {
         // returns beg = end if length = 0 (includes scalar value)
         // distinguishing 0-length-vector against scalar value is
         // caller's responsibility
@@ -628,7 +628,7 @@ $${debmes:repost_done}
         return Range(actual_index, prev_actual_index);
     }
 
-    const value_type& seq_getArg(size_t base, size_t index) {
+    const value_type& seq_getArg(uint base, uint index) {
         Range r = seq_get_range(base, index);
         // multiple value appearing here is not supported now
         assert(r.end - r.beg == 0); 
@@ -705,7 +705,7 @@ $${debmes:repost_done}
                 {"sa_name", sa.name},
                 {"args", [&](std::ostream& os) {
                         for (size_t l = 0 ; l < sa.args.size() ; l++) {
-                            os << ", int arg_index" << l;
+                            os << ", int argIndex" << l;
                         }
                     }}
                 );
@@ -725,7 +725,7 @@ $${debmes:repost_done}
                 if (arg.type.extension == Extension::None) {
                     stencil(
                         os, R"(
-        ${arg_type} arg${index}; _sa.downcast(arg${index}, *${get_arg}(base, arg_index${index}));
+        ${arg_type} arg${index}; _sa.downcast(arg${index}, *${get_arg}(base, argIndex${index}));
 )",
                         {"arg_type", make_type_name(arg.type)},
                         {"get_arg", get_arg},

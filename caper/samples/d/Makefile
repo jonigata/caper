@@ -1,6 +1,6 @@
 .SUFFIXES: .cpg .id
 
-TARGET  = hello0 hello1 hello2 # calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
+TARGET  = hello0 hello1 hello2 calc0 # calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
 
 %.ipp : ../grammar/%.cpg ../../caper
 	../../caper $< $@ --debug -d

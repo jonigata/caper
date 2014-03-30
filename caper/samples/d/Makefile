@@ -1,6 +1,6 @@
 .SUFFIXES: .cpg .id
 
-TARGET  = hello0 hello1 hello2 calc0 # calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
+TARGET  = list0 list1 list2 optional hello0 hello1 hello2 calc0 list0 list1 list2 optional # calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
 
 %.ipp : ../grammar/%.cpg ../../caper
 	../../caper $< $@ --debug -d
@@ -44,6 +44,30 @@ calc2: calc2.d calc2_parser.d
 	gdc -o $@ $^
 
 calc2_parser.d : ../grammar/calc2.cpg ../../caper
+	../../caper $< $@ --debug -d
+
+list0: list0.d list0_parser.d
+	gdc -o $@ $^
+
+list0_parser.d : ../grammar/list0.cpg ../../caper
+	../../caper $< $@ --debug -d
+
+list1: list1.d list1_parser.d
+	gdc -o $@ $^
+
+list1_parser.d : ../grammar/list1.cpg ../../caper
+	../../caper $< $@ --debug -d
+
+list2: list2.d list2_parser.d
+	gdc -o $@ $^
+
+list2_parser.d : ../grammar/list2.cpg ../../caper
+	../../caper $< $@ --debug -d
+
+optional: optional.d optional_parser.d
+	gdc -o $@ $^
+
+optional_parser.d : ../grammar/optional.cpg ../../caper
 	../../caper $< $@ --debug -d
 
 

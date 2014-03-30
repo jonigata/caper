@@ -22,33 +22,15 @@ std::string make_type_name(const Type& x) {
         case Extension::Star:
         case Extension::Plus:
         case Extension::Slash:
-            return "Sequence<" + x.name + ">";
+            return x.name + "[]";
         case Extension::Question:
-            return "Optional<" + x.name + ">";
+            return x.name + "[]";
         default:
             assert(0);
             return "";
     }
 }
         
-std::string make_arg_decl(const Type& x, size_t l) {
-    std::string sl = std::to_string(l);
-    std::string y = make_type_name(x) + " arg" + sl;
-    switch (x.extension) {
-        case Extension::None:
-            return y;
-        case Extension::Star:
-        case Extension::Plus:
-        case Extension::Question:
-        case Extension::Slash:
-            return
-                y + "(_sa, _stack, seq_get_range(base, arg_index" + sl + "))";
-        default:
-            assert(0);
-            return "";
-    }
-}
-
 void make_signature(
     const std::map<std::string, Type>&      nonterminal_types,
     const tgt::parsing_table::rule_type&    rule,
@@ -324,7 +306,12 @@ private:
     struct StackFrame {
         TableEntry* entry;
         ValueType   value;
-        int         sequence_length;
+        int         sequenceLength;
+    };
+
+    struct Range {
+        int begin;
+        int end;
     };
 
 )",
@@ -375,9 +362,9 @@ $${pop_stack_implementation}
                 if (options.allow_ebnf) {
                     stencil(
                         os, R"(
-        int nn = int(n);
+        int nn = cast(int)n;
         while(nn--) {
-            _stack.pop(1 + _stack.top().sequence_length);
+            _stack.pop(1 + _stack.top().sequenceLength);
         }
 )"
                         );
@@ -410,16 +397,16 @@ $${debmes:done}
         // post error_token;
 $${debmes:post_error_start}
         ValueType defaultValue;
-        while((stackTop().state)(this, Token.${recover_token}, defaultValue)){}
+        while((stackTop().entry.state)(this, Token.${recovery_token}, defaultValue)){}
 $${debmes:post_error_done}
-        commit_tmp_stack();
+        commitTmpStack();
         // repost original token
         // if it still causes error, discard it;
 $${debmes:repost_start}
-        while((stackTop().state)(this, token, value)){ }
+        while((stackTop().entry.state)(this, token, value)){ }
 $${debmes:repost_done}
         if (!_error) {
-            commit_tmp_stack();
+            commitTmpStack();
         }
         if (token != Token.${token_eof}) {
             _error = false;
@@ -478,172 +465,73 @@ $${debmes:repost_done}
     if (options.allow_ebnf) {
         stencil(
             os, R"(
-    // EBNF support class
-    struct Range {
-        int beg;
-        int end;
-        Range() : beg(-1), end(-1) {}
-        Range(int b, int e) : beg(b), end(e) {}
-    };
-
-    template <class T>
-    class Optional {
-    public:
-        typedef Stack<StackFrame, StackSize> stack_type;
-
-    public:
-        Optional(SemanticAction& sa, stack_type& s, const Range& r)
-            : sa_(&sa), s_(&s), p_(r.beg == r.end ? -1 : r.beg){}
-
-        operator bool() const {
-            return 0 <= p_;
-        }
-        bool operator!() const {
-            return !bool(*this);
-        }
-        T operator*() const {
-            value_type v;
-            sa_->downcast(v, s_->nth(p_).value);
-            return v;
-        }
-
-    private:
-        SemanticAction* sa_;
-        stack_type*     s_;
-        int             p_;
-
-    };
-
-    template <class T>
-    class Sequence {
-    public:
-        typedef Stack<StackFrame, StackSize> stack_type;
-
-        class const_iterator {
-        public:
-            typedef T value_type;
-
-        public:
-            const_iterator(SemanticAction& sa, stack_type& s, int p)
-                : sa_(&sa), s_(&s), p_(p){}
-            const_iterator(const const_iterator& x) : s_(x.s_), p_(x.p_){}
-            const_iterator& operator=(const const_iterator& x) {
-                sa_ = x.sa_;
-                s_ = x.s_;
-                p_ = x.p_;
-                return *this;
-            }
-            value_type operator*() const {
-                value_type v;
-                sa_->downcast(v, s_->nth(p_).value);
-                return v;
-            }
-            const_iterator& operator++() {
-                ++p_;
-                return *this;
-            }
-            bool operator==(const const_iterator& x) const {
-                return p_ == x.p_;
-            }
-            bool operator!=(const const_iterator& x) const {
-                return !((*this)==x);
-            }
-        private:
-            SemanticAction* sa_;
-            stack_type*     s_;
-            int             p_;
-
-        };
-
-    public:
-        Sequence(SemanticAction& sa, stack_type& stack, const Range& r)
-            : sa_(sa), stack_(stack), range_(r) {
-        }
-
-        const_iterator begin() const {
-            return const_iterator(sa_, stack_, range_.beg);
-        }
-        const_iterator end() const {
-            return const_iterator(sa_, stack_, range_.end);
-        }
-
-    private:
-        SemanticAction& sa_;
-        stack_type&     stack_;
-        Range           range_;
-
-    };
-
     // EBNF support member functions
     bool seq_head(Nonterminal nonterminal, int base) {
         // case '*': base == 0
         // case '+': base == 1
-        int dest = (this->*(stack_nth_top(base)->entry->gotof))(nonterminal);
-        return pushStack(dest, value_type(), base);
+        int dest = (stack_nth_top(base).entry.gotof)(nonterminal);
+        ValueType defaultValue;
+        return pushStack(dest, defaultValue, base);
     }
-
-    bool seq_trail(Nonterminal, int base) {
+    bool seq_trail(Nonterminal nonterminal, int base) {
         // '*', '+' trailer
-        assert(base == 2);
-        stack_.swapTopAndSecond();
-        stackTop()->sequence_length++;
+        _stack.swapTopAndSecond();
+        stackTop().sequenceLength++;
         return true;
     }
-
-    bool seq_trail2(Nonterminal, int base) {
+    bool seq_trail2(Nonterminal nonterminal, int base) {
         // '/' trailer
-        assert(base == 3);
-        stack_.swapTopAndSecond();
+        _stack.swapTopAndSecond();
         popStack(1); // erase delimiter
-        stack_.swapTopAndSecond();
-        stackTop()->sequence_length++;
+        _stack.swapTopAndSecond();
+        stackTop().sequenceLength++;
         return true;
     }
-
     bool opt_nothing(Nonterminal nonterminal, int base) {
         // same as head of '*'
-        assert(base == 0);
         return seq_head(nonterminal, base);
     }
-
     bool opt_just(Nonterminal nonterminal, int base) {
         // same as head of '+'
-        assert(base == 1);
         return seq_head(nonterminal, base);
     }
-
-    Range seq_get_range(uint base, uint index) {
+    Range seq_get_range(int base, int index) {
         // returns beg = end if length = 0 (includes scalar value)
         // distinguishing 0-length-vector against scalar value is
         // caller's responsibility
-        int n = int(base - index);
-        assert(0 < n);
-        int prev_actual_index;
-        int actual_index  = stack_.depth();
+        int n = base - index;
+        int prevActualIndex;
+        int actualIndex = _stack.depth();
         while(n--) {
-            actual_index--;
-            prev_actual_index = actual_index;
-            actual_index -= stack_.nth(actual_index).sequence_length;
+            actualIndex--;
+            prevActualIndex = actualIndex;
+            actualIndex -= _stack.nth(actualIndex).sequenceLength;
         }
-        return Range(actual_index, prev_actual_index);
+        return Range(actualIndex, prevActualIndex);
     }
-
-    const value_type& seq_getArg(uint base, uint index) {
+    ValueType seq_get_arg(int base, int index) {
         Range r = seq_get_range(base, index);
         // multiple value appearing here is not supported now
-        assert(r.end - r.beg == 0); 
-        return stack_.nth(r.beg).value;
+        return _stack.nth(r.begin).value;
     }
+    ValueType[] seq_get_seq(int base, int index) {
+        Range r = seq_get_range(base, index);
 
+        ValueType[] a = [];
+        for(int i = r.begin ; i < r.end ; i++) {
+            a ~= _stack.nth(i).value;
+        }        
+        return a;
+    }
     StackFrame* stack_nth_top(int n) {
-        Range r = seq_get_range(n + 1, 0);
+        Range r = this.seq_get_range(n + 1, 0);
         // multiple value appearing here is not supported now
-        assert(r.end - r.beg == 0);
-        return &stack_.nth(r.beg);
+        return _stack.nth(r.begin);
     }
 )"
             );
     }
+
 
     stencil(
         os, R"(
@@ -734,9 +622,10 @@ $${debmes:repost_done}
                 } else {
                     stencil(
                         os, R"(
-        ${arg_decl}; 
+        ${arg_type} arg${index} = seq_get_seq(base, argIndex${index});
 )",
-                        {"arg_decl", make_arg_decl(arg.type, l)}
+                        {"arg_type", make_type_name(arg.type)},
+                        {"index", l}
                         );
                 }
             }

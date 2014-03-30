@@ -274,7 +274,7 @@ $${entries}
                 for (const auto& state: table.states()) {
                     stencil(
                         os, R"(
-            { state: this.state${i}, gotof: this.gotof${i}, handleError: ${handle_error} },
+            { state: this.state_${i}, gotof: this.gotof_${i}, handleError: ${handle_error} },
 )",
                             
                         {"i", i},
@@ -452,19 +452,19 @@ $${debmes:repost_done}
         stencil(
             os, R"(
         // EBNF support member functions
-        seqHead : function(nonterminal, base) {
+        seq_head : function(nonterminal, base) {
             // case '*': base == 0
             // case '+': base == 1
-            var dest = this.stackNthTop(base).entry.gotof.apply(this, [nonterminal]);
+            var dest = this.stack_nth_top(base).entry.gotof.apply(this, [nonterminal]);
             return this.pushStack(dest, null, base);
         },
-        seqTrail : function(nonterminal, base) {
+        seq_trail : function(nonterminal, base) {
             // '*', '+' trailer
             this.stack.swapTopAndSecond();
             this.stackTop().sequenceLength++;
             return true;
         },
-        seqTrail2 : function(nonterminal, base) {
+        seq_trail2 : function(nonterminal, base) {
             // '/' trailer
             this.stack.swapTopAndSecond();
             this.popStack(1); // erase delimiter
@@ -472,15 +472,15 @@ $${debmes:repost_done}
             this.stackTop().sequenceLength++;
             return true;
         },
-        optNothing : function(nonterminal, base) {
+        opt_nothing : function(nonterminal, base) {
             // same as head of '*'
-            return seqHead(nonterminal, base);
+            return this.seq_head(nonterminal, base);
         },
-        optJust : function(nonterminal, base) {
+        opt_just : function(nonterminal, base) {
             // same as head of '+'
-            return seqHead(nonterminal, base);
+            return this.seq_head(nonterminal, base);
         },
-        seqGetRange : function(base, index) {
+        seq_get_range : function(base, index) {
             // returns beg = end if length = 0 (includes scalar value)
             // distinguishing 0-length-vector against scalar value is
             // caller's responsibility
@@ -494,20 +494,25 @@ $${debmes:repost_done}
             }
             return new Range(actualIndex, prevActualIndex);
         },
-        seqGetArg : function(base, index) {
-            var r = seqGetRange(base, index);
+        seq_get_arg : function(base, index) {
+            var r = this.seq_get_range(base, index);
             // multiple value appearing here is not supported now
             return this.stack.nth(r.begin).value;
         },
-        seqGetSeq : function(base, index) {
-            var r = seqGetRange(base, index);
-            return this.stack.slice(r.begin, r.end - r.begin);
+        seq_get_seq : function(base, index) {
+            var r = this.seq_get_range(base, index);
+
+            var a = [];
+            for(var i = r.begin ; i < r.end ; i++) {
+                a.push(this.stack.nth(i).value);
+            }        
+            return a;
         },
-        stackNthTop : function(n) {
-            var r = seqGetRange(n + 1, 0);
+        stack_nth_top : function(n) {
+            var r = this.seq_get_range(n + 1, 0);
             // multiple value appearing here is not supported now
             return this.stack.nth(r.begin);
-        }
+        },
 )"
             );
     }
@@ -596,7 +601,7 @@ $${debmes:repost_done}
                 } else {
                     stencil(
                         os, R"(
-            var arg${index} = seqGetSeq(base, argIndex${index}));
+            var arg${index} = this.seq_get_seq(base, argIndex${index});
 )",
                         {"index", l}
                         );
@@ -631,7 +636,7 @@ $${debmes:repost_done}
         // state header
         stencil(
             os, R"(
-        state${state_no} : function(token, value) {
+        state_${state_no} : function(token, value) {
 $${debmes:state}
             switch(token) {
 )",
@@ -640,7 +645,7 @@ $${debmes:state}
                     if (options.debug_parser) {
                         stencil(
                             os, R"(
-            console.log("state${state_no} << " + getTokenLabel(token));
+            console.log("state_${state_no} << " + getTokenLabel(token));
 )",
                             {"state_no", state.no}
                             );
@@ -719,7 +724,7 @@ $${debmes:state}
                         if (k) {
                             const auto& sa = *k;
                             assert(sa.special);
-                            funcname = "sa." + sa.name;
+                            funcname = "this." + sa.name;
                         }
                         stencil(
                             os, R"(
@@ -816,7 +821,7 @@ $${debmes:state}
         // gotof header
         stencil(
             os, R"(
-        gotof${state_no} : function(nonterminal) {
+        gotof_${state_no} : function(nonterminal) {
 )",
             {"state_no", state.no}
             );

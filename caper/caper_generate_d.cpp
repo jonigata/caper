@@ -91,7 +91,7 @@ void generate_d(
 module ${module_name};
 
 import std.array;
-import std.cstream;
+import std.stdio;
 
 )",
         {"module_name", module_name}
@@ -325,14 +325,6 @@ private:
         table_entry*    entry;
         ValueType       value;
         int             sequence_length;
-
-        static stack_frame opCall(table_entry* e, ValueType v, int sl) {
-            stack_frame result;
-            result.entry = e;
-            result.value = v;
-            result.sequence_length = sl;
-            return result;
-        }
     };
 
 )",
@@ -439,37 +431,37 @@ $${debmes:repost_done}
             {"token_eof", options.token_prefix + "eof"},
             {"debmes:start", {
                     options.debug_parser ?
-                        R"(        derr.writefln("recover rewinding start: stack depth = %d", stack_.depth());
+                        R"(        stderr.writefln("recover rewinding start: stack depth = %d", stack_.depth());
 )" :
                         ""}},
             {"debmes:failed", {
                     options.debug_parser ?
-                        R"(        derr.writeln("recover rewinding failed");
+                        R"(        stderr.writeln("recover rewinding failed");
 )" :
                         ""}},
             {"debmes:done", {
                     options.debug_parser ?
-                        R"(        derr.writeln("recover rewinding done: stack depth = %d", stack_.depth());
+                        R"(        stderr.writeln("recover rewinding done: stack depth = %d", stack_.depth());
 )":
                         ""}},
             {"debmes:post_error_start", {
                     options.debug_parser ?
-                        R"(        derr.writeln("posting error token");
+                        R"(        stderr.writeln("posting error token");
 )" :
                         ""}},
             {"debmes:post_error_done", {
                     options.debug_parser ?
-                        R"(        derr.writeln("posting error token done");
+                        R"(        stderr.writeln("posting error token done");
 )" :
                         ""}},
             {"debmes:repost_start", {
                     options.debug_parser ?
-                        R"(        derr.writeln("reposting original token");
+                        R"(        stderr.writeln("reposting original token");
 )" :
                         ""}},
             {"debmes:repost_done", {
                     options.debug_parser ? 
-                        R"(        derr.writeln("reposting original token done");
+                        R"(        stderr.writeln("reposting original token done");
 )" :
                         ""}}
             );
@@ -788,7 +780,7 @@ $${debmes:state}
                     if (options.debug_parser) {
                         stencil(
                             os, R"(
-        derr.writefln("state_${state_no} << %s", token_label(token));
+        stderr.writefln("state_${state_no} << %s", token_label(token));
 )",
                             {"state_no", state.no}
                             );

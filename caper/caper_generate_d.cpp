@@ -42,7 +42,7 @@ std::string make_arg_decl(const Type& x, size_t l) {
         case Extension::Question:
         case Extension::Slash:
             return
-                y + "(sa_, stack_, seq_get_range(base, arg_index" + sl + "))";
+                y + "(_sa, _stack, seq_get_range(base, arg_index" + sl + "))";
         default:
             assert(0);
             return "";
@@ -105,7 +105,7 @@ enum Token {
 $${tokens}
 }
 
-string token_label(Token t) {
+string tokenLabel(Token t) {
     static string[] labels = [
 $${labels}
     ];
@@ -144,79 +144,79 @@ $${labels}
         os, R"(
 class Stack(T) {
 public:
-    this() { gap_ = 0; }
+    this() { _gap = 0; }
 
-    void rollback_tmp() {
-        gap_ = stack_.length;
-        tmp_.length = 0;
+    void rollbackTmp() {
+        _gap = _stack.length;
+        _tmp.length = 0;
     }
 
-    void commit_tmp() {
+    void commitTmp() {
         // expect not to throw
-        stack_.length = gap_;
-        stack_ ~= tmp_;
-        tmp_.length = 0;
+        _stack.length = _gap;
+        _stack ~= _tmp;
+        _tmp.length = 0;
     }
     bool push(T f) {
-        tmp_ ~= f;
+        _tmp ~= f;
         return true;
     }
 	   
     void pop(uint n) {
-        if (tmp_.length < n) {
-            n -= tmp_.length;
-            tmp_.length = 0;
-            gap_ -= n;
+        if (_tmp.length < n) {
+            n -= _tmp.length;
+            _tmp.length = 0;
+            _gap -= n;
         } else {
-            tmp_.length -= n;
+            _tmp.length -= n;
         }
     }
 
     T* top() {
         assert(0 < depth());
-        if (0 < tmp_.length) {
-            return &tmp_.back;
+        if (0 < _tmp.length) {
+            return &_tmp.back;
         } else {
-            return &stack_[gap_ - 1];
+            return &_stack[_gap - 1];
         }
     }
 	   
-    T* get_arg(uint base, uint index) {
-        uint n = tmp_.length;
+    T* getArg(uint base, uint index) {
+        uint n = _tmp.length;
         if (base - index <= n) {
-            return &tmp_[n - (base - index)];
+            return &_tmp[n - (base - index)];
         } else {
-            return &stack_[gap_ - (base - n) + index];
+            return &_stack[_gap - (base - n) + index];
         }
     }
 	   
     void clear() {
-        stack_.length = 0;
-        tmp_.length = 0;
-        gap_ = 0; 
+        _stack.length = 0;
+        _tmp.length = 0;
+        _gap = 0; 
     }
 	   
     bool empty() {
-        if (0 < tmp_.length) {
+        if (0 < _tmp.length) {
             return false;
         } else {
-            return gap_ == 0;
+            return _gap == 0;
         }
     }
 	   
     uint depth() {
-        return gap_ + tmp_.length;
+        return _gap + _tmp.length;
     }
 	   
     T* nth(uint index) {
-        if (gap_ <= index) {
-            return &tmp_[index - gap_];
+        if (_gap <= index) {
+            return &_tmp[index - _gap];
         } else {
-            return &stack_[index];
+            return &_stack[index];
         }
     }
 
-    void swap_top_and_second() {
+    void swapTopAndSecond() {
         uint d = depth();
         assert(2 <= d);
         T x = *nth(d - 1);
@@ -225,9 +225,9 @@ public:
     }
 
 private:
-    T[] stack_;
-    T[] tmp_;
-    uint gap_;
+    T[] _stack;
+    T[] _tmp;
+    uint _gap;
 	   
 };
 
@@ -259,43 +259,43 @@ class Parser(Value, SemanticAction) {
         os, R"(
     }
 
-    this(SemanticAction sa){ sa_ = sa; reset(); }
+    this(SemanticAction sa){ _sa = sa; reset(); }
 
     void reset() {
-        error_ = false;
-        accepted_ = false;
-        stack_ = new typeof(stack_);
-        clear_stack();
-        rollback_tmp_stack();
+        _error = false;
+        _accepted = false;
+        _stack = new typeof(_stack);
+        clearStack();
+        rollbackTmpStack();
         ValueType defaultValue;
-        if (push_stack(${first_state}, defaultValue)) {
-            commit_tmp_stack();
+        if (pushStack(${first_state}, defaultValue)) {
+            commitTmpStack();
         } else {
-            sa_.stack_overflow();
-            error_ = true;
+            _sa.stack_overflow();
+            _error = true;
         }
     }
 
     bool post(TokenType token, ValueType value) {
-        rollback_tmp_stack();
-        error_ = false;
-        while((stack_top().entry.state)(this, token, value)){ }
-        if (!error_) {
-            commit_tmp_stack();
+        rollbackTmpStack();
+        _error = false;
+        while((stackTop().entry.state)(this, token, value)){ }
+        if (!_error) {
+            commitTmpStack();
         } else {
             recover(token, value);
         }
-        return accepted_ || error_;
+        return _accepted || _error;
     }
 
     bool accept(out ValueType v) {
-        assert(accepted_);
-        if (error_) { return false; }
-        v = accepted_value_;
+        assert(_accepted);
+        if (_error) { return false; }
+        v = _accepted_value;
         return true;
     }
 
-    bool error() { return error_; }
+    bool error() { return _error; }
 
 )",
         {"first_state", table.first_state()}
@@ -305,26 +305,26 @@ class Parser(Value, SemanticAction) {
     stencil(
         os, R"(
 private:
-    alias typeof(this) self_type;
-    alias bool function(self_type, TokenType, ValueType) state_type;
-    alias int function(Nonterminal) gotof_type;
+    alias typeof(this) SelfType;
+    alias bool function(SelfType, TokenType, ValueType) StateType;
+    alias int function(Nonterminal) GotofType;
 
-    bool        accepted_;
-    bool        error_;
-    ValueType   accepted_value_;
+    bool        _accepted;
+    bool        _error;
+    ValueType   _accepted_value;
 
-    SemanticAction sa_;
+    SemanticAction _sa;
 
-    struct table_entry {
-        state_type  state;
-        gotof_type  gotof;
-        bool        handle_error;
+    struct TableEntry {
+        StateType   state;
+        GotofType   gotof;
+        bool        handleError;
     };
 
-    struct stack_frame {
-        table_entry*    entry;
-        ValueType       value;
-        int             sequence_length;
+    struct StackFrame {
+        TableEntry* entry;
+        ValueType   value;
+        int         sequence_length;
     };
 
 )",
@@ -334,40 +334,40 @@ private:
     // stack operation
     stencil(
         os, R"(
-    Stack!(stack_frame) stack_;
+    Stack!(StackFrame) _stack;
 
-    bool push_stack(int state_index, ValueType v, int sl = 0) {
-	bool f = stack_.push(stack_frame(entry(state_index), v, sl));
-        assert(!error_);
+    bool pushStack(int state_index, ValueType v, int sl = 0) {
+	bool f = _stack.push(StackFrame(entry(state_index), v, sl));
+        assert(!_error);
         if (!f) { 
-            error_ = true;
-            sa_.stack_overflow();
+            _error = true;
+            _sa.stack_overflow();
         }
         return f;
     }
 
-    void pop_stack(uint n) {
+    void popStack(uint n) {
 $${pop_stack_implementation}
     }
 
-    stack_frame* stack_top() {
-        return stack_.top();
+    StackFrame* stackTop() {
+        return _stack.top();
     }
 
-    ValueType* get_arg(size_t base, size_t index) {
-        return &stack_.get_arg(base, index).value;
+    ValueType* getArg(size_t base, size_t index) {
+        return &_stack.getArg(base, index).value;
     }
 
-    void clear_stack() {
-        stack_.clear();
+    void clearStack() {
+        _stack.clear();
     }
 
-    void rollback_tmp_stack() {
-        stack_.rollback_tmp();
+    void rollbackTmpStack() {
+        _stack.rollbackTmp();
     }
 
-    void commit_tmp_stack() {
-        stack_.commit_tmp();
+    void commitTmpStack() {
+        _stack.commitTmp();
     }
 
 )",
@@ -377,14 +377,14 @@ $${pop_stack_implementation}
                         os, R"(
         int nn = int(n);
         while(nn--) {
-            stack_.pop(1 + stack_.top().sequence_length);
+            _stack.pop(1 + _stack.top().sequence_length);
         }
 )"
                         );
                 } else {
                     stencil(
                         os, R"(
-        stack_.pop(n);
+        _stack.pop(n);
 )"
                         );
                 }
@@ -395,14 +395,14 @@ $${pop_stack_implementation}
         stencil(
             os, R"(
     void recover(TokenType token, ValueType value) {
-        rollback_tmp_stack();
-        error_ = false;
+        rollbackTmpStack();
+        _error = false;
 $${debmes:start}
-        while(!stack_top().entry.handle_error) {
-            pop_stack(1);
-            if (stack_.empty()) {
+        while(!stackTop().entry.handleError) {
+            popStack(1);
+            if (_stack.empty()) {
 $${debmes:failed}
-                error_ = true;
+                _error = true;
                 return;
             }
         }
@@ -410,19 +410,19 @@ $${debmes:done}
         // post error_token;
 $${debmes:post_error_start}
         ValueType defaultValue;
-        while((stack_top().state)(this, Token.${recover_token}, defaultValue)){}
+        while((stackTop().state)(this, Token.${recover_token}, defaultValue)){}
 $${debmes:post_error_done}
         commit_tmp_stack();
         // repost original token
         // if it still causes error, discard it;
 $${debmes:repost_start}
-        while((stack_top().state)(this, token, value)){ }
+        while((stackTop().state)(this, token, value)){ }
 $${debmes:repost_done}
-        if (!error_) {
+        if (!_error) {
             commit_tmp_stack();
         }
         if (token != Token.${token_eof}) {
-            error_ = false;
+            _error = false;
         }
     }
 
@@ -431,7 +431,7 @@ $${debmes:repost_done}
             {"token_eof", options.token_prefix + "eof"},
             {"debmes:start", {
                     options.debug_parser ?
-                        R"(        stderr.writefln("recover rewinding start: stack depth = %d", stack_.depth());
+                        R"(        stderr.writefln("recover rewinding start: stack depth = %d", _stack.depth());
 )" :
                         ""}},
             {"debmes:failed", {
@@ -441,7 +441,7 @@ $${debmes:repost_done}
                         ""}},
             {"debmes:done", {
                     options.debug_parser ?
-                        R"(        stderr.writeln("recover rewinding done: stack depth = %d", stack_.depth());
+                        R"(        stderr.writeln("recover rewinding done: stack depth = %d", _stack.depth());
 )":
                         ""}},
             {"debmes:post_error_start", {
@@ -489,7 +489,7 @@ $${debmes:repost_done}
     template <class T>
     class Optional {
     public:
-        typedef Stack<stack_frame, StackSize> stack_type;
+        typedef Stack<StackFrame, StackSize> stack_type;
 
     public:
         Optional(SemanticAction& sa, stack_type& s, const Range& r)
@@ -517,7 +517,7 @@ $${debmes:repost_done}
     template <class T>
     class Sequence {
     public:
-        typedef Stack<stack_frame, StackSize> stack_type;
+        typedef Stack<StackFrame, StackSize> stack_type;
 
         class const_iterator {
         public:
@@ -579,24 +579,24 @@ $${debmes:repost_done}
         // case '*': base == 0
         // case '+': base == 1
         int dest = (this->*(stack_nth_top(base)->entry->gotof))(nonterminal);
-        return push_stack(dest, value_type(), base);
+        return pushStack(dest, value_type(), base);
     }
 
     bool seq_trail(Nonterminal, int base) {
         // '*', '+' trailer
         assert(base == 2);
-        stack_.swap_top_and_second();
-        stack_top()->sequence_length++;
+        stack_.swapTopAndSecond();
+        stackTop()->sequence_length++;
         return true;
     }
 
     bool seq_trail2(Nonterminal, int base) {
         // '/' trailer
         assert(base == 3);
-        stack_.swap_top_and_second();
-        pop_stack(1); // erase delimiter
-        stack_.swap_top_and_second();
-        stack_top()->sequence_length++;
+        stack_.swapTopAndSecond();
+        popStack(1); // erase delimiter
+        stack_.swapTopAndSecond();
+        stackTop()->sequence_length++;
         return true;
     }
 
@@ -628,14 +628,14 @@ $${debmes:repost_done}
         return Range(actual_index, prev_actual_index);
     }
 
-    const value_type& seq_get_arg(size_t base, size_t index) {
+    const value_type& seq_getArg(size_t base, size_t index) {
         Range r = seq_get_range(base, index);
         // multiple value appearing here is not supported now
         assert(r.end - r.beg == 0); 
         return stack_.nth(r.beg).value;
     }
 
-    stack_frame* stack_nth_top(int n) {
+    StackFrame* stack_nth_top(int n) {
         Range r = seq_get_range(n + 1, 0);
         // multiple value appearing here is not supported now
         assert(r.end - r.beg == 0);
@@ -648,10 +648,10 @@ $${debmes:repost_done}
     stencil(
         os, R"(
     bool call_nothing(Nonterminal nonterminal, int base) {
-        pop_stack(base);
-        int dest_index = (stack_top().entry.gotof)(nonterminal);
+        popStack(base);
+        int dest_index = (stackTop().entry.gotof)(nonterminal);
         ValueType defaultValue;
-        return push_stack(dest_index, defaultValue);
+        return pushStack(dest_index, defaultValue);
     }
 
 )"
@@ -711,10 +711,10 @@ $${debmes:repost_done}
                 );
 
             // check sequence conciousness
-            std::string get_arg = "get_arg";
+            std::string get_arg = "getArg";
             for (const auto& arg: sa.args) {
                 if (arg.type.extension != Extension::None) {
-                    get_arg = "seq_get_arg";
+                    get_arg = "seq_getArg";
                     break;
                 }
             }
@@ -725,7 +725,7 @@ $${debmes:repost_done}
                 if (arg.type.extension == Extension::None) {
                     stencil(
                         os, R"(
-        ${arg_type} arg${index}; sa_.downcast(arg${index}, *${get_arg}(base, arg_index${index}));
+        ${arg_type} arg${index}; _sa.downcast(arg${index}, *${get_arg}(base, arg_index${index}));
 )",
                         {"arg_type", make_type_name(arg.type)},
                         {"get_arg", get_arg},
@@ -744,11 +744,11 @@ $${debmes:repost_done}
             // semantic action / automatic value conversion
             stencil(
                 os, R"(
-        ${nonterminal_type} r = sa_.${semantic_action_name}(${args});
-        ValueType v; sa_.upcast(v, r);
-        pop_stack(base);
-        int dest_index = (stack_top().entry.gotof)(nonterminal);
-        return push_stack(dest_index, v);
+        ${nonterminal_type} r = _sa.${semantic_action_name}(${args});
+        ValueType v; _sa.upcast(v, r);
+        popStack(base);
+        int dest_index = (stackTop().entry.gotof)(nonterminal);
+        return pushStack(dest_index, v);
     }
 
 )",
@@ -771,7 +771,7 @@ $${debmes:repost_done}
         // state header
         stencil(
             os, R"(
-    static bool state_${state_no}(self_type self, TokenType token, ValueType value) {
+    static bool state_${state_no}(SelfType self, TokenType token, ValueType value) {
 $${debmes:state}
         switch(token) {
 )",
@@ -780,7 +780,7 @@ $${debmes:state}
                     if (options.debug_parser) {
                         stencil(
                             os, R"(
-        stderr.writefln("state_${state_no} << %s", token_label(token));
+        stderr.writefln("state_${state_no} << %s", tokenLabel(token));
 )",
                             {"state_no", state.no}
                             );
@@ -818,7 +818,7 @@ $${debmes:state}
                         os, R"(
         case ${case_tag}:
             // shift
-            self.push_stack(/*state*/ ${dest_index}, value);
+            self.pushStack(/*state*/ ${dest_index}, value);
             return false;
 )",
                         {"case_tag", case_tag},
@@ -878,8 +878,8 @@ $${debmes:state}
                         os, R"(
         case ${case_tag}:
             // accept
-            self.accepted_ = true;
-            self.accepted_value_ = *self.get_arg(1, 0);
+            self._accepted = true;
+            self._accepted_value = *self.getArg(1, 0);
             return false;
 )",
                         {"case_tag", case_tag}
@@ -889,8 +889,8 @@ $${debmes:state}
                     stencil(
                         os, R"(
         case ${case_tag}:
-            self.sa_.syntax_error();
-            self.error_ = true;
+            self._sa.syntax_error();
+            self._error = true;
             return false;
 )",
                         {"case_tag", case_tag}
@@ -944,8 +944,8 @@ $${debmes:state}
         stencil(
             os, R"(
         default:
-            self.sa_.syntax_error();
-            self.error_ = true;
+            self._sa.syntax_error();
+            self._error = true;
             return false;
         }
     }
@@ -1009,8 +1009,8 @@ $${debmes:state}
     // table
     stencil(
         os, R"(
-    table_entry* entry(int n) {
-        static table_entry entries[] = [
+    TableEntry* entry(int n) {
+        static TableEntry entries[] = [
 $${entries}
         ];
         return &entries[n];

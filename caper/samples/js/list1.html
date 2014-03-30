@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="ja">
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+  <script src="./list1.ijs" type="text/javascript"></script>
+  <script>
+    function scanner(s) {
+        s.match(/^\s*/);
+        s = RegExp.rightContext;
+        console.log(s);
+    
+        var tokens = list.Token;
+        if (s.length == 0) {
+            return [tokens.token_eof, null, ""];
+        }
+    
+        switch(s[0]) {
+        case '(': return [tokens.token_LParen, null, s.substr(1)];
+        case ')': return [tokens.token_RParen, null, s.substr(1)];
+        case ',': return [tokens.token_Comma, null, s.substr(1)];
+        }
+        if (s.match(/^\d+/)) {
+            s = RegExp.rightContext;
+            return [tokens.token_Number, RegExp.lastMatch - 0, s];
+        }
+        throw "unknwon char";
+    }
+
+    function parse(s) {
+        var sa = {
+            Identity: function(a) {
+                console.log('Identity');
+                return a;
+            },
+            Document : function(a) {
+                console.log('Document');
+                return a;
+            }
+        };
+        var parser = new list.Parser(sa);
+
+        while(true) {
+            var a = scanner(s);
+            if (parser.post(a[0], a[1])) {
+                break;
+            }
+            s = a[2];
+        }
+        $('#console').append("result: " + parser.acceptedValue + "\n");
+    }
+
+    $(function() {
+        $('#submit').click(function() { parse($('#expr').val())});
+    });
+
+  </script>
+  
+  <body>
+    expr: <input id="expr" type="text">
+    <button id="submit">run</button>
+
+    <div>
+      <pre id="console"></pre>
+    </div>
+  </body>
+</html>

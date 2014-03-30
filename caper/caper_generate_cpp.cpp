@@ -548,7 +548,7 @@ $${pop_stack_implementation}
                 } else {
                     stencil(
                         os, R"(
-        stack_.pop( n );
+        stack_.pop(n);
 )"
                         );
                 }
@@ -1162,7 +1162,7 @@ $${debmes:state}
     }
 
 )"
-                );
+            );
 
 
     }

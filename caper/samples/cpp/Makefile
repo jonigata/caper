@@ -9,7 +9,7 @@ CC	    = clang++
 %.ipp : ../grammar/%.cpg ../../caper
 	../../caper $< $@ --debug
 
-all: hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
+all: hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
 
 ../../caper:
 	cd ../..; $(MAKE)
@@ -84,20 +84,20 @@ optional: optional.o
 
 optional.o : optional.cpp optional.ipp
 
-recovery: recovery.o
+recovery0: recovery0.o
 	$(CC) $(CPPFLAGS) -o $@ $^
 
-recovery.o : recovery.cpp recovery.ipp
+recovery0.o : recovery0.cpp recovery0.ipp
 
-recovery2: recovery2.o
+recovery1: recovery1.o
 	$(CC) $(CPPFLAGS) -o $@ $^
 
-recovery2.o : recovery2.cpp recovery2.ipp
+recovery1.o : recovery1.cpp recovery1.ipp
 
 clean :
 	rm -f *.o 
 	rm -f *.ipp
-	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery recovery2 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional
+	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional
 
 test : calc2.o
 	cd ../test; $(MAKE)

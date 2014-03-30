@@ -5,6 +5,9 @@
 
 #include <string>
 #include <iostream>
+
+using namespace std;
+
 #include "hello2.ipp"
 
 struct SemanticAction {

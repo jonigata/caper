@@ -3,7 +3,7 @@
 
 // $Id$
 
-#include "recovery.ipp"
+#include "recovery0.ipp"
 #include <iostream>
 
 class unexpected_char : public std::exception {};

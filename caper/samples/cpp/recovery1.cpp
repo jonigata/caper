@@ -4,7 +4,7 @@
 
 // $Id$
 
-#include "recovery2.ipp"
+#include "recovery1.ipp"
 #include <iostream>
 #include <cmath>
 

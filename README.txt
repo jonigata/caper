@@ -5,3 +5,5 @@ http://jonigata.github.io/caper/caper.html
 
 English site:
 http://jonigata.github.io/caper/en/caper.html
+
+twitter: jonigata

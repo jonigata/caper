@@ -360,19 +360,13 @@ make_lalr_table(
 
                 s.action_table[Traits::eof()] = action_type(
                     action_accept, 0xdeadbeaf, g.root_rule());
-            } else if (!x.rule().is_ebnf_expanded()) {
+            } else {
                 // b)項[A→α・, a]がJiの要素であり、
                 // A≠Sならば、action[i, a]に
                 // "reduce A→α"を入れる。
 
                 s.action_table[x.lookahead().token()] = action_type(
                     action_reduce, 0xdeadbeaf, x.rule());
-            } else {
-                // bの亜種
-                // EBNF展開によって生成されたルールである場合、
-                // reduce時に代わりにpopしない
-
-
             }                    
         }
 

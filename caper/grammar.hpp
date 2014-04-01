@@ -456,10 +456,6 @@ public:
         return imp->elements;
     }
 
-    bool is_ebnf_expanded() const {
-        return imp->left.name()[0] == '#';
-    }
-    
 private:
     void enunique() {
         if (!imp.unique()) { imp = std::make_shared<rule_imp>(*imp); }

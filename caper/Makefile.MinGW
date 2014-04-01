@@ -10,12 +10,15 @@ OBJS = \
 	caper_generate_d.o \
 	caper_generate_csharp.o \
 	caper_generate_js.o \
-	caper_generate_java.o
+	caper_generate_java.o \
+	caper_stencil.o
 
 HEADERS = \
 	lr.hpp \
 	fastlalr.hpp \
-	caper_ast.hpp
+	caper_ast.hpp \
+	caper_token.hpp \
+	grammar.hpp
 
 TOP_HEADERS = \
 	$(HEADERS) \
@@ -27,7 +30,8 @@ TOP_HEADERS = \
 	caper_generate_js.hpp \
 	caper_generate_csharp.hpp \
 	caper_generate_d.hpp \
-	caper_generate_java.hpp
+	caper_generate_java.hpp \
+	caper_format.hpp
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lboost_filesystem -lboost_system
@@ -48,13 +52,8 @@ caper_generate_js.o: $(HEADERS) caper_generate_js.hpp caper_generate_js.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_js.cpp
 caper_generate_java.o: $(HEADERS) caper_generate_java.hpp caper_generate_java.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_java.cpp
+caper_stencil.o: $(HEADERS) caper_stencil.hpp caper_stencil.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_stencil.cpp
 
 clean:
 	rm -f *.o gmon.out gmon.log
-
-caper_ast.hpp: fastlalr.hpp
-caper_cpg.hpp: fastlalr.hpp caper_ast.hpp
-fastlalr.hpp: lr.hpp
-honalee.hpp: lr.hpp
-lalr.hpp: lr.hpp
-lr.hpp: grammar.hpp

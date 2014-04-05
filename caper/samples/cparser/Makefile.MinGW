@@ -7,7 +7,7 @@ DOTOBJ = .o
 CXX = g++
 CXXFLAGS = -m32 -static -std=c++11 -O9
 
-CAPER = ../caper$(DOTEXE)
+CAPER = ../../../caper$(DOTEXE)
 
 HEADERS = \
 	CParser.hpp \

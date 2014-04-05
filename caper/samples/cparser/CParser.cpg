@@ -1,0 +1,640 @@
+// Written by Katayama Hirofumi MZ <katayama.hirofumi.mz@gmail.com>.
+// This file is public domain software.
+
+%token_prefix;
+
+%token T_ADD_ASSIGN<shared_ptr<TokenValue> >;
+%token T_ALIGNAS<shared_ptr<TokenValue> >;
+%token T_ALIGNOF<shared_ptr<TokenValue> >;
+%token T_AND_ASSIGN<shared_ptr<TokenValue> >;
+%token T_AND<shared_ptr<TokenValue> >;
+%token T_ARROW<shared_ptr<TokenValue> >;
+%token T_ASM<shared_ptr<TokenValue> >;
+%token T_ASSIGN<shared_ptr<TokenValue> >;
+%token T_ASTERISK<shared_ptr<TokenValue> >;
+%token T_ATOMIC<shared_ptr<TokenValue> >;
+%token T_AUTO<shared_ptr<TokenValue> >;
+%token T_BITWISE_NOT<shared_ptr<TokenValue> >;
+%token T_BOOL<shared_ptr<TokenValue> >;
+%token T_BREAK<shared_ptr<TokenValue> >;
+%token T_CASE<shared_ptr<TokenValue> >;
+%token T_CDECL<shared_ptr<TokenValue> >;
+%token T_CHAR<shared_ptr<TokenValue> >;
+%token T_COLON<shared_ptr<TokenValue> >;
+%token T_COMMA<shared_ptr<TokenValue> >;
+%token T_COMPLEX<shared_ptr<TokenValue> >;
+%token T_CONST<shared_ptr<TokenValue> >;
+%token T_CONSTANT<shared_ptr<TokenValue> >;
+%token T_CONTINUE<shared_ptr<TokenValue> >;
+%token T_DECLSPEC<shared_ptr<TokenValue> >;
+%token T_DEC<shared_ptr<TokenValue> >;
+%token T_DEFAULT<shared_ptr<TokenValue> >;
+%token T_DIV_ASSIGN<shared_ptr<TokenValue> >;
+%token T_DO<shared_ptr<TokenValue> >;
+%token T_DOT<shared_ptr<TokenValue> >;
+%token T_DOUBLE<shared_ptr<TokenValue> >;
+%token T_ELLIPSIS<shared_ptr<TokenValue> >;
+%token T_ELSE<shared_ptr<TokenValue> >;
+%token T_ENUM<shared_ptr<TokenValue> >;
+%token T_EQUAL<shared_ptr<TokenValue> >;
+%token T_EXTERN<shared_ptr<TokenValue> >;
+%token T_FASTCALL<shared_ptr<TokenValue> >;
+%token T_FLOAT<shared_ptr<TokenValue> >;
+%token T_FOR<shared_ptr<TokenValue> >;
+%token T_FORCEINLINE<shared_ptr<TokenValue> >;
+%token T_GENERIC<shared_ptr<TokenValue> >;
+%token T_GE<shared_ptr<TokenValue> >;
+%token T_GNU_ATTRIBUTE<shared_ptr<TokenValue> >;
+%token T_GNU_EXTENSION<shared_ptr<TokenValue> >;
+%token T_GOTO<shared_ptr<TokenValue> >;
+%token T_GT<shared_ptr<TokenValue> >;
+%token T_IDENTIFIER<shared_ptr<TokenValue> >;
+%token T_IF<shared_ptr<TokenValue> >;
+%token T_IMAGINARY<shared_ptr<TokenValue> >;
+%token T_INC<shared_ptr<TokenValue> >;
+%token T_INLINE<shared_ptr<TokenValue> >;
+%token T_INT<shared_ptr<TokenValue> >;
+%token T_INT32<shared_ptr<TokenValue> >;
+%token T_INT64<shared_ptr<TokenValue> >;
+%token T_LE<shared_ptr<TokenValue> >;
+%token T_LONG<shared_ptr<TokenValue> >;
+%token T_LT<shared_ptr<TokenValue> >;
+%token T_L_AND<shared_ptr<TokenValue> >;
+%token T_L_SHIFT_ASSIGN<shared_ptr<TokenValue> >;
+%token T_L_BRACE<shared_ptr<TokenValue> >;
+%token T_L_BRACKET<shared_ptr<TokenValue> >;
+%token T_L_SHIFT<shared_ptr<TokenValue> >;
+%token T_L_OR<shared_ptr<TokenValue> >;
+%token T_L_PAREN<shared_ptr<TokenValue> >;
+%token T_MINUS<shared_ptr<TokenValue> >;
+%token T_MOD_ASSIGN<shared_ptr<TokenValue> >;
+%token T_MUL_ASSIGN<shared_ptr<TokenValue> >;
+%token T_NE<shared_ptr<TokenValue> >;
+%token T_NORETURN<shared_ptr<TokenValue> >;
+%token T_NOTHROW<shared_ptr<TokenValue> >;
+%token T_NOT<shared_ptr<TokenValue> >;
+%token T_OR_ASSIGN<shared_ptr<TokenValue> >;
+%token T_OR<shared_ptr<TokenValue> >;
+%token T_PERCENT<shared_ptr<TokenValue> >;
+%token T_PLUS<shared_ptr<TokenValue> >;
+%token T_PRAGMA<shared_ptr<TokenValue> >;
+%token T_PTR32<shared_ptr<TokenValue> >;
+%token T_PTR64<shared_ptr<TokenValue> >;
+%token T_QUESTION<shared_ptr<TokenValue> >;
+%token T_REGISTER<shared_ptr<TokenValue> >;
+%token T_RESTRICT<shared_ptr<TokenValue> >;
+%token T_RETURN<shared_ptr<TokenValue> >;
+%token T_R_SHIFT_ASSIGN<shared_ptr<TokenValue> >;
+%token T_R_BRACE<shared_ptr<TokenValue> >;
+%token T_R_BRACKET<shared_ptr<TokenValue> >;
+%token T_R_SHIFT<shared_ptr<TokenValue> >;
+%token T_R_PAREN<shared_ptr<TokenValue> >;
+%token T_SEMICOLON<shared_ptr<TokenValue> >;
+%token T_SHORT<shared_ptr<TokenValue> >;
+%token T_SIGNED<shared_ptr<TokenValue> >;
+%token T_SIZEOF<shared_ptr<TokenValue> >;
+%token T_SLASH<shared_ptr<TokenValue> >;
+%token T_STATIC<shared_ptr<TokenValue> >;
+%token T_STATIC_ASSERT<shared_ptr<TokenValue> >;
+%token T_STDCALL<shared_ptr<TokenValue> >;
+%token T_STRING<shared_ptr<TokenValue> >;
+%token T_STRUCT<shared_ptr<TokenValue> >;
+%token T_SUB_ASSIGN<shared_ptr<TokenValue> >;
+%token T_SWITCH<shared_ptr<TokenValue> >;
+%token T_TAGNAME<shared_ptr<TokenValue> >;
+%token T_THREAD_LOCAL<shared_ptr<TokenValue> >;
+%token T_TYPEDEF<shared_ptr<TokenValue> >;
+%token T_TYPEDEF_NAME<shared_ptr<TokenValue> >;
+%token T_TYPEDEF_TAG<shared_ptr<TokenValue> >;
+%token T_UNALIGNED<shared_ptr<TokenValue> >;
+%token T_UNION<shared_ptr<TokenValue> >;
+%token T_UNSIGNED<shared_ptr<TokenValue> >;
+%token T_VOID<shared_ptr<TokenValue> >;
+%token T_VOLATILE<shared_ptr<TokenValue> >;
+%token T_WHILE<shared_ptr<TokenValue> >;
+%token T_W64<shared_ptr<TokenValue> >;
+%token T_XOR_ASSIGN<shared_ptr<TokenValue> >;
+%token T_XOR<shared_ptr<TokenValue> >;
+
+%namespace cparser;
+
+translation_unit<shared_ptr<TransUnit> >
+    : [DoTransUnit1] translation_unit(0) external_declaration(1)
+    | [DoTransUnit2] external_declaration(0)
+    ;
+
+external_declaration<shared_ptr<ExtDecl> >
+    : [DoExtDecl1] function_definition(0)
+    | [DoExtDecl2] declaration(0)
+    | [DoExtDecl3] T_SEMICOLON
+    ;
+
+function_definition<shared_ptr<Decl> >
+    : [DoFuncDef1] declaration_specifiers(0) declarator(1) declaration_list(2) compound_statement(3)
+    | [DoFuncDef2] declaration_specifiers(0) declarator(1) compound_statement(2)
+    | [DoFuncDef3] declarator(0) declaration_list(1) compound_statement(2)
+    | [DoFuncDef4] declarator(0) compound_statement(1)
+    ;
+
+declaration_list<shared_ptr<DeclList> >
+    : [DoDeclList1] declaration_list(0) declaration(1)
+    | [DoDeclList2] declaration(0)
+    ;
+
+declaration<shared_ptr<Decl> >
+    : [DoDecl1] T_TYPEDEF typedef_declaration_specifiers(0) typedef_declarator_list(1) T_SEMICOLON
+    | [DoDecl2] declaration_specifiers(0) init_declarator_list(1) T_SEMICOLON
+    | [DoDecl3] declaration_specifiers(0) T_SEMICOLON
+    | [DoDecl4] static_assert_declaration(0)
+    | [DoDecl5] asm_specifier(0) T_SEMICOLON
+    | [DoDecl6] asm_block(0)
+    ;
+
+declaration_specifiers<shared_ptr<DeclSpecs> >
+    : [DoDeclSpecs1] storage_class_specifier(0) declaration_specifiers(1)
+    | [DoDeclSpecs2] storage_class_specifier(0)
+    | [DoDeclSpecs3] function_specifier(0) declaration_specifiers(1)
+    | [DoDeclSpecs4] function_specifier(0)
+    | [DoDeclSpecs5] type_specifier(0) declaration_specifiers(1)
+    | [DoDeclSpecs6] type_specifier(0)
+    | [DoDeclSpecs7] type_qualifier(0) declaration_specifiers(1)
+    | [DoDeclSpecs8] type_qualifier(0)
+    | [DoDeclSpecs9] alignment_specifier(0) declaration_specifiers(1)
+    | [DoDeclSpecs10] alignment_specifier(0)
+    ;
+
+typedef_declaration_specifiers<shared_ptr<DeclSpecs> >
+    : [DoTypedefDeclSpecs1] type_specifier(0) typedef_declaration_specifiers(1)
+    | [DoTypedefDeclSpecs2] type_qualifier(0) typedef_declaration_specifiers(1)
+    | [DoTypedefDeclSpecs3] type_specifier(0)
+    | [DoTypedefDeclSpecs4] type_qualifier(0)
+    ;
+
+storage_class_specifier<shared_ptr<StorClsSpec> >
+    : [DoStorClsSpec1] T_AUTO
+    | [DoStorClsSpec2] T_EXTERN
+    | [DoStorClsSpec3] T_REGISTER
+    | [DoStorClsSpec4] T_STATIC
+    | [DoStorClsSpec5] T_THREAD_LOCAL
+    ;
+
+type_specifier<shared_ptr<TypeSpec> >
+    : [DoTypeSpec1] T_VOID
+    | [DoTypeSpec2] T_CHAR
+    | [DoTypeSpec3] T_SHORT
+    | [DoTypeSpec4] T_INT
+    | [DoTypeSpec5] T_INT32
+    | [DoTypeSpec6] T_INT64
+    | [DoTypeSpec7] T_LONG
+    | [DoTypeSpec8] T_FLOAT
+    | [DoTypeSpec9] T_DOUBLE
+    | [DoTypeSpec10] T_SIGNED
+    | [DoTypeSpec11] T_UNSIGNED
+    | [DoTypeSpec12] T_BOOL
+    | [DoTypeSpec13] T_W64
+    | [DoTypeSpec14] T_TYPEDEF_NAME(0)
+    | [DoTypeSpec15] struct_specifier(0)
+    | [DoTypeSpec16] union_specifier(0)
+    | [DoTypeSpec17] enum_specifier(0)
+    | [DoTypeSpec18] atomic_type_specifier(0)
+    | [DoTypeSpec19] T_COMPLEX
+    | [DoTypeSpec20] T_IMAGINARY
+    ;
+
+atomic_type_specifier<shared_ptr<AtomicTypeSpec> >
+    : [DoAtomicTypeSpec1] T_ATOMIC T_L_PAREN type_name(0) T_R_PAREN
+    ;
+
+type_qualifier<shared_ptr<TypeQual> >
+    : [DoTypeQual1] T_CONST
+    | [DoTypeQual2] T_RESTRICT
+    | [DoTypeQual3] T_VOLATILE
+    ;
+
+struct_specifier<shared_ptr<TypeSpec> >
+    : [DoStructSpec1] T_STRUCT T_TAGNAME(0) T_L_BRACE struct_declaration_list(1) T_R_BRACE
+    | [DoStructSpec2] T_STRUCT T_L_BRACE struct_declaration_list(0) T_R_BRACE
+    | [DoStructSpec3] T_STRUCT T_TAGNAME(0)
+    ;
+
+union_specifier<shared_ptr<TypeSpec> >
+    : [DoUnionSpec1] T_UNION T_TAGNAME(0) T_L_BRACE struct_declaration_list(1) T_R_BRACE
+    | [DoUnionSpec2] T_UNION T_L_BRACE struct_declaration_list(0) T_R_BRACE
+    | [DoUnionSpec3] T_UNION T_TAGNAME(0)
+    ;
+
+struct_declaration_list<shared_ptr<DeclList> >
+    : [DoStructDeclList1] struct_declaration_list(0) struct_declaration(1)
+    | [DoStructDeclList2] struct_declaration(0)
+    ;
+
+typedef_declarator_list<shared_ptr<DeclorList> >
+    : [DoTypedefDeclorList1] typedef_declarator_list(0) T_COMMA typedef_declarator(1)
+    | [DoTypedefDeclorList2] typedef_declarator(0)
+    ;
+
+init_declarator_list<shared_ptr<DeclorList> >
+    : [DoInitDeclorList1] init_declarator_list(0) T_COMMA init_declarator(1)
+    | [DoInitDeclorList2] init_declarator(0)
+    ;
+
+init_declarator<shared_ptr<Declor> >
+    : [DoInitDeclor1] declarator(0) T_ASSIGN initializer(1)
+    | [DoInitDeclor2] declarator(0)
+    ;
+
+struct_declaration<shared_ptr<Decl> >
+    : [DoStructDecl1] specifier_qualifier_list(0) struct_declarator_list(1) T_SEMICOLON
+    | [DoStructDecl2] specifier_qualifier_list(0) T_SEMICOLON
+    | [DoStructDecl3] static_assert_declaration(0)
+    ;
+
+specifier_qualifier_list<shared_ptr<DeclSpecs> >
+    : [DoSpecQualList1] type_specifier(0) specifier_qualifier_list(1)
+    | [DoSpecQualList2] type_specifier(0)
+    | [DoSpecQualList3] type_qualifier(0) specifier_qualifier_list(1)
+    | [DoSpecQualList4] type_qualifier(0)
+    ;
+
+struct_declarator_list<shared_ptr<DeclorList> >
+    : [DoStructDeclorList1] struct_declarator_list(0) T_COMMA struct_declarator(1)
+    | [DoStructDeclorList2] struct_declarator(0)
+    ;
+
+struct_declarator<shared_ptr<Declor> >
+    : [DoStructDeclor1] declarator(0) T_COLON constant_expression(1)
+    | [DoStructDeclor2] declarator(0)
+    | [DoStructDeclor3] T_COLON constant_expression(0)
+    ;
+
+enum_specifier<shared_ptr<TypeSpec> >
+    : [DoEnumSpec1] T_ENUM T_TAGNAME(0) T_L_BRACE enumerator_list(1) T_COMMA T_R_BRACE
+    | [DoEnumSpec2] T_ENUM T_TAGNAME(0) T_L_BRACE enumerator_list(1) T_R_BRACE
+    | [DoEnumSpec3] T_ENUM T_L_BRACE enumerator_list(0) T_COMMA T_R_BRACE
+    | [DoEnumSpec4] T_ENUM T_L_BRACE enumerator_list(0) T_R_BRACE
+    | [DoEnumSpec5] T_ENUM T_TAGNAME(0)
+    ;
+
+enumerator_list<shared_ptr<EnumorList> >
+    : [DoEnumorList1] enumerator_list(0) T_COMMA enumerator(1)
+    | [DoEnumorList2] enumerator(0)
+    ;
+
+enumerator<shared_ptr<Enumor> >
+    : [DoEnumor1] T_IDENTIFIER(0) T_ASSIGN constant_expression(1)
+    | [DoEnumor2] T_IDENTIFIER(0)
+    ;
+
+typedef_declarator<shared_ptr<Declor> >
+    : [DoTypedefDeclor1] pointer(0) typedef_direct_declarator(1)
+    | [DoTypedefDeclor2] typedef_direct_declarator(0)
+    ;
+
+declarator<shared_ptr<Declor> >
+    : [DoDeclor1] pointer(0) direct_declarator(1)
+    | [DoDeclor2] direct_declarator(0)
+    ;
+
+typedef_direct_declarator<shared_ptr<Declor> >
+    : [DoTypedefDirDeclor1] T_TYPEDEF_TAG(0)
+    | [DoTypedefDirDeclor2] T_L_PAREN typedef_declarator(0) T_R_PAREN
+    | [DoTypedefDirDeclor3] typedef_direct_declarator(0) T_L_BRACKET constant_expression(1) T_R_BRACKET
+    | [DoTypedefDirDeclor4] typedef_direct_declarator(0) T_L_BRACKET T_R_BRACKET
+    | [DoTypedefDirDeclor5] typedef_direct_declarator(0) T_L_PAREN parameter_type_list(1) T_R_PAREN
+    | [DoTypedefDirDeclor6] typedef_direct_declarator(0) T_L_PAREN identifier_list(1) T_R_PAREN
+    | [DoTypedefDirDeclor7] typedef_direct_declarator(0) T_L_PAREN T_R_PAREN
+    ;
+
+direct_declarator<shared_ptr<Declor> >
+    : [DoDirDeclor1] T_IDENTIFIER(0)
+    | [DoDirDeclor2] T_L_PAREN declarator(0) T_R_PAREN
+    | [DoDirDeclor3] direct_declarator(0) T_L_BRACKET constant_expression(1) T_R_BRACKET
+    | [DoDirDeclor4] direct_declarator(0) T_L_BRACKET T_R_BRACKET
+    | [DoDirDeclor5] direct_declarator(0) T_L_PAREN parameter_type_list(1) T_R_PAREN
+    | [DoDirDeclor6] direct_declarator(0) T_L_PAREN identifier_list(1) T_R_PAREN
+    | [DoDirDeclor7] direct_declarator(0) T_L_PAREN T_R_PAREN
+    ;
+
+pointer<shared_ptr<Pointers> >
+    : [DoPtr1] asterisk_company(0) type_qualifier_list pointer(1)
+    | [DoPtr2] asterisk_company(0) type_qualifier_list
+    | [DoPtr3] asterisk_company(0) pointer(1)
+    | [DoPtr4] asterisk_company(0)
+    ;
+
+asterisk_company<shared_ptr<AstCom> >
+    : [DoAstCom1] T_UNALIGNED T_ASTERISK(0) T_PTR64 
+    | [DoAstCom2] T_UNALIGNED T_ASTERISK(0) T_PTR32
+    | [DoAstCom3] T_UNALIGNED T_ASTERISK(0)
+    | [DoAstCom4] T_ASTERISK(0) T_PTR64
+    | [DoAstCom5] T_ASTERISK(0) T_PTR32
+    | [DoAstCom6] T_ASTERISK(0)
+    ;
+
+type_qualifier_list<shared_ptr<TypeQualList> >
+    : [DoTypeQualList1] type_qualifier_list(0) type_qualifier(1)
+    | [DoTypeQualList2] type_qualifier(0)
+    ;
+
+parameter_type_list<shared_ptr<ParamList> >
+    : [DoParamTypeList1] parameter_list(0) T_COMMA T_ELLIPSIS
+    | [DoParamTypeList2] parameter_list(0)
+    ;
+
+parameter_list<shared_ptr<ParamList> >
+    : [DoParamList1] parameter_list(0) T_COMMA parameter_declaration(1)
+    | [DoParamList2] parameter_declaration(0)
+    ;
+
+parameter_declaration<shared_ptr<Decl> >
+    : [DoParamDecl1] declaration_specifiers(0) declarator(1)
+    | [DoParamDecl2] declaration_specifiers(0) abstract_declarator(1)
+    | [DoParamDecl3] declaration_specifiers(0)
+    ;
+
+identifier_list<shared_ptr<IdentList> >
+    : [DoIdentList1] identifier_list(0) T_COMMA T_IDENTIFIER(1)
+    | [DoIdentList2] T_IDENTIFIER(0)
+    ;
+
+initializer<shared_ptr<Initer> >
+    : [DoIniter1] assignment_expression(0)
+    | [DoIniter2] T_L_BRACE initializer_list(0) T_COMMA T_R_BRACE
+    | [DoIniter3] T_L_BRACE initializer_list(0) T_R_BRACE
+    ;
+
+initializer_list<shared_ptr<IniterList> >
+    : [DoIniterList1] initializer_list(0) T_COMMA initializer(1)
+    | [DoIniterList2] initializer(0)
+    ;
+
+type_name<shared_ptr<TypeName> >
+    : [DoTypeName1] specifier_qualifier_list(0) abstract_declarator(1)
+    | [DoTypeName2] specifier_qualifier_list(0)
+    ;
+
+abstract_declarator<shared_ptr<Declor> >
+    : [DoAbsDeclor1] pointer(0) direct_abstract_declarator(1)
+    | [DoAbsDeclor2] direct_abstract_declarator(0)
+    | [DoAbsDeclor3] pointer(0)
+    ;
+
+direct_abstract_declarator<shared_ptr<Declor> >
+    : [DoDirAbsDeclor1] T_L_PAREN abstract_declarator(0) T_R_PAREN
+    | [DoDirAbsDeclor2] T_L_BRACKET T_R_BRACKET
+    | [DoDirAbsDeclor3] direct_abstract_declarator(0) T_L_BRACKET T_R_BRACKET
+    | [DoDirAbsDeclor4] T_L_BRACKET constant_expression(0) T_R_BRACKET
+    | [DoDirAbsDeclor5] direct_abstract_declarator(0) T_L_BRACKET constant_expression(1) T_R_BRACKET
+    | [DoDirAbsDeclor6] T_L_PAREN T_R_PAREN
+    | [DoDirAbsDeclor7] direct_abstract_declarator(0) T_L_PAREN T_R_PAREN
+    | [DoDirAbsDeclor8] T_L_PAREN parameter_type_list(0) T_R_PAREN
+    | [DoDirAbsDeclor9] direct_abstract_declarator(0) T_L_PAREN parameter_type_list(1) T_R_PAREN
+    ;
+
+statement_list<shared_ptr<StmtList> >
+    : [DoStmtList1] statement_list(0) statement(1)
+    | [DoStmtList2] statement(0)
+    ;
+
+statement<shared_ptr<Stmt> >
+    : [DoStmt1] labeled_statement(0)
+    | [DoStmt2] expression_statement(0)
+    | [DoStmt3] compound_statement(0)
+    | [DoStmt4] selection_statement(0)
+    | [DoStmt5] iteration_statement(0)
+    | [DoStmt6] jump_statement(0)
+    ;
+
+labeled_statement<shared_ptr<LabeledStmt> >
+    : [DoLabeledStmt1] T_IDENTIFIER(0) T_COLON statement(1)
+    | [DoLabeledStmt2] T_CASE constant_expression(0) T_COLON statement(1)
+    | [DoLabeledStmt3] T_DEFAULT T_COLON statement(0)
+    ;
+
+expression_statement<shared_ptr<ExprStmt> >
+    : [DoExprStmt1] T_SEMICOLON
+    | [DoExprStmt2] expression(0) T_SEMICOLON
+    ;
+
+compound_statement<shared_ptr<CompStmt> >
+    : [DoCompStmt1] T_L_BRACE T_R_BRACE
+    | [DoCompStmt2] T_L_BRACE declaration_list(0) T_R_BRACE
+    | [DoCompStmt3] T_L_BRACE statement_list(0) T_R_BRACE
+    | [DoCompStmt4] T_L_BRACE declaration_list(0) statement_list(1) T_R_BRACE
+    ;
+
+selection_statement<shared_ptr<SelStmt> >
+    : [DoSelStmt1] T_IF T_L_PAREN expression(0) T_R_PAREN statement(1) T_ELSE statement(2)
+    | [DoSelStmt2] T_IF T_L_PAREN expression(0) T_R_PAREN statement(1)
+    | [DoSelStmt3] T_SWITCH T_L_PAREN expression(0) T_R_PAREN statement(1)
+    ;
+
+iteration_statement<shared_ptr<IterStmt> >
+    : [DoIterStmt1] T_WHILE T_L_PAREN expression(0) T_R_PAREN statement(1)
+    | [DoIterStmt2] T_DO statement(0) T_WHILE T_L_PAREN expression(1) T_R_PAREN T_SEMICOLON
+    | [DoIterStmt3] T_FOR T_L_PAREN T_SEMICOLON T_SEMICOLON T_R_PAREN statement(0)
+    | [DoIterStmt4] T_FOR T_L_PAREN T_SEMICOLON T_SEMICOLON expression(0) T_R_PAREN statement(1)
+    | [DoIterStmt5] T_FOR T_L_PAREN T_SEMICOLON expression(0) T_SEMICOLON T_R_PAREN statement(1)
+    | [DoIterStmt6] T_FOR T_L_PAREN T_SEMICOLON expression(0) T_SEMICOLON expression(1) T_R_PAREN statement(2)
+    | [DoIterStmt7] T_FOR T_L_PAREN expression(0) T_SEMICOLON T_SEMICOLON T_R_PAREN statement(1)
+    | [DoIterStmt8] T_FOR T_L_PAREN expression(0) T_SEMICOLON T_SEMICOLON expression(1) T_R_PAREN statement(2)
+    | [DoIterStmt9] T_FOR T_L_PAREN expression(0) T_SEMICOLON expression(1) T_SEMICOLON T_R_PAREN statement(2)
+    | [DoIterStmt10] T_FOR T_L_PAREN expression(0) T_SEMICOLON expression(1) T_SEMICOLON expression(2) T_R_PAREN statement(3)
+    ;
+
+jump_statement<shared_ptr<JumpStmt> >
+    : [DoJumpStmt1] T_GOTO T_IDENTIFIER(0) T_SEMICOLON
+    | [DoJumpStmt2] T_CONTINUE T_SEMICOLON
+    | [DoJumpStmt3] T_BREAK T_SEMICOLON
+    | [DoJumpStmt4] T_RETURN T_SEMICOLON
+    | [DoJumpStmt5] T_RETURN expression(0) T_SEMICOLON
+    ;
+
+expression<shared_ptr<Expr> >
+    : [DoExpr1] assignment_expression(0)
+    | [DoExpr2] expression(0) T_COMMA assignment_expression(1)
+    ;
+
+assignment_expression<shared_ptr<AssignExpr> >
+    : [DoAssignExpr1] conditional_expression(0)
+    | [DoAssignExpr2] unary_expression(0) T_ASSIGN assignment_expression(1)
+    | [DoAssignExpr3] unary_expression(0) T_MUL_ASSIGN assignment_expression(1)
+    | [DoAssignExpr4] unary_expression(0) T_DIV_ASSIGN assignment_expression(1)
+    | [DoAssignExpr5] unary_expression(0) T_MOD_ASSIGN assignment_expression(1)
+    | [DoAssignExpr6] unary_expression(0) T_ADD_ASSIGN assignment_expression(1)
+    | [DoAssignExpr7] unary_expression(0) T_SUB_ASSIGN assignment_expression(1)
+    | [DoAssignExpr8] unary_expression(0) T_L_SHIFT_ASSIGN assignment_expression(1)
+    | [DoAssignExpr9] unary_expression(0) T_R_SHIFT_ASSIGN assignment_expression(1)
+    | [DoAssignExpr10] unary_expression(0) T_AND_ASSIGN assignment_expression(1)
+    | [DoAssignExpr11] unary_expression(0) T_XOR_ASSIGN assignment_expression(1)
+    | [DoAssignExpr12] unary_expression(0) T_OR_ASSIGN assignment_expression(1)
+    ;
+
+conditional_expression<shared_ptr<CondExpr> >
+    : [DoCondExpr1] logical_or_expression(0)
+    | [DoCondExpr2] logical_or_expression(0) T_QUESTION expression(1) T_COLON conditional_expression(2)
+    ;
+
+constant_expression<shared_ptr<CondExpr> >
+    : [DoConstExpr1] conditional_expression(0)
+    ;
+
+logical_or_expression<shared_ptr<LogOrExpr> >
+    : [DoLogOrExpr1] logical_and_expression(0)
+    | [DoLogOrExpr2] logical_or_expression(0) T_L_OR logical_and_expression(1)
+    ;
+
+logical_and_expression<shared_ptr<LogAndExpr> >
+    : [DoLogAnd1] inclusive_or_expression(0)
+    | [DoLogAnd2] logical_and_expression(0) T_L_AND inclusive_or_expression(1)
+    ;
+
+inclusive_or_expression<shared_ptr<InclOrExpr> >
+    : [DoInclOrExpr1] exclusive_or_expression(0)
+    | [DoInclOrExpr2] inclusive_or_expression(0) T_OR exclusive_or_expression(1)
+    ;
+
+exclusive_or_expression<shared_ptr<ExclOrExpr> >
+    : [DoExclOr1] and_expression(0)
+    | [DoExclOr2] exclusive_or_expression(0) T_XOR and_expression(1)
+    ;
+
+and_expression<shared_ptr<AndExpr> >
+    : [DoAndExpr1] equality_expression(0)
+    | [DoAndExpr2] and_expression(0) T_AND equality_expression(1)
+    ;
+
+equality_expression<shared_ptr<EqualExpr> >
+    : [DoEqualExpr1] relational_expression(0)
+    | [DoEqualExpr2] equality_expression(0) T_EQUAL relational_expression(1)
+    | [DoEqualExpr3] equality_expression(0) T_NE relational_expression(1)
+    ;
+
+relational_expression<shared_ptr<RelExpr> >
+    : [DoRelExpr1] shift_expression(0)
+    | [DoRelExpr2] relational_expression(0) T_LT shift_expression(1)
+    | [DoRelExpr3] relational_expression(0) T_GT shift_expression(1)
+    | [DoRelExpr4] relational_expression(0) T_LE shift_expression(1)
+    | [DoRelExpr5] relational_expression(0) T_GE shift_expression(1)
+    ;
+
+shift_expression<shared_ptr<ShiftExpr> >
+    : [DoShiftExpr1] additive_expression(0)
+    | [DoShiftExpr2] shift_expression(0) T_L_SHIFT additive_expression(1)
+    | [DoShiftExpr3] shift_expression(0) T_R_SHIFT additive_expression(1)
+    ;
+
+additive_expression<shared_ptr<AddExpr> >
+    : [DoAddExpr1] multiplicative_expression(0)
+    | [DoAddExpr2] additive_expression(0) T_PLUS multiplicative_expression(1)
+    | [DoAddExpr3] additive_expression(0) T_MINUS multiplicative_expression(1)
+    ;
+
+multiplicative_expression<shared_ptr<MulExpr> >
+    : [DoMulExpr1] cast_expression(0)
+    | [DoMulExpr2] multiplicative_expression(0) T_ASTERISK cast_expression(1)
+    | [DoMulExpr3] multiplicative_expression(0) T_SLASH cast_expression(1)
+    | [DoMulExpr4] multiplicative_expression(0) T_PERCENT cast_expression(1)
+    ;
+
+cast_expression<shared_ptr<CastExpr> >
+    : [DoCastExpr1] unary_expression(0)
+    | [DoCastExpr2] T_L_PAREN type_name(0) T_R_PAREN T_L_BRACE initializer_list(1) T_COMMA T_R_BRACE
+    | [DoCastExpr3] T_L_PAREN type_name(0) T_R_PAREN T_L_BRACE initializer_list(1) T_R_BRACE
+    | [DoCastExpr4] T_L_PAREN type_name(0) T_R_PAREN cast_expression(1)
+    ;
+
+unary_expression<shared_ptr<UnaryExpr> >
+    : [DoUnaryExpr1] postfix_expression(0)
+    | [DoUnaryExpr2] T_INC unary_expression(0)
+    | [DoUnaryExpr3] T_DEC unary_expression(0)
+    | [DoUnaryExpr4] T_AND cast_expression(0)
+    | [DoUnaryExpr5] T_ASTERISK cast_expression(0)
+    | [DoUnaryExpr6] T_PLUS cast_expression(0)
+    | [DoUnaryExpr7] T_MINUS cast_expression(0)
+    | [DoUnaryExpr8] T_BITWISE_NOT cast_expression(0)
+    | [DoUnaryExpr9] T_NOT cast_expression(0)
+    | [DoUnaryExpr10] T_SIZEOF unary_expression(0)
+    | [DoUnaryExpr11] T_SIZEOF T_L_PAREN type_name(0) T_R_PAREN
+    | [DoUnaryExpr12] T_ALIGNOF T_L_PAREN type_name T_R_PAREN
+    ;
+
+postfix_expression<shared_ptr<PostfixExpr> >
+    : [DoPostfixExpr1] primary_expression(0)
+    | [DoPostfixExpr2] postfix_expression(0) T_L_BRACKET expression T_R_BRACKET
+    | [DoPostfixExpr3] postfix_expression(0) T_L_PAREN argument_expression_list T_R_PAREN
+    | [DoPostfixExpr4] postfix_expression(0) T_L_PAREN T_R_PAREN
+    | [DoPostfixExpr5] postfix_expression(0) T_DOT T_IDENTIFIER
+    | [DoPostfixExpr6] postfix_expression(0) T_ARROW T_IDENTIFIER
+    | [DoPostfixExpr7] postfix_expression(0) T_INC
+    | [DoPostfixExpr8] postfix_expression(0) T_DEC
+    ;
+
+primary_expression<shared_ptr<PrimExpr> >
+    : [DoPrimExpr1] T_IDENTIFIER(0)
+    | [DoPrimExpr2] T_CONSTANT(0)
+    | [DoPrimExpr3] T_STRING(0)
+    | [DoPrimExpr4] T_L_PAREN expression(0) T_R_PAREN
+    | [DoPrimExpr5] generic_selection
+    ;
+
+generic_selection<shared_ptr<GeneSel> >
+    : [DoGeneSel1] T_GENERIC T_L_PAREN assignment_expression(0) T_COMMA generic_assoc_list(1) T_R_PAREN
+    ;
+
+generic_assoc_list<shared_ptr<GeneAssocList> >
+    : [DoGeneAssocList1] generic_assoc_list(0) T_COMMA generic_association(1)
+    | [DoGeneAssocList2] generic_association(0)
+    ;
+
+generic_association<shared_ptr<GeneAssoc> >
+    : [DoGeneAssoc1] type_name(0) T_COLON assignment_expression(1)
+    | [DoGeneAssoc2] T_DEFAULT T_COLON assignment_expression(0)
+    ;
+
+argument_expression_list<shared_ptr<ArgExprList> >
+    : [DoArgExprList1] argument_expression_list(0) T_COMMA assignment_expression(1)
+    | [DoArgExprList2] assignment_expression(0)
+    ;
+
+function_specifier<shared_ptr<FuncSpec> >
+    : [DoFuncSpec1] T_INLINE
+    | [DoFuncSpec2] T_FORCEINLINE
+    | [DoFuncSpec3] T_NORETURN
+    ;
+
+alignment_specifier<shared_ptr<AlignSpec> >
+    : [DoAlignSpec1] T_ALIGNAS T_L_PAREN type_name(0) T_R_PAREN
+    | [DoAlignSpec2] T_ALIGNAS T_L_PAREN constant_expression(0) T_R_PAREN
+    ;
+
+static_assert_declaration<shared_ptr<StaticAssertDecl> >
+    : [DoStaticAssertDecl1] 
+        T_STATIC_ASSERT T_L_PAREN constant_expression(0)
+        T_COMMA T_STRING(1) T_R_PAREN T_SEMICOLON
+    ;
+
+asm_specifier<shared_ptr<AsmSpec> >
+    : [DoAsmSpec1] T_ASM type_qualifier_list(0) T_L_PAREN asm_operands(1) T_R_PAREN
+    | [DoAsmSpec2] T_ASM type_qualifier_list(0) T_L_PAREN T_R_PAREN
+    | [DoAsmSpec3] T_ASM T_L_PAREN asm_operands(0) T_R_PAREN
+    | [DoAsmSpec4] T_ASM T_L_PAREN T_R_PAREN
+    ;
+
+asm_block<shared_ptr<AsmBlock> >
+    : [DoAsmBlock1] T_ASM T_L_BRACE asm_operands(0) T_R_BRACE
+    ;
+
+asm_operands<shared_ptr<AsmOperands> >
+    : [DoAsmOperands1] asm_operands(0) asm_operand(1)
+    | [DoAsmOperands2] asm_operand(0)
+    ;
+
+asm_operand<shared_ptr<AsmOperand> >
+    : [DoAsmOperand1] T_STRING(0)
+    | [DoAsmOperand2] T_IDENTIFIER(0)
+    | [DoAsmOperand3] T_COMMA
+    | [DoAsmOperand4] T_COLON
+    | [DoAsmOperand5] T_L_PAREN expression(0) T_R_PAREN
+    | [DoAsmOperand6] T_L_BRACKET expression(0) T_R_BRACKET
+    ;

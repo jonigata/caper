@@ -395,21 +395,21 @@ void generate_csharp(
                         
                         // action
                         const tgt::parsing_table::action* a = &(*j).second;
-                        switch( a->type ) {
+                        switch( a->type() ) {
                         case zw::gr::action_shift:
                                 os << "				// shift\n"
                                    << "				push_stack( "
-                                   << "this.state_" << a->dest_index << ", "
-                                   << "this.gotof_" << a->dest_index << ", "
+                                   << "this.state_" << a->dest_index() << ", "
+                                   << "this.gotof_" << a->dest_index() << ", "
                                    << "value);\n"
                                    << "				return false;\n";
                                 break;
                         case zw::gr::action_reduce:
                                 os << "				// reduce\n";
                                 {
-                                    size_t base = a->rule.right().size();
+                                    size_t base = a->rule().right().size();
 				        
-                                    const tgt::parsing_table::rule_type& rule = a->rule;
+                                    const tgt::parsing_table::rule_type& rule = a->rule();
                                         action_map_type::const_iterator k = actions.find( rule );
                                         
                                         size_t nonterminal_index = std::distance(

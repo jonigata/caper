@@ -20,6 +20,7 @@ using std::exit;
 #include "caper_generate_csharp.hpp"
 #include "caper_generate_d.hpp"
 #include "caper_generate_java.hpp"
+#include "caper_generate_glr_js.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -48,6 +49,10 @@ void get_commandline_options(
         std::string arg = argv[index];
 
         if (arg[0] == '-') {
+            if (arg == "-glr") {
+                cmdopt.algorithm = "glr";
+                continue;
+            }
             if (arg == "-java" || arg == "-Java") {
                 cmdopt.language = "Java";
                 continue;
@@ -125,12 +130,14 @@ int main(int argc, const char** argv) {
         const action_map_type&,
         const tgt::parsing_table&);
 
-    std::unordered_map<std::string, generator_type> generators;
-    generators["Java"]          = generate_java;
-    generators["C#"]            = generate_csharp;
-    generators["C++"]           = generate_cpp;
-    generators["JavaScript"]    = generate_javascript;
-    generators["D"]             = generate_d;
+    std::map<std::string, std::map<std::string, generator_type>> generators;
+    generators["lalr1"]["Java"]          = generate_java;
+    generators["lalr1"]["C#"]            = generate_csharp;
+    generators["lalr1"]["C++"]           = generate_cpp;
+    generators["lalr1"]["JavaScript"]    = generate_javascript;
+    generators["lalr1"]["D"]             = generate_d;
+
+    generators["glr"]["JavaScript"]     = generate_glr_javascript;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {
@@ -198,7 +205,7 @@ int main(int argc, const char** argv) {
         for (const auto& x: token_id_map) {
             tokens[x.second] = x.first;
         }
-        generators[cmdopt.language](
+        generators[cmdopt.algorithm][cmdopt.language](
             cmdopt.outfile,
             ofs,
             options,

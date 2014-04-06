@@ -792,15 +792,27 @@ public:
     typedef core<Token, Traits>         core_type; 
     typedef item<Token, Traits>         item_type; 
     
-    struct action {
-        action_t type;
-
+    struct action_entry {
+        action_t    type;
         int         dest_index; // index to states_
         rule_type   rule;
+    };
 
-        action(){}
-        action(action_t at, int di, const rule_type& r)
-            : type(at), dest_index(di), rule(r) {}
+    struct action_entry_less {
+        bool operator()(const action_entry& x, const action_entry& y) const {
+            return
+                std::make_tuple(x.type, x.rule.id()) <
+                std::make_tuple(y.type, y.rule.id());
+        }
+    };
+
+    struct action {
+        action_t type() const { return front().type; }
+        int dest_index() const { return front().dest_index; }
+        const rule_type& rule() const { return front().rule; }
+
+        const action_entry& front() const { return *entries.begin(); }
+        std::set<action_entry, action_entry_less> entries;
     };
 
     struct state {

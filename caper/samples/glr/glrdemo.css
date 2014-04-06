@@ -1,0 +1,45 @@
+body { 
+  font: 14px helvetica neue, helvetica, arial, sans-serif;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+
+#cy {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+}
+
+#step-button {
+    position: absolute;
+    left: 16px;
+    top: 16px;
+    border-radius: 10px;        /* CSS3草案 */  
+    background-color:#ccecf4;
+    width: 120px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    color: #fff;
+    z-index: 2;
+}
+
+#sentence {
+    position: absolute;
+    left: 140px;
+    top: 16px;
+    width: 960px;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    z-index: 2;
+    font-size: 18px;
+}
+
+#processed {
+    color: #f00;
+}

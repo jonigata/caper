@@ -133,6 +133,7 @@ make_lalr_table(
     typedef parsing_table<Token, Traits>                parsing_table_type;
     typedef typename parsing_table_type::state          state_type;
     typedef typename parsing_table_type::states_type    states_type;
+    typedef typename parsing_table_type::action_entry   action_entry_type;
     typedef typename parsing_table_type::action         action_type;
     typedef typename state_type::propagate_type         propagate_type;
 
@@ -321,13 +322,13 @@ make_lalr_table(
             // shift
             auto k = s.action_table.find(a.token());
             if (k != s.action_table.end()) {
-                if ((*k).second.type == action_reduce) {
-                    srr(x.rule(), (*k).second.rule);
+                if ((*k).second.type() == action_reduce) {
+                    srr(x.rule(), (*k).second.rule());
                 }
             }
 
-            s.action_table[a.token()] = action_type(
-                action_shift, next, x.rule());
+            s.action_table[a.token()].entries.insert(
+                action_entry_type { action_shift, next, x.rule() });
         }
 
         // b), c)は同時に行う
@@ -335,38 +336,36 @@ make_lalr_table(
             if (!x.over()) { continue; }
 
             // conflict判定ではacceptをreduceの一種とみなす
-            bool add_action = true;
-
             auto k = s.action_table.find(x.lookahead().token());
             if (k != s.action_table.end()) {
-                const rule_type& krule = (*k).second.rule;
-                if ((*k).second.type == action_shift) {
-                    srr(krule, x.rule());
-                    add_action = false; // shiftを優先
-                }
-                if ((*k).second.type == action_reduce &&
-                    !(krule == x.rule())) {
-                    rrr(krule, x.rule());
-                    // 若い方を優先
-                    add_action = x.rule().id() < (*k).second.rule.id(); 
+                const action_type& earlier = (*k).second;
+                for (const auto& earlier_entry: earlier.entries) {
+                    const rule_type& krule = earlier_entry.rule;
+                    if (earlier_entry.type == action_shift) {
+                        srr(krule, x.rule());
+                    }
+                    if (earlier_entry.type == action_reduce &&
+                        !(krule == x.rule())) {
+                        rrr(krule, x.rule());
+                    }
                 }
             }
-
-            if (!add_action) { continue; }
 
             if (x.rule() == g.root_rule()) {
                 // c)項[S'→S・, $]がJiの要素ならば、
                 // action[i, $]に"accept"を入れる。
 
-                s.action_table[Traits::eof()] = action_type(
-                    action_accept, 0xdeadbeaf, g.root_rule());
+                s.action_table[Traits::eof()].entries.insert(
+                    action_entry_type {
+                        action_accept, int(0xdeadbeaf), g.root_rule() });
             } else {
                 // b)項[A→α・, a]がJiの要素であり、
                 // A≠Sならば、action[i, a]に
                 // "reduce A→α"を入れる。
 
-                s.action_table[x.lookahead().token()] = action_type(
-                    action_reduce, 0xdeadbeaf, x.rule());
+                s.action_table[x.lookahead().token()].entries.insert(
+                    action_entry_type {
+                        action_reduce, int(0xdeadbeaf), x.rule() });
             }                    
         }
 
@@ -508,13 +507,13 @@ public:
             if (i == state->action_table.end()) { throw syntax_error(); }
 
             const action_type* action = &((*i).second);
-            switch (action->type) {
+            switch (action->type()) {
                 case action_shift:
-                    push_stack(action->dest_index, v);
+                    push_stack(action->dest_index(), v);
                     ate = true;
                     break;
                 case action_reduce: {
-                    const auto& rule = action->rule;
+                    const auto& rule = action->rule();
                     value_type v;
                     run_semantic_action(v, rule);
                     pop_stack(rule.right().size());
@@ -527,7 +526,7 @@ public:
                     break;
                 }
                 case action_accept: {
-                    const auto& rule = action->rule;
+                    const auto& rule = action->rule();
                     run_semantic_action(accept_value_, rule);
                     return true;
                 }

@@ -9,6 +9,7 @@
 
 void stencil_output(
     std::ostream& os,
+    int indent,
     const char* t,
     const std::map<std::string, StencilCallback>& m) {
 
@@ -17,8 +18,13 @@ void stencil_output(
     if (c != '\n') {
         ss.unget();
     }
-    
+
+    bool beginning_of_line = true;
     while((c = ss.get()) != std::char_traits<char>::eof()) {
+        if (beginning_of_line) {
+            for (int i = 0 ; i < indent ; i++) { os.put(' '); }
+            beginning_of_line = false;
+        }
         if (c == '$') {
             bool chomp = false;
             c = ss.get();
@@ -46,6 +52,9 @@ void stencil_output(
             }
         } else {
             os << char(c);
+            if (c == '\n') {
+                beginning_of_line = true;
+            }
         }
     }
 }

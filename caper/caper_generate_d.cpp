@@ -694,14 +694,14 @@ $${debmes:state}
             const auto& token = pair.first;
             const auto& action = pair.second;
 
-            const auto& rule = action.rule;
+            const auto& rule = action.rule();
 
             // action header 
             std::string case_tag =
                 "Token." + options.token_prefix + tokens[token];
 
             // action
-            switch (action.type) {
+            switch (action.type()) {
                 case zw::gr::action_shift:
                     stencil(
                         os, R"(
@@ -711,7 +711,7 @@ $${debmes:state}
             return false;
 )",
                         {"case_tag", case_tag},
-                        {"dest_index", action.dest_index}
+                        {"dest_index", action.dest_index()}
                         );
                     break;
                 case zw::gr::action_reduce: {

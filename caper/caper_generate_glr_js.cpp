@@ -45,7 +45,7 @@ void make_action_case(
             stencil_indent(
                 os, indent, R"(
                 // accept
-                accepts.push(this.stack);
+                accepts.push(new Slice(this.sa, this.stack));
 )"
                 );
             break;
@@ -344,11 +344,48 @@ $${entries}
             }
         },
         combine : function(slice) {
-            this.stack.prev = this.stack.prev.concat(slice.stack.prev);
+            for (var i = 0 ; i < slice.stack.prev.length ; i++) {
+                var n = slice.stack.prev[i];
+                var shouldInsert = true;
+                for (var j = 0 ; j < this.stack.prev.length ; j++) {
+                    if (n == this.stack.prev[j]) {
+                        shouldInsert = false;
+                        break;
+                    }
+                }
+                if (shouldInsert) {
+                    this.stack.prev.push(n);
+                }
+            }
+
             if (this.stack.node.nodeType == 'NNode') {
-                this.stack.node.successors = 
-                    this.stack.node.successors.concat(
-                        slice.stack.node.successors);
+                var x = slice.stack.node.successors;
+                var y = this.stack.node.successors;
+
+                for (var i = 0 ; i < x.length ; i++) {
+                    var shouldInsert = true;
+                    var s = x[i];
+                    for (var j = 0 ; j < y.length ; j++) {
+                        var t = y[j];
+                        if (s.length == t.length) {
+                            var match = true;
+                            for (var k = 0 ; k < s.length ; k++) {
+                                if (s[k] != t[k]) {
+                                    match = false;
+                                    break;
+                                }
+                            }
+                            if (match) {
+                                // already exist
+                                shouldInsert = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (shouldInsert) {
+                        y.push(s);
+                    }
+                }
             }
         },
         postToReduce : function(token, tnode, shifters, reducers, accepts, age) {
@@ -374,20 +411,25 @@ $${entries}
             this.stack = new Vertex(this.entry(stateIndex), v, this.stack, age);
         },
         popStack : function(n, nonterminal, reducers, args, age) {
-            if (n == 0) {
+            args = new Cons(this.stack.node, args);
+            if (n == 1) {
                 var a = [];
                 while(args != null) {
                     a.push(args.car);
                     args = args.cdr;
                 }
-                this.pushStack(
-                    this.stack.entry.gotof.apply(this, [nonterminal]),
-                    new NNode(nonterminal, a),
-                    age-1);
-                reducers.push(new Slice(this.sa, this.stack));
+                var nnode = new NNode(nonterminal, a);
+                for(var i = 0 ; i < this.stack.prev.length ; i++) {
+                    var newStack = this.stack.prev[i];
+                    var newSlice = new Slice(this.sa, newStack);
+                    newSlice.pushStack(
+                        newStack.entry.gotof.apply(this, [nonterminal]),
+                        nnode,
+                        age-1);
+                    reducers.push(newSlice);
+                }
                 return;
             }
-            args = new Cons(this.stack.node, args);
             for(var i = 0 ; i < this.stack.prev.length ; i++) {
                 new Slice(
                     this.sa, this.stack.prev[i]).popStack(
@@ -527,7 +569,18 @@ $${debmes:state}
     exports.Parser = Parser;
 
     Parser.prototype = {
-        post: function(token, value) {
+        postFirst : function(token, value) {
+            function PostContext(slices) {
+                this.tnode = new TNode(token, value);
+                this.actives = [];
+                for(var i = 0 ; i < slices.length ; i++) {
+                    this.actives.push(slices[i]);
+                }
+                this.shifters = [];
+            }
+            return new PostContext(this.slices);
+        },
+        postNext : function(context) {
             var combine = function(src, sin, din, dout) {
                 var dst = [];
                 for (var i = 0 ; i < src.length ; i++) {
@@ -539,7 +592,6 @@ $${debmes:state}
                             // unite
                             kill = true;
                             fixed.combine(newer);
-                            console.log("killed");
                             break;
                         }
                     }
@@ -550,68 +602,74 @@ $${debmes:state}
                 return dst;
             };
 
-            console.log("post " + token + ", " + value);
-            var tnode = new TNode(token, value);
-
-            var actives = [];
-            for(var i = 0 ; i < this.slices.length ; i++) {
-                actives.push(this.slices[i]);
-            }
-
-            var shifters = [];
-            while (0 < actives.length) {
+            if (0 < context.actives.length) {
                 var reducers = [];
-                var curr = actives.shift();
-                curr.postToReduce(token, tnode, shifters, reducers, this.accepts, this.age);
-                
-                actives = combine(
-                    reducers.concat(actives),
+                var curr = context.actives.shift();
+                curr.postToReduce(
+                    context.tnode.token, context.tnode,
+                    context.shifters, reducers, this.accepts,
+                    this.age);
+
+                context.actives = combine(
+                    reducers.concat(context.actives),
                     function(x) { return x; },
                     function(x) { return x; },
                     function(x) { return x; });
+                return true;
+            } else {
+                context.shifters = combine(
+                    context.shifters,
+                    function(x) { return x[0]; },
+                    function(x) { return x[0]; },
+                    function(x) { return x; });
+                for (var i = 0 ; i < context.shifters.length ; i++) {
+                    var tuple = context.shifters[i];
+                    tuple[0].postToShift(tuple[1], tuple[2], this.age);
+                }
+
+                this.slices = combine(
+                    context.shifters,
+                    function(x) { return x[0]; },
+                    function(x) { return x; },
+                    function(x) { return x[0]; });
+
+                this.age++;
+
+console.log(this.accepts);
+                this.accepts = combine(
+                    this.accepts,
+                    function(x) { return x; },
+                    function(x) { return x; },
+                    function(x) { return x; });
+console.log(this.accepts);
+
+                return false;
             }
-
-            if (this.slices.length < shifters.length) {
-                console.log("forked " + (shifters.length - this.slices.length));
-            }
-
-            shifters = combine(
-                shifters,
-                function(x) { return x[0]; },
-                function(x) { return x[0]; },
-                function(x) { return x; });
-            for (var i = 0 ; i < shifters.length ; i++) {
-                var tuple = shifters[i];
-                tuple[0].postToShift(tuple[1], tuple[2], this.age);
-            }
-
-            this.slices = combine(
-                shifters,
-                function(x) { return x[0]; },
-                function(x) { return x; },
-                function(x) { return x[0]; });
-
-            for (var k = 0 ; k < this.slices.length ; k++) {
-                //this.slices[k].dump();
-            }
-            this.age++;
-            console.log(this.accepts.join(', '));
-
-            return 0 < this.accepts.length;
         },
-        draw: function(drawer) {
+        draw: function(drawer, context) {
             // collect all living vertices
             var totalSet = {};
             var currSet = {};
             for (var i = 0 ; i < this.accepts.length ; i++) {
-                var p = this.accepts[i];
+                var p = this.accepts[i].stack;
                 currSet[p.index] = p;
+            }
+            if (context == null) {
+                for (var i = 0 ; i < this.slices.length ; i++) {
+                    var p = this.slices[i].stack;
+                    currSet[p.index] = p;
+                }
+            } else {
+                for (var i = 0 ; i < context.actives.length ; i++) {
+                    var p = context.actives[i].stack;
+                    currSet[p.index] = p;
+                }
+                for (var i = 0 ; i < context.shifters.length ; i++) {
+                    var p = context.shifters[i][0].stack;
+                    currSet[p.index] = p;
+                }
             }
 
-            for (var i = 0 ; i < this.slices.length ; i++) {
-                var p = this.slices[i].stack;
-                currSet[p.index] = p;
-            }
             while (true) {
                 var keys = Object.keys(currSet);
                 var n = keys.length;

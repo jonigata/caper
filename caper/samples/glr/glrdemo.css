@@ -28,11 +28,23 @@ body {
     z-index: 2;
 }
 
-#sentence {
+#status {
     position: absolute;
     left: 140px;
     top: 16px;
-    width: 960px;
+    width: 140;
+    height: 32px;
+    line-height: 32px;
+    text-align: center;
+    z-index: 2;
+    font-size: 18px;
+}
+
+#sentence {
+    position: absolute;
+    left: 300px;
+    top: 16px;
+    width: 600;
     height: 32px;
     line-height: 32px;
     text-align: center;

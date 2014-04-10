@@ -24,7 +24,7 @@ void make_action_case(
             stencil_indent(
                 os, indent, R"(
                 // shift
-                shifters.push([this.clone(), ${dest_index}, tnode]);
+                shifters.push([this, ${dest_index}, tnode]);
 )",
                 {"dest_index", action_entry.dest_index}
                 );
@@ -45,7 +45,7 @@ void make_action_case(
             stencil_indent(
                 os, indent, R"(
                 // accept
-                accepts.push(new Slice(this.sa, this.stack));
+                accepts.push(this);
 )"
                 );
             break;
@@ -237,10 +237,17 @@ $${labels}
         };
     }
 
+    function Cons(car, cdr) {
+        this.car = car;
+        this.cdr = cdr;
+    }
+
+    var entries = null;
+
     var vertexIndex = 0;
-    function Vertex(entry, n, prev, age) {
-        this.entry = entry;
-        this.node = n;
+    function Vertex(stateIndex, node, prev, age) {
+        this.entry = this.getEntry(stateIndex);
+        this.node = node;
         this.prev = [prev];
         if (prev == null) {
             this.x = 0;
@@ -253,79 +260,26 @@ $${labels}
         this.rightY = this.y;
         this.index = vertexIndex++;
     }
-
-    function Cons(car, cdr) {
-        this.car = car;
-        this.cdr = cdr;
-    }
-
-)");
-
-    // slice constructor
-    stencil(
-        os, R"(
-    function Slice(sa, stack) {
-        this.sa = sa;
-
-        this.stack = stack;
-        this.error = false;
-
-)",
-        {"first_state", table.first_state()}
-        );
-
-    // table
-    stencil(
-        os, R"(
-        var entries = [
-$${entries}
-            null
-        ];
-
-        this.entry = function(n) {
-            return entries[n];
-        };
-
-)",
-        {"entries", [&](std::ostream& os) {
-                for (int i = 0 ; i < table.states().size() ; i++) {
-                    stencil(
-                        os, R"(
-            { state: this.state_${i}, gotof: this.gotof_${i}, index: ${i} },
-)",
-                            
-                        {"i", i}
-                        );
-                }                    
-            }}
+)"
         );
 
     
     stencil(
         os, R"(
-        if (this.stack == null) {
-            this.pushStack(${first_state}, null, 0);
-        }
-    }
-    exports.Slice = Slice;
-
-    Slice.prototype = {
-        dumpAux : function(s) {
-            if (s == null) {
+    Vertex.prototype = {
+        dumpAux : function() {
+            if (this.stack == null) {
                 return "";
             } else {
-                return this.dumpAux(s.prev[0]) + ", " + (s.node == null ? "null" : s.node.toString());
+                return this.stack.prev[0].dumpAux() + ", " + (this.stack.node == null ? "null" : this.stack.node.toString());
             }
         },
         dump : function() {
-            console.log(this.stack.entry.index + ": " + this.dumpAux(this.stack));
+            console.log(this.entry.index + ": " + this.dumpAux());
         },
-        clone : function() {
-            return new Slice(this.sa, this.stack);
-        },
-        combinable : function(slice) {
-            var xs = this.stack;
-            var ys = slice.stack;
+        combinable : function(another) {
+            var xs = this;
+            var ys = another;
             if (xs.entry.index != ys.entry.index) {
                 return false;
             }
@@ -343,24 +297,24 @@ $${entries}
                 return true;
             }
         },
-        combine : function(slice) {
-            for (var i = 0 ; i < slice.stack.prev.length ; i++) {
-                var n = slice.stack.prev[i];
+        combine : function(another) {
+            for (var i = 0 ; i < another.prev.length ; i++) {
+                var n = another.prev[i];
                 var shouldInsert = true;
-                for (var j = 0 ; j < this.stack.prev.length ; j++) {
-                    if (n == this.stack.prev[j]) {
+                for (var j = 0 ; j < this.prev.length ; j++) {
+                    if (n == this.prev[j]) {
                         shouldInsert = false;
                         break;
                     }
                 }
                 if (shouldInsert) {
-                    this.stack.prev.push(n);
+                    this.prev.push(n);
                 }
             }
 
-            if (this.stack.node.nodeType == 'NNode') {
-                var x = slice.stack.node.successors;
-                var y = this.stack.node.successors;
+            if (this.node.nodeType == 'NNode') {
+                var x = another.node.successors;
+                var y = this.node.successors;
 
                 for (var i = 0 ; i < x.length ; i++) {
                     var shouldInsert = true;
@@ -388,30 +342,18 @@ $${entries}
                 }
             }
         },
-        postToReduce : function(token, tnode, shifters, reducers, accepts, age) {
-            this.error = false;
-            this.stack.entry.state.apply(
-                this, [token, tnode, shifters, reducers, accepts, age]);
+        post: function(tnode, shifters, reducers, accepts, age) {
+            this.entry.state.apply(
+                this, [tnode, shifters, reducers, accepts, age]);
         },
-        postToShift : function(state, node, age) {
-            this.pushStack(state, node, age);
+        shift : function(state, node, age) {
+            return this.pushStack(state, node, age);
         },
-        getError : function() {
-            return this.error;
-        },
-
-)",
-        {"first_state", table.first_state()}
-        );
-
-    // stack operation
-    stencil(
-        os, R"(
-        pushStack : function(stateIndex, v, age) {
-            this.stack = new Vertex(this.entry(stateIndex), v, this.stack, age);
+        pushStack : function(stateIndex, value, age) {
+            return new Vertex(stateIndex, value, this, age);
         },
         popStack : function(n, nonterminal, reducers, args, age) {
-            args = new Cons(this.stack.node, args);
+            args = new Cons(this.node, args);
             if (n == 1) {
                 var a = [];
                 while(args != null) {
@@ -419,21 +361,19 @@ $${entries}
                     args = args.cdr;
                 }
                 var nnode = new NNode(nonterminal, a);
-                for(var i = 0 ; i < this.stack.prev.length ; i++) {
-                    var newStack = this.stack.prev[i];
-                    var newSlice = new Slice(this.sa, newStack);
-                    newSlice.pushStack(
-                        newStack.entry.gotof.apply(this, [nonterminal]),
+                for(var i = 0 ; i < this.prev.length ; i++) {
+                    var p = this.prev[i];
+                    var newStack = p.pushStack(
+                        p.entry.gotof.apply(this, [nonterminal]),
                         nnode,
                         age-1);
-                    reducers.push(newSlice);
+                    reducers.push(newStack);
                 }
                 return;
             }
-            for(var i = 0 ; i < this.stack.prev.length ; i++) {
-                new Slice(
-                    this.sa, this.stack.prev[i]).popStack(
-                        n-1, nonterminal, reducers, args, age);
+            for(var i = 0 ; i < this.prev.length ; i++) {
+                this.prev[i].popStack(
+                    n-1, nonterminal, reducers, args, age);
             }
         },
 
@@ -445,16 +385,16 @@ $${entries}
         // state header
         stencil(
             os, R"(
-        state_${state_no} : function(token, tnode, shifters, reducers, accepts, age) {
+        state_${state_no} : function(tnode, shifters, reducers, accepts, age) {
 $${debmes:state}
-            switch(token) {
+            switch(tnode.token) {
 )",
             {"state_no", state.no},
             {"debmes:state", [&](std::ostream& os){
                     if (options.debug_parser) {
                         stencil(
                             os, R"(
-            console.log("state_${state_no} << " + getTokenLabel(token));
+            console.log("state_${state_no} << " + getTokenLabel(tnode.token));
 )",
                             {"state_no", state.no}
                             );
@@ -496,9 +436,7 @@ $${debmes:state}
         stencil(
             os, R"(
             default:
-                this.sa.syntaxError();
-                this.error = true;
-                return false;
+                break;
             }
         },
 
@@ -557,28 +495,36 @@ $${debmes:state}
             );
     }
     stencil(os, R"(
-        dummy : null
+        getEntry : function(index) {
+            if (entries == null) {
+                entries = [
+$${entries}
+                    null
+                ];
+            }
+            return entries[index];
+        }
     };
 
     function Parser(sa) {
-        this.slices = [];
-        this.slices.push(new Slice(sa, null));
+        this.heads = [];
+        this.heads.push(new Vertex(${first_state}, null, null, 0));
         this.accepts = [];
+        this.error = false;
         this.age = 1;
     }
     exports.Parser = Parser;
 
     Parser.prototype = {
         postFirst : function(token, value) {
-            function PostContext(slices) {
+            function PostContext(heads) {
                 this.tnode = new TNode(token, value);
-                this.actives = [];
-                for(var i = 0 ; i < slices.length ; i++) {
-                    this.actives.push(slices[i]);
-                }
+                this.actives = heads;
                 this.shifters = [];
             }
-            return new PostContext(this.slices);
+            var p = new PostContext(this.heads);
+            this.heads = null;
+            return p;
         },
         postNext : function(context) {
             var combine = function(src, sin, din, dout) {
@@ -605,8 +551,8 @@ $${debmes:state}
             if (0 < context.actives.length) {
                 var reducers = [];
                 var curr = context.actives.shift();
-                curr.postToReduce(
-                    context.tnode.token, context.tnode,
+                curr.post(
+                    context.tnode,
                     context.shifters, reducers, this.accepts,
                     this.age);
 
@@ -624,10 +570,10 @@ $${debmes:state}
                     function(x) { return x; });
                 for (var i = 0 ; i < context.shifters.length ; i++) {
                     var tuple = context.shifters[i];
-                    tuple[0].postToShift(tuple[1], tuple[2], this.age);
+                    tuple[0] = tuple[0].shift(tuple[1], tuple[2], this.age);
                 }
 
-                this.slices = combine(
+                this.heads = combine(
                     context.shifters,
                     function(x) { return x[0]; },
                     function(x) { return x; },
@@ -635,13 +581,11 @@ $${debmes:state}
 
                 this.age++;
 
-console.log(this.accepts);
                 this.accepts = combine(
                     this.accepts,
                     function(x) { return x; },
                     function(x) { return x; },
                     function(x) { return x; });
-console.log(this.accepts);
 
                 return false;
             }
@@ -651,21 +595,21 @@ console.log(this.accepts);
             var totalSet = {};
             var currSet = {};
             for (var i = 0 ; i < this.accepts.length ; i++) {
-                var p = this.accepts[i].stack;
+                var p = this.accepts[i];
                 currSet[p.index] = p;
             }
             if (context == null) {
-                for (var i = 0 ; i < this.slices.length ; i++) {
-                    var p = this.slices[i].stack;
+                for (var i = 0 ; i < this.heads.length ; i++) {
+                    var p = this.heads[i];
                     currSet[p.index] = p;
                 }
             } else {
                 for (var i = 0 ; i < context.actives.length ; i++) {
-                    var p = context.actives[i].stack;
+                    var p = context.actives[i];
                     currSet[p.index] = p;
                 }
                 for (var i = 0 ; i < context.shifters.length ; i++) {
-                    var p = context.shifters[i][0].stack;
+                    var p = context.shifters[i][0];
                     currSet[p.index] = p;
                 }
             }
@@ -773,6 +717,18 @@ console.log(this.accepts);
     return exports;
 })();
 
-)"
-        );
+)",
+            {"first_state", table.first_state()},
+            {"entries", [&](std::ostream& os) {
+                    for (int i = 0 ; i < table.states().size() ; i++) {
+                        stencil(
+                            os, R"(
+        { state: this.state_${i}, gotof: this.gotof_${i}, index: ${i} },
+)",
+                            
+                            {"i", i}
+                            );
+                    }                    
+                }}
+    );
 }

@@ -20,6 +20,7 @@ using std::exit;
 #include "caper_generate_csharp.hpp"
 #include "caper_generate_d.hpp"
 #include "caper_generate_java.hpp"
+#include "caper_generate_boo.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -75,6 +76,10 @@ void get_commandline_options(
                 cmdopt.language = "JavaScript";
                 continue;
             }
+            if (arg == "-boo" || arg == "-BOO") {
+                cmdopt.language = "Boo";
+                continue;
+            }
             if (arg == "-lalr1") {
                 cmdopt.algorithm = "lalr1";
                 continue;
@@ -105,7 +110,7 @@ void get_commandline_options(
     }
 
     if (state < 2) {
-        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -java] input_filename output_filename" << std::endl;
+        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -java | -boo] input_filename output_filename" << std::endl;
         exit(1);
     }
 
@@ -131,6 +136,7 @@ int main(int argc, const char** argv) {
     generators["C++"]           = generate_cpp;
     generators["JavaScript"]    = generate_javascript;
     generators["D"]             = generate_d;
+    generators["Boo"]           = generate_boo;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {

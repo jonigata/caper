@@ -1,0 +1,7 @@
+*.o
+depend/
+caper/caper
+capella/capella.hpp
+capella/capella
+caper/samples/*/*.exe
+caper/samples/*/*.exe.mdb

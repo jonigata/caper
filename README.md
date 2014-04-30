@@ -13,7 +13,7 @@ Caper emits C++, Java, JavaScript, D, C#, Boo code.
 ### Introduction
 
 * http://qiita.com/jonigata/items/2a4e3b642afd20970eb2
-* 
+
 ### Implementing GLR
 
 * http://qiita.com/jonigata/items/69381937b2d5b0af410c

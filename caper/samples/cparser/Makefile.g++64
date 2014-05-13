@@ -16,17 +16,11 @@ OPTIONS = -mconsole -O0 -D_DEBUG $(DEFS) $(DEFS2) -Wall -pedantic
 CXXFLAGS = -std=c++0x
 
 OBJS = \
-	Main64.o \
+	Main64$(DOTOBJ) \
 
 CR_HEADERS = \
 	stdafx.h \
-	Coding.h \
-	Coding_inl.h \
-	CodeReverse.h \
-	CodeReverse_inl.h \
-	Module.h \
-	Module_inl.h \
-	mzc2mini.h
+	Main.h \
 
 CPARSER_HEADER = \
 	CParseHeader.h \
@@ -36,18 +30,16 @@ CPARSER_HEADER = \
 	CParser.h \
 	TypeSystem.h
 
-RCFLAGS = -F pe-x86-64
-
 all: cparser64$(DOTEXE)
 
 cparser64$(DOTEXE): $(OBJS)
 	$(CXX) -o cparser64$(DOTEXE) $(CXXFLAGS) $(OPTIONS) $(OBJS)
 
-Main64.o: $(CR_HEADERS) $(CPARSER_HEADER) Main.cpp
-	$(CXX) -c $(CXXFLAGS) $(OPTIONS) -o Main64.o Main.cpp
+Main64$(DOTOBJ): $(CR_HEADERS) $(CPARSER_HEADER) Main.cpp
+	$(CXX) -c $(CXXFLAGS) $(OPTIONS) -o Main64$(DOTOBJ) Main.cpp
 CParser.h: $(CAPER) CParser.cpg
 	$(CAPER) CParser.cpg CParser.h
 
 clean:
-	rm -f *.o
+	rm -f *$(DOTOBJ)
 	rm -f CParser.h

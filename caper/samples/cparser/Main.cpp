@@ -7,15 +7,19 @@ const char * const cr_logo =
     "///////////////////////////////////////////////\n"
 #if defined(_WIN64) || defined(__LP64__) || defined(_LP64)
 # ifdef __GNUC__
-    "// CParser sample 0.1.4 (64-bit) for gcc     //\n"
+    "// CParser sample 0.1.5 (64-bit) for gcc     //\n"
+# elif defined(__clang__)
+    "// CParser sample 0.1.5 (64-bit) for clang    //\n"
 # elif defined(_MSC_VER)
-    "// CParser sample 0.1.4 (64-bit) for cl      //\n"
+    "// CParser sample 0.1.5 (64-bit) for cl      //\n"
 # endif
 #else   // !64-bit
 # ifdef __GNUC__
-    "// CParser sample 0.1.4 (32-bit) for gcc     //\n"
+    "// CParser sample 0.1.5 (32-bit) for gcc     //\n"
+# elif defined(__clang__)
+    "// CParser sample 0.1.5 (32-bit) for clang    //\n"
 # elif defined(_MSC_VER)
-    "// CParser sample 0.1.4 (32-bit) for cl      //\n"
+    "// CParser sample 0.1.5 (32-bit) for cl      //\n"
 # endif
 #endif  // !64-bit
     "// public domain software                    //\n"
@@ -1268,6 +1272,8 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
         #ifdef _WIN32   // Windows!
             #ifdef __GNUC__
                 CR_String cmdline("gcccpp.bat");
+            #elif defined(__clang__)
+                CR_String cmdline("clangcpp.bat");
             #elif defined(_MSC_VER)
                 CR_String cmdline("clcpp.bat");
             #else
@@ -1276,6 +1282,8 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
         #else   // Not Windows!
             #ifdef __GNUC__
                 CR_String cmdline("gcccpp.sh");
+            #elif defined(__clang__)
+                CR_String cmdline("clangcpp.sh");
             #else
                 #error You lose.
             #endif

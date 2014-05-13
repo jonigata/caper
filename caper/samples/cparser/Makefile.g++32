@@ -21,7 +21,6 @@ OBJS = \
 CR_HEADERS = \
 	stdafx.h \
 	Main.h \
-	Main_inl.h \
 
 CPARSER_HEADER = \
 	CParseHeader.h \
@@ -31,15 +30,13 @@ CPARSER_HEADER = \
 	CParser.h \
 	TypeSystem.h
 
-RCFLAGS = -F pe-i386
-
 all: cparser$(DOTEXE)
 
 cparser$(DOTEXE): $(OBJS)
 	$(CXX) -o cparser$(DOTEXE) $(CXXFLAGS) $(OPTIONS) $(OBJS)
 
 Main$(DOTOBJ): $(CR_HEADERS) $(CPARSER_HEADER) Main.cpp
-	$(CXX) -c $(CXXFLAGS) $(OPTIONS) $(CXXFLAGS) -o Main$(DOTOBJ) Main.cpp
+	$(CXX) -c $(CXXFLAGS) $(OPTIONS) -o Main$(DOTOBJ) Main.cpp
 CParser.h: $(CAPER) CParser.cpg
 	$(CAPER) CParser.cpg CParser.h
 

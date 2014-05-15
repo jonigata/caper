@@ -7,7 +7,7 @@ DOTEXE = .exe
 CXX = g++
 CAPER = ../../../caper$(DOTEXE)
 
-DEFS = -static -m64 -mthreads -DJAPAN
+DEFS = -static -m64 -mthreads -DJAPAN -ansi -std=c++11
 DEFS2 = 
 
 #OPTIONS = -mconsole -O9 -Ofast -DNDEBUG $(DEFS) $(DEFS2) -Wall -pedantic

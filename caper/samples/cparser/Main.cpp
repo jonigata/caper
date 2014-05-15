@@ -27,6 +27,8 @@ const char * const cr_logo =
     "// katayama.hirofumi.mz@gmail.com            //\n"
     "///////////////////////////////////////////////\n";
 
+using namespace std;
+
 ////////////////////////////////////////////////////////////////////////////
 
 // temporary file
@@ -1254,7 +1256,7 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
 {
     char *pchDotExt = strrchr(args[0], '.');
     // if file extension is ".i",
-    if (_stricmp(pchDotExt, ".i") == 0)
+    if (strcmp(pchDotExt, ".i") == 0)
     {
         // directly parse
         if (!cparser::parse_file(tu, args[0], is_64bit))
@@ -1263,10 +1265,12 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
             return cr_exit_parse_error;   // failure
         }
     }
-    else if (_stricmp(pchDotExt, ".h") == 0 || _stricmp(pchDotExt, ".c") == 0)
+    else if (strcmp(pchDotExt, ".h") == 0 || strcmp(pchDotExt, ".c") == 0)
     {
         // if file extension is ".h",
-        cr_tmpfile = _tempnam(".", "coderev_temp");
+        static char filename[] = "cparser~.tmp";
+        cr_tmpfile = filename;
+        atexit(CrDeleteTempFileAtExit);
 
         // build command line
         #ifdef _WIN32   // Windows!
@@ -1457,13 +1461,13 @@ int main(int argc, char **argv)
 
     if (argc >= 2 && 
         (strcmp(argv[1], "/?") == 0 ||
-         _stricmp(argv[1], "--help") == 0))
+         strcmp(argv[1], "--help") == 0))
     {
         CrShowHelp();
         return cr_exit_ok;
     }
 
-    if (argc >= 2 && _stricmp(argv[1], "--version") == 0)
+    if (argc >= 2 && strcmp(argv[1], "--version") == 0)
     {
         return cr_exit_ok;
     }

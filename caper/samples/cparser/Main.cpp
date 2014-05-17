@@ -1285,9 +1285,9 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
             #endif
         #else   // Not Windows!
             #ifdef __GNUC__
-                CR_String cmdline("gcccpp.sh");
+                CR_String cmdline("./gcccpp.sh");
             #elif defined(__clang__)
-                CR_String cmdline("clangcpp.sh");
+                CR_String cmdline("./clangcpp.sh");
             #else
                 #error You lose.
             #endif

@@ -29,7 +29,6 @@ namespace cparser
 
         void upcast(shared_ptr<Node>& x, const int& y)
         {
-            x = shared_ptr<Node>(new Node);
         }
 
         template <typename T>

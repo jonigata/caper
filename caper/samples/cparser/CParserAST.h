@@ -76,15 +76,8 @@ namespace cparser
             m_loc = n.m_loc;
         }
 
-        CR_Location& location()
-        {
-            return m_loc;
-        }
-
-        const CR_Location& location() const
-        {
-            return m_loc;
-        }
+              CR_Location& location()       { return m_loc; }
+        const CR_Location& location() const { return m_loc; }
 
     protected:
         CR_Location  m_loc;

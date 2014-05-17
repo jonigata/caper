@@ -1318,7 +1318,7 @@ namespace cparser
             const typename TokenInfoContainer::iterator end = c.end();
             for (it = c.begin(); it != end; ++it)
             {
-                if (it->m_token == T_L_PAREN && (it + 1)->m_token == T_ASM)
+                if (it->m_token == T_R_PAREN && (it + 1)->m_token == T_ASM)
                 {
                     // int func() __asm__("..." "...");
                     it = skip_asm_for_fn_decl(it + 1, end);

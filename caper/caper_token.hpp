@@ -31,6 +31,7 @@ enum Token {
     token_directive_recover,
     token_directive_access_modifier,
     token_directive_dont_use_stl,
+    token_directive_smart_ptr,
     token_eof,
 };
 
@@ -67,6 +68,7 @@ const char* token_labels(Token op) {
         "%recover",
         "%access_modifier",
         "%dont_use_stl",
+        "%smart_ptr",
         "$"
     };
 

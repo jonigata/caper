@@ -22,4 +22,4 @@ Caper emits C++, Java, JavaScript, D, C#, Boo code.
 
 ## Contact
 
-twitter: jonigata
+twitter: @jonigata

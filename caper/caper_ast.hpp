@@ -240,6 +240,13 @@ struct RecoverDecl : public Declaration {
         : Declaration(r), name(as) {}
 };
 
+struct SmartPtrDecl : public Declaration {
+    std::string     tag;
+
+    SmartPtrDecl(const Range& r, const std::string& as)
+        : Declaration(r), tag(as) {}
+};
+
 struct AccessModifierDecl : public Declaration {
     std::string     modifier;
 
@@ -289,6 +296,7 @@ struct GenerateOptions {
     bool            dont_use_stl    = false;
     bool            recovery        = false;
     std::string     recovery_token  = "error";
+    std::string     smart_ptr_tag   = "";
 };
 
 struct Type {

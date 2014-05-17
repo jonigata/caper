@@ -1318,6 +1318,14 @@ namespace cparser
             const typename TokenInfoContainer::iterator end = c.end();
             for (it = c.begin(); it != end; ++it)
             {
+                if (it->m_token == T_L_PAREN && (it + 1)->m_token == T_ASM)
+                {
+                    // int func() __asm__("..." "...");
+                    it = skip_asm_for_fn_decl(it + 1, end);
+                    if (it == end)
+                        break;
+                }
+
                 if (it->m_token == T_GNU_ATTRIBUTE)
                 {
                     it2 = it;
@@ -1540,6 +1548,34 @@ namespace cparser
         {
             TokenInfoIt it = begin;
             if (it != end && it->m_token == T_GNU_ATTRIBUTE)
+                ++it;
+
+            if (it != end && it->m_token == T_L_PAREN)
+            {
+                ++it;
+                int paren_nest = 1;
+                for (; it != end; ++it)
+                {
+                    if (it->m_token == T_L_PAREN)
+                    {
+                        paren_nest++;
+                    }
+                    else if (it->m_token == T_R_PAREN)
+                    {
+                        paren_nest--;
+                        if (paren_nest == 0)
+                            break;
+                    }
+                }
+            }
+            return it;
+        }
+
+        template <class TokenInfoIt>
+        TokenInfoIt skip_asm_for_fn_decl(TokenInfoIt begin, TokenInfoIt end)
+        {
+            TokenInfoIt it = begin;
+            if (it != end && it->m_token == T_ASM)
                 ++it;
 
             if (it != end && it->m_token == T_L_PAREN)

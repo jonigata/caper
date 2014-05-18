@@ -1285,9 +1285,9 @@ int CrInputCSrc(shared_ptr<TransUnit>& tu, int argc, char **args, bool is_64bit)
             #endif
         #else   // Not Windows!
             #ifdef __GNUC__
-                CR_String cmdline("./gcccpp.sh");
+                CR_String cmdline("bash ./gcccpp.sh");
             #elif defined(__clang__)
-                CR_String cmdline("./clangcpp.sh");
+                CR_String cmdline("bash ./clangcpp.sh");
             #else
                 #error You lose.
             #endif
@@ -1436,10 +1436,10 @@ void CrShowHelp(void)
 {
 #if defined(_WIN64) || defined(__LP64__) || defined(_LP64)
     fprintf(stderr,
-        " Usage: cparser64 [options] [input-file.h] [compiler_options]\n");
+        " Usage: cparser64 [options] [input-file.h [compiler_options]]\n");
 #else
     fprintf(stderr,
-        " Usage: cparser [options] [input-file.h] [compiler_options]\n");
+        " Usage: cparser [options] [input-file.h [compiler_options]]\n");
 #endif
     fprintf(stderr, "\n");
     fprintf(stderr, "Options:\n");

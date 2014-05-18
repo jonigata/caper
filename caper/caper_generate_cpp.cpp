@@ -14,25 +14,31 @@
 
 namespace {
 
-std::string make_type_name(const Type& x) {
+std::string make_type_name(const Type& x, const std::string& smart_pointer_tag) {
+    std::string type;
+    if (smart_pointer_tag.empty())
+        type = x.name;
+    else
+        type = smart_pointer_tag + "<" + x.name + ">";
+
     switch(x.extension) {
         case Extension::None:
-            return x.name;
+            return type;
         case Extension::Star:
         case Extension::Plus:
         case Extension::Slash:
-            return "Sequence<" + x.name + ">";
+            return "Sequence<" + type + ">";
         case Extension::Question:
-            return "Optional<" + x.name + ">";
+            return "Optional<" + type + ">";
         default:
             assert(0);
             return "";
     }
 }
-        
-std::string make_arg_decl(const Type& x, size_t l) {
+
+std::string make_arg_decl(const Type& x, size_t l, const std::string& smart_pointer_tag) {
     std::string sl = std::to_string(l);
-    std::string y = make_type_name(x) + " arg" + sl;
+    std::string y = make_type_name(x, smart_pointer_tag) + " arg" + sl;
     switch (x.extension) {
         case Extension::None:
             return y;
@@ -52,17 +58,19 @@ void make_signature(
     const std::map<std::string, Type>&      nonterminal_types,
     const tgt::parsing_table::rule_type&    rule,
     const SemanticAction&                   sa,
-    std::vector<std::string>&               signature) {
+    std::vector<std::string>&               signature,
+    const std::string&                      smart_pointer_tag) {
     // function name
     signature.push_back(sa.name);
 
     // return value
     signature.push_back(
-        make_type_name(*finder(nonterminal_types, rule.left().name())));
+        make_type_name(*finder(nonterminal_types, rule.left().name()),
+                       smart_pointer_tag));
 
     // arguments
     for (const auto& arg: sa.args) {
-        signature.push_back(make_type_name(arg.type));
+        signature.push_back(make_type_name(arg.type, smart_pointer_tag));
     }
 }
 
@@ -78,7 +86,7 @@ void generate_cpp(
     const action_map_type&              actions,
     const tgt::parsing_table&           table) {
 
-#ifdef _WINDOWS
+#ifdef _WIN32
     char basename[_MAX_PATH];
     char extension[_MAX_PATH];
     _splitpath(src_filename.c_str(), NULL, NULL, basename, extension);
@@ -843,7 +851,8 @@ $${debmes:repost_done}
                 nonterminal_types,
                 rule,
                 sa,
-                signature);
+                signature,
+                options.smart_pointer_tag);
 
             // skip duplicated
             if (0 < stub_indices.count(signature)) {
@@ -889,7 +898,7 @@ $${debmes:repost_done}
                         os, R"(
         ${arg_type} arg${index}; sa_.downcast(arg${index}, ${get_arg}(base, arg_index${index}));
 )",
-                        {"arg_type", make_type_name(arg.type)},
+                        {"arg_type", make_type_name(arg.type, options.smart_pointer_tag)},
                         {"get_arg", get_arg},
                         {"index", l}
                         );
@@ -898,7 +907,7 @@ $${debmes:repost_done}
                         os, R"(
         ${arg_decl}; 
 )",
-                        {"arg_decl", make_arg_decl(arg.type, l)}
+                        {"arg_decl", make_arg_decl(arg.type, l, options.smart_pointer_tag)}
                         );
                 }
             }
@@ -914,7 +923,7 @@ $${debmes:repost_done}
     }
 
 )",
-                {"nonterminal_type", make_type_name(rule_type)},
+                {"nonterminal_type", make_type_name(rule_type, options.smart_pointer_tag)},
                 {"semantic_action_name", sa.name},
                 {"args", [&](std::ostream& os) {
                         bool first = true;
@@ -999,7 +1008,8 @@ $${debmes:state}
                             nonterminal_types,
                             rule,
                             sa,
-                            signature);
+                            signature,
+                            options.smart_pointer_tag);
 
                         reduce_action_cache_key_type key =
                             boost::make_tuple(

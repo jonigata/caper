@@ -131,7 +131,7 @@ void make_cpg_parser(cpg::parser& p) {
         [](const arguments_type& args) -> Value {
             return Value(args[0]);
         },
-        "SmartPtrDecl", token_semicolon);
+        "SmartPointerDecl", token_semicolon);
     make_rule(
         g, p,
         "Declaration", 
@@ -236,16 +236,16 @@ void make_cpg_parser(cpg::parser& p) {
         },
         token_directive_namespace, token_identifier);
 
-    // ..%smart_ptréŒ¾
+    // ..%smart_pointeréŒ¾
     make_rule(
         g, p,
-        "SmartPtrDecl",
+        "SmartPointerDecl",
         [](const arguments_type& args) -> Value {
-            auto p = std::make_shared<SmartPtrDecl>(
+            auto p = std::make_shared<SmartPointerDecl>(
                 range(args), get_symbol<TypeTag>(args[1]));
             return Value(p);
         },
-        token_directive_smart_ptr, token_typetag);
+        token_directive_smart_pointer, token_typetag);
 
     // ..%recoveréŒ¾
     make_rule(

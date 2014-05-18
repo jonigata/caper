@@ -1,5 +1,5 @@
 %token_prefix;
-%smart_ptr<shared_ptr>;
+%smart_pointer<shared_ptr>;
 
 %token T_ADD_ASSIGN<TokenValue>;
 %token T_ALIGNAS<TokenValue>;

@@ -65,9 +65,9 @@ void collect_informations(
             // %namespaceéŒ¾
             options.namespace_name = namespacedecl->name;
         }
-        if (auto smartptrdecl = downcast<SmartPtrDecl>(x)) {
-            // %smart_ptréŒ¾
-            options.smart_ptr_tag = smartptrdecl->tag;
+        if (auto smartptrdecl = downcast<SmartPointerDecl>(x)) {
+            // %smart_pointeréŒ¾
+            options.smart_pointer_tag = smartptrdecl->tag;
         }
         if (auto recoverdecl = downcast<RecoverDecl>(x)) {
             if (0 < known.count(recoverdecl->name)) {

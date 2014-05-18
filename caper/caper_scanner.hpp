@@ -24,7 +24,7 @@ public:
         dirdic_["recover"] = token_directive_recover;
         dirdic_["access_modifier"] = token_directive_access_modifier;
         dirdic_["dont_use_stl"] = token_directive_dont_use_stl;
-        dirdic_["smart_ptr"] = token_directive_smart_ptr;
+        dirdic_["smart_pointer"] = token_directive_smart_pointer;
         lines_.push_back(0);
     }
     ~scanner() {}

@@ -48,12 +48,6 @@ import System.Collections.Generic
 
     // enum Token
     if (!options.external_token) {
-        // token enumeration
-        //os << options.access_modifier << "enum Token:\n";
-        //for (size_t i = 0 ; i < tokens.size() ; i++) {
-        //    os << "  " << options.token_prefix << tokens[i] << "\n";
-        //}
-        //os << "\n";
         stencil(
             os, R"(
 enum Token:
@@ -106,189 +100,186 @@ $${tokens}
         }
     }
 
-    os << options.access_modifier << "interface ISemanticAction:\n";
-    os << "  def syntax_error() as void\n";
-    os << "  def stack_overflow() as void\n";
+    //os << options.access_modifier << "interface ISemanticAction:\n";
+    //os << "  def syntax_error() as void\n";
+    //os << "  def stack_overflow() as void\n";
+    stencil(
+        os, R"(
+${access_modifier}interface ISemanticAction:
+  def syntax_error() as void
+  def stack_overflow() as void
+  // actions
+$${methods}
 
-    /*
-       for( std::unordered_set< std::string >::const_iterator i = types.begin();
-       i != types.end();
-       ++i ) {
-       os << "		" << "void upcast( out object x, " << (*i) << " y );\n";
-       }
-
-       for( std::unordered_set< std::string >::const_iterator i = types.begin();
-       i != types.end();
-       ++i ) {
-       os << "		" << "void downcast( out " << (*i) << " x, object y );\n";
-       }*/
-    os << "\n";
-        
-    std::unordered_set< std::string > methods;
-
-    for (std::set< semantic_action_entry >::const_iterator it = ss.begin(); it != ss.end(); ++it) {
-        std::stringstream methodstream;
-        methodstream << "  def " << (*it).name << "(ref ";
-        bool first = true;
-        for (size_t l = 0; l < (*it).args.size(); l++) {
-            if (first) { first = false; } else { methodstream << ", "; }
-            methodstream << "arg" << l << " as " << ((*it).args[l]);
-        }
-        methodstream << ") as void\n";
-        methods.insert(methodstream.str());
-    }
-
-    for (std::unordered_set<std::string>::const_iterator it = methods.begin(); it != methods.end(); ++it)
-        os << *it;
-
-    os << "\n";
+)",
+        {"access_modifier", options.access_modifier},
+        {"methods",
+            [&](std::ostream& os) {
+                for (std::set< semantic_action_entry >::const_iterator it = ss.begin(); it != ss.end(); ++it) {
+                    std::stringstream args;
+                    bool first = true;
+                    for (size_t l = 0; l < (*it).args.size(); l++) {
+                        if (first) { first = false; } else { args << ", "; }
+                        args << "arg" << l << " as " << ((*it).args[l]);
+                    }
+                    stencil(
+                        os, R"(
+  def ${name}(ref ${args}) as void
+)",
+                        {"name", (*it).name},
+                        {"args", args.str()});
+                }
+            }
+        });
 
     // parser class
-    os << options.access_modifier << "class Parser ():\n"
-       // stack_frame clas
-       << "  private class stack_frame ():\n"
-       << "    public state as state_type\n"
-       << "    public gotof as gotof_type\n"
-       << "    public value as object\n\n"
-       << "    public def constructor(s as state_type, g as gotof_type, v as object):\n"
-       << "      state = s\n"
-       << "      gotof = g\n"
-       << "      value = v\n"
-       << "\n"
-       // Stack class
-       << "  private class Stack ():\n"
-       << "    private stack = List[of stack_frame]()\n"
-       << "    private tmp = List[of stack_frame]()\n"
-       << "    private gap as int\n"
-       << "\n"
-       << "    public def constructor():\n"
-       << "      self.gap = 0\n"
-       << "\n"
-       << "    public def reset_tmp():\n"
-       << "      self.gap = self.stack.Count\n"
-       << "      self.tmp.Clear()\n"
-       << "\n"
-       << "    public def commit_tmp():\n"
-       << "      size = self.gap + self.tmp.Count\n"
-       << "      self.stack.Capacity = size if size > self.stack.Capacity\n"
-       << "      self.stack.RemoveRange(self.gap, self.stack.Count - self.gap)\n"
-       << "      self.stack.AddRange(self.tmp)\n"
-       << "\n"
-       << "    public def push(f as stack_frame) as bool:\n"
-       << "      self.tmp.Add(f)\n"
-       << "      return true\n"
-       << "\n"
-       << "    public def pop(n as int):\n"
-       << "      if self.tmp.Count < n:\n"
-       << "        n -= self.tmp.Count\n"
-       << "        self.tmp.Clear()\n"
-       << "        self.gap -= n\n"
-       << "      else:\n"
-       << "        self.tmp.RemoveRange(self.tmp.Count - n, n)\n"
-       << "\n"
-       << "    public def top() as stack_frame:\n"
-       << "      if self.tmp.Count != 0:\n"
-       << "        return self.tmp[self.tmp.Count - 1]\n"
-       << "      else:\n"
-       << "        return self.stack[self.gap - 1]\n"
-       << "\n"
-       << "    public def my_get_arg(b as int, i as int) as stack_frame:\n"
-       << "      n = self.tmp.Count\n"
-       << "      if b - i <= n:\n"
-       << "        return self.tmp[n - (b - i)]\n"
-       << "      else:\n"
-       << "        return self.stack[self.gap - (b - n) + i]\n"
-       << "\n"
-       << "    public def clear():\n"
-       << "      self.stack.Clear()\n"
-       << "\n"
-       << "  // class Stack\n\n"
-       // delegate
-       << "  private callable state_type(token as Token, value as object) as bool\n"
-       << "  private callable gotof_type(i as int, value as object) as bool\n"
-       << "\n"
-       // constructor
-       << "  public def constructor(sa as ISemanticAction):\n"
-       << "    self.stack = Stack()\n"
-       << "    self.sa = sa\n"
-       << "    self.reset()\n"
-       << "\n\n"
-       // public member
-       << "  public def reset():\n"
-       << "    self.error = false\n"
-       << "    self.accepted = false\n"
-       << "    self.clear_stack()\n"
-       << "    self.reset_tmp_stack()\n"
-       << "    if self.push_stack("
-       << "self.state_" << table.first_state() << ", "
-       << "self.gotof_" << table.first_state()
-       << ", " << "object()):\n"
-       << "      self.commit_tmp_stack()\n"
-       << "    else:\n"
-       << "      self.sa.stack_overflow()\n"
-       << "      self.error = true\n"
-       << "\n"
-       << "  public def post(token as Token, value as object) as bool:\n"
-       << "    System.Diagnostics.Debug.Assert(not self.error)\n"
-       << "    self.reset_tmp_stack()\n"
-       << "    while stack_top().state(token, value):\n"
-       << "      pass\n"
-       << "    unless self.error:\n"
-       << "      self.commit_tmp_stack()\n"
-       << "    return self.accepted\n"
-       << "\n"
-       << "  public def accept(ref v as object) as bool:\n"
-       << "    System.Diagnostics.Debug.Assert(self.accepted)\n"
-       << "    if self.error:\n"
-       << "      v = object()\n"
-       << "      return false\n"
-       << "    v = self.accepted_value\n"
-       << "    return true\n"
-       << "\n"
-       << "  public def Error() as bool:\n"
-       << "    return self.error\n"
-       << "\n"
-       // private member
-       << "  private sa as ISemanticAction\n"
-       << "  private stack as Stack\n"
-       << "  private accepted as bool\n"
-       << "  private error as bool\n"
-       << "  private accepted_value as object\n"
-       << "\n"
-       << "  private def push_stack(s as state_type, g as gotof_type, v as object) as bool:\n"
-       << "    f = self.stack.push(stack_frame(s, g, v))\n"
-       << "    System.Diagnostics.Debug.Assert(not self.error)\n"
-       << "    unless f:\n"
-       << "      self.error = true\n"
-       << "      self.sa.stack_overflow()\n"
-       << "    return f\n"
-       << "\n"
-       << "  private def pop_stack(n as int):\n"
-       << "    self.stack.pop(n)\n"
-       << "\n"
-       << "  private def stack_top() as stack_frame:\n"
-       << "    return self.stack.top()\n"
-       << "\n"
-       << "  private def my_get_arg(b as int, i as int) as object:\n"
-       << "    return stack.my_get_arg(b, i).value\n"
-       << "\n"
-       << "  private def clear_stack():\n"
-       << "    self.stack.clear()\n"
-       << "\n"
-       << "  private def reset_tmp_stack():\n"
-       << "    self.stack.reset_tmp()\n"
-       << "\n"
-       << "  private def commit_tmp_stack():\n"
-       << "    self.stack.commit_tmp()\n"
-       << "\n"
-       ;
-        
+    stencil(
+        os, R"(
+${access_modifier}class Parser ():
+  // stack_frame clas
+  private class stack_frame ():
+    public state as state_type
+    public gotof as gotof_type
+    public value as object
+
+    public def constructor(s as state_type, g as gotof_type, v as object):
+      state = s
+      gotof = g
+      value = v
+
+  // Stack class
+  private class Stack ():
+    private stack = List[of stack_frame]()
+    private tmp = List[of stack_frame]()
+    private gap as int
+
+    public def constructor():
+      self.gap = 0
+
+    public def reset_tmp():
+      self.gap = self.stack.Count
+      self.tmp.Clear()
+
+    public def commit_tmp():
+      size = self.gap + self.tmp.Count
+      self.stack.Capacity = size if size > self.stack.Capacity
+      self.stack.RemoveRange(self.gap, self.stack.Count - self.gap)
+      self.stack.AddRange(self.tmp)
+
+    public def push(f as stack_frame) as bool:
+      self.tmp.Add(f)
+      return true
+
+    public def pop(n as int):
+      if self.tmp.Count < n:
+        n -= self.tmp.Count
+        self.tmp.Clear()
+        self.gap -= n
+      else:
+        self.tmp.RemoveRange(self.tmp.Count - n, n)
+
+    public def top() as stack_frame:
+      if self.tmp.Count != 0:
+        return self.tmp[self.tmp.Count - 1]
+      else:
+        return self.stack[self.gap - 1]
+
+    public def my_get_arg(b as int, i as int) as stack_frame:
+      n = self.tmp.Count
+      if b - i <= n:
+        return self.tmp[n - (b - i)]
+      else:
+        return self.stack[self.gap - (b - n) + i]
+
+    public def clear():
+      self.stack.Clear()
+
+  // delegate
+  private callable state_type(token as Token, value as object) as bool
+  private callable gotof_type(i as int, value as object) as bool
+
+  public def constructor(sa as ISemanticAction):
+    self.stack = Stack()
+    self.sa = sa
+    self.reset()
+
+  public def reset():
+    self.error = false
+    self.accepted = false
+    self.clear_stack()
+    self.reset_tmp_stack()
+    if self.push_stack(self.state_${first_state}, self.gotof_${first_state}, object()):
+      self.commit_tmp_stack()
+    else:
+      self.sa.stack_overflow()
+      self.error = true
+
+  public def post(token as Token, value as object) as bool:
+    System.Diagnostics.Debug.Assert(not self.error)
+    self.reset_tmp_stack()
+    while stack_top().state(token, value):
+      pass
+    unless self.error:
+      self.commit_tmp_stack()
+    return self.accepted
+
+  public def accept(ref v as object) as bool:
+    System.Diagnostics.Debug.Assert(self.accepted)
+    if self.error:
+      v = object()
+      return false
+    v = self.accepted_value
+    return true
+
+  public def Error() as bool:
+    return self.error
+
+  // private member
+  private sa as ISemanticAction
+  private stack as Stack
+  private accepted as bool
+  private error as bool
+  private accepted_value as object
+
+  private def push_stack(s as state_type, g as gotof_type, v as object) as bool:
+    f = self.stack.push(stack_frame(s, g, v))
+    System.Diagnostics.Debug.Assert(not self.error)
+    unless f:
+      self.error = true
+      self.sa.stack_overflow()
+    return f
+
+  private def pop_stack(n as int):
+    self.stack.pop(n)
+
+  private def stack_top() as stack_frame:
+    return self.stack.top()
+
+  private def my_get_arg(b as int, i as int) as object:
+    return stack.my_get_arg(b, i).value
+
+  private def clear_stack():
+    self.stack.clear()
+
+  private def reset_tmp_stack():
+    self.stack.reset_tmp()
+
+  private def commit_tmp_stack():
+    self.stack.commit_tmp()
+
+)",
+        {"access_modifier", options.access_modifier},
+        {"first_state", table.first_state()});
+
     // states handler
     for (tgt::parsing_table::states_type::const_iterator i = table.states().begin(); i != table.states().end(); ++i) {
         const tgt::parsing_table::state& s = *i;
-
         // gotof header
-        os << "  def gotof_" << s.no << "(nonterminal_index as int, v as object) as bool:\n";
+        stencil(
+            os, R"(
+  def gotof_${num}(nonterminal_index as int, v as object) as bool:
+)",
+            {"num", s.no});
         // gotof dispatcher
         std::stringstream ss;
         //ss << "			switch(nonterminal_index)\n"
@@ -309,63 +300,78 @@ $${tokens}
                 (*i).goto_table.find(rule.left());
 
             if (k != (*i).goto_table.end()) {
-                if (first) {
-                    ss << "    if nonterminal_index == " << nonterminal_index << ":\n";
-                    first = false;
-                } else {
-                    ss << "    elif nonterminal_index == " << nonterminal_index << ":\n";
-                }
-                ss << "      return push_stack(self.state_" << (*k).second
-                    << ", self.gotof_" << (*k).second
-                    << ", v)\n";
+                stencil(
+                    ss, R"(
+    ${if} nonterminal_index == ${nonterminal_index}:
+)",
+                    {"if", (first)? "if" : "elif"},
+                    {"nonterminal_index", nonterminal_index});
+                first = false;
+                stencil(
+                    ss, "      return push_stack(self.state_${next_state}, self.gotof_${next_state}, v)\n",
+                    {"next_state", (*k).second});
                 output_switch = true;
                 generated.insert( nonterminal_index );
             }
         }
-        ss << "    else:\n"
-           << "      System.Diagnostics.Debug.Assert(false)\n"
-           << "      return false\n"
-           << "\n";
+        stencil(
+            ss, R"(
+    else:
+      System.Diagnostics.Debug.Assert(false)
+      return false
+
+)");
         if (output_switch) {
             os << ss.str();
         } else {
-            os << "    System.Diagnostics.Debug.Assert(false)\n"
-               << "    return true\n";
+            stencil(
+                os, R"(
+    System.Diagnostics.Debug.Assert(false)
+    return true
+
+)");
         }
-        // gotof footer
-        os << "\n";
 
         // state header
-        os << "  def state_" << s.no << "(token as Token, value as object) as bool:\n";
+        stencil(
+            os, R"(
+  def state_${num}(token as Token, value as object) as bool:
+)",
+            {"num", s.no});
 
         // dispatcher header
         //os << "			switch(token)\n"
         //   << "			{\n";
-
         // action table
         first = true;
         int ridx = 0;
         for (tgt::parsing_table::state::action_table_type::const_iterator j = s.action_table.begin(); j != s.action_table.end(); ++j) {
             // action header 
-            if (first) {
-                os << "    if token == Token." << options.token_prefix << tokens[(*j).first] << ":\n";
-                first = false;
-            } else {
-                os << "    elif token == Token." << options.token_prefix << tokens[(*j).first] << ":\n";
-            }
+            stencil(
+                os, R"(
+    ${if} token == Token.${token_prefix}${token}:
+)",
+                {"if", (first)? "if" : "elif"},
+                {"token_prefix", options.token_prefix},
+                {"token", tokens[(*j).first]});
+            first = false;
             // action
             const tgt::parsing_table::action* a = &(*j).second;
             switch( a->type ) {
             case zw::gr::action_shift:
-                os << "      // shift\n"
-                   << "      push_stack( "
-                   << "self.state_" << a->dest_index << ", "
-                   << "self.gotof_" << a->dest_index << ", "
-                   << "value)\n"
-                   << "      return false;\n";
+                stencil(
+                    os, R"(
+      // shift
+      push_stack(self.state_${dest_index}, self.gotof_${dest_index}, value)
+      return false
+)",
+                    {"dest_index", a->dest_index});
                 break;
             case zw::gr::action_reduce:
-                os << "      // reduce\n";
+                stencil(
+                    os, R"(
+      // reduce
+)");
                 {
                     size_t base = a->rule.right().size();
 
@@ -383,41 +389,74 @@ $${tokens}
                         // automatic argument conversion
                         for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
                             const SemanticAction::Argument& arg = sa.args[l];
-                            os << "      arg" << l
-                               << " = my_get_arg(" << base
-                               << ", " << arg.source_index << ") cast " << arg.type.name << "\n";
+                            stencil(
+                                os, R"(
+      arg${idx} = my_get_arg(${base}, ${source}) cast ${type}
+)",
+                                {"idx", l},
+                                {"base", base},
+                                {"source", arg.source_index},
+                                {"type", arg.type.name});
                         }
 
                         // semantic action
-                        os << "      r" << ridx << " as " << (*nonterminal_types.find( rule.left().name() )).second.name << "\n";
-                        os << "      self.sa." << sa.name << "(r" << ridx;
-                        for (size_t l = 0; l < sa.args.size(); l++) {
-                            os << ", arg" << l;
-                        }
-                        os << ")\n";
+                        stencil(
+                            os, R"(
+      r${ridx} as ${type}
+      self.sa.${sa_name}(r${ridx}$${args} )
+)",
+                            {"ridx", ridx},
+                            {"type", (*nonterminal_types.find( rule.left().name() )).second.name},
+                            {"sa_name", sa.name},
+                            {"args",
+                                [&](std::ostream& os) {
+                                    for (size_t l = 0; l < sa.args.size(); l++) {
+                                        stencil(
+                                            os, R"(, arg${idx})",
+                                            {"idx", l});
+                                    }
+                                    }
+                                });
 
                         // automatic return value conversion
-                        os << "      v = r" << ridx << " cast object\n";
-                        os << "      pop_stack(" << base << ")\n";
-                        os << "      return stack_top().gotof(" << nonterminal_index << ", v)\n";
+                        stencil(
+                            os, R"(
+      v = r${ridx} cast object
+      pop_stack(${base})
+      return stack_top().gotof(${nonterminal_index}, v)
+)",
+                            {"ridx", ridx},
+                            {"base", base},
+                            {"nonterminal_index", nonterminal_index});
                     } else {
-                        os << "      // run_semantic_action();\n";
-                        os << "      pop_stack(" << base << ")\n";
-                        os << "      return stack_top().gotof(" << nonterminal_index << ", object())\n";
+                        stencil(
+                            os, R"(
+      // run_semantic_action()
+      pop_stack(${base})
+      return stack_top().gotof(${nonterminal_index}, object())
+)",
+                            {"base", base},
+                            {"nonterminal_index", nonterminal_index});
                     }
                 }
                 break;
             case zw::gr::action_accept:
-                os << "      // accept\n";
-                os << "      // run_semantic_action();\n";
-                os << "      self.accepted = true\n";
-                os << "      self.accepted_value = my_get_arg(1, 0)\n"; // implicit root
-                os << "      return false\n";
+                stencil(
+                    os, R"(
+      // accept
+      // run_semantic_action()
+      self.accepted = true
+      self.accepted_value = my_get_arg(1, 0) // implicit root
+      return false
+)");
                 break;
             case zw::gr::action_error:
-                os << "      self.sa.syntax_error()\n";
-                os << "      self.error = true\n"; 
-                os << "      return false\n";
+                stencil(
+                    os, R"(
+      self.sa.syntax_error()
+      self.error = true
+      return false
+)");
                 break;
             }
 
@@ -426,16 +465,20 @@ $${tokens}
         }
 
         // dispatcher footer
-        os << "    else:\n";
-        os << "      self.sa.syntax_error()\n";
-        os << "      self.error = true\n";
-        os << "      return false\n";
-        // state footer
-        os << "\n";
+        stencil(
+            os, R"(
+    else:
+      self.sa.syntax_error()
+      self.error = true
+      return false
+
+)");
     }
 
-    os << "// class Parser\n\n";
-        
+    stencil(
+        os, R"(
+// class Parser)");
+
     // namespace footer
     //os << "} // namespace " << options.namespace_name;
 

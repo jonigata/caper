@@ -20,6 +20,7 @@ using std::exit;
 #include "caper_generate_csharp.hpp"
 #include "caper_generate_d.hpp"
 #include "caper_generate_java.hpp"
+#include "caper_generate_boo.hpp"
 #include "caper_generate_glr_js.hpp"
 #include "caper_generate_glr_rb.hpp"
 #include <sstream>
@@ -83,6 +84,9 @@ void get_commandline_options(
             }
             if (arg == "-rb" || arg == "-ruby" || arg == "-Ruby") {
                 cmdopt.language = "ruby";
+            }
+            if (arg == "-boo" || arg == "-BOO") {
+                cmdopt.language = "Boo";
                 continue;
             }
             if (arg == "-lalr1") {
@@ -115,7 +119,7 @@ void get_commandline_options(
     }
 
     if (state < 2) {
-        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -java] input_filename output_filename" << std::endl;
+        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -java | -boo] input_filename output_filename" << std::endl;
         exit(1);
     }
 
@@ -141,6 +145,7 @@ int main(int argc, const char** argv) {
     generators["lalr1"]["C++"]           = generate_cpp;
     generators["lalr1"]["JavaScript"]    = generate_javascript;
     generators["lalr1"]["D"]             = generate_d;
+    generators["lalr1"]["Boo"]           = generate_boo;
 
     generators["glr"]["JavaScript"]     = generate_glr_javascript;
     generators["glr"]["ruby"]           = generate_glr_ruby;
@@ -157,18 +162,18 @@ int main(int argc, const char** argv) {
         exit(1);
     }
 
-    // cpgƒXƒLƒƒƒi
+    // cpgã‚¹ã‚­ãƒ£ãƒŠ
     typedef std::istreambuf_iterator<char> is_iterator;
     is_iterator b(ifs);
     is_iterator e;
     scanner<is_iterator> s(b, e);
 
     try {
-        // cpgƒp[ƒT
+        // cpgãƒ‘ãƒ¼ã‚µ
         cpg::parser p;
         make_cpg_parser(p);
 
-        // cpgƒp[ƒX
+        // cpgãƒ‘ãƒ¼ã‚¹
         Token token = token_empty;
         while (token != token_eof) {
             value_type v;
@@ -182,7 +187,7 @@ int main(int argc, const char** argv) {
         }
 
 
-        // Šeíî•ñ‚ÌûW
+        // å„ç¨®æƒ…å ±ã®åé›†
         GenerateOptions options;
         options.debug_parser = cmdopt.debug_parser;
 
@@ -194,7 +199,7 @@ int main(int argc, const char** argv) {
             nonterminal_types,
             p.accept_value());
 
-        // ‘ÎÛ•¶–@‚Ì\•¶ƒe[ƒuƒ‹‚Ìì¬
+        // å¯¾è±¡æ–‡æ³•ã®æ§‹æ–‡ãƒ†ãƒ¼ãƒ–ãƒ«ã®ä½œæˆ
         tgt::parsing_table table;
         std::map<std::string, size_t> token_id_map;
         action_map_type actions;
@@ -206,7 +211,7 @@ int main(int argc, const char** argv) {
             terminal_types,
             nonterminal_types);
 
-        // ƒ^[ƒQƒbƒgƒp[ƒT‚Ìo—Í
+        // ã‚¿ãƒ¼ã‚²ãƒƒãƒˆãƒ‘ãƒ¼ã‚µã®å‡ºåŠ›
         std::vector<std::string> tokens(token_id_map.size());
         for (const auto& x: token_id_map) {
             tokens[x.second] = x.first;

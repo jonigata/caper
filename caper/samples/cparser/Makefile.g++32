@@ -1,0 +1,45 @@
+# Makefile.g++32 --- Makefile for 32-bit GNU C++
+# Usage: make -f Makefile.g++32
+
+DOTOBJ = .o
+DOTEXE = .exe
+
+CXX = g++
+CAPER = ../../../caper$(DOTEXE)
+
+DEFS = -static -m32 -DJAPAN -ansi -std=c++11
+DEFS2 = 
+
+#OPTIONS = -O9 -Ofast -DNDEBUG $(DEFS) $(DEFS2) -Wall -pedantic
+OPTIONS = -O0 -D_DEBUG $(DEFS) $(DEFS2) -Wall -pedantic
+
+CXXFLAGS = -std=c++0x
+
+OBJS = \
+	Main$(DOTOBJ) \
+
+CR_HEADERS = \
+	stdafx.h \
+	Main.h \
+
+CPARSER_HEADER = \
+	CParseHeader.h \
+	CScanner.h \
+	CParserAST.h \
+	CParserSite.h \
+	CParser.h \
+	TypeSystem.h
+
+all: cparser$(DOTEXE)
+
+cparser$(DOTEXE): $(OBJS)
+	$(CXX) -o cparser$(DOTEXE) $(CXXFLAGS) $(OPTIONS) $(OBJS)
+
+Main$(DOTOBJ): $(CR_HEADERS) $(CPARSER_HEADER) Main.cpp
+	$(CXX) -c $(CXXFLAGS) $(OPTIONS) -o Main$(DOTOBJ) Main.cpp
+CParser.h: $(CAPER) CParser.cpg
+	$(CAPER) CParser.cpg CParser.h
+
+clean:
+	rm -f *$(DOTOBJ)
+	rm -f CParser.h

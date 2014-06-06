@@ -29,8 +29,12 @@ void stencil_output(
             bool chomp = false;
             c = ss.get();
             if (c == '$') {
-                chomp = true;
                 c = ss.get();
+                if (c == '$') {
+                    os << char(c);
+                    continue;
+                }
+                chomp = true;
             }
             if (c != '{') {
                 throw std::runtime_error(

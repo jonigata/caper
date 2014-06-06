@@ -937,7 +937,7 @@ template <class Token, class Traits>
 struct null_reporter {
     typedef rule<Token, Traits> rule_type;
 
-    void operator()(const rule_type&, const rule_type& y) {
+    void operator()(const rule_type&, const rule_type&) {
         // do nothing
     }
 };

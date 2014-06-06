@@ -140,10 +140,7 @@ struct TagDeclarator : public boost::static_visitor<void> {
         void operator()( const TypeDef& x ) const
         {
                 std::string tagname = x.name.s;
-                for( std::string::iterator i = tagname.begin() ; i != tagname.end() ; ++i ) {
-                        *i = toupper( *i );
-                }
-                os << "    TAG_" << tagname << " = " << context.tagid++ << ",\n";
+                os << "    " << tagname << " = " << context.tagid++ << ",\n";
         }
 };
 
@@ -189,9 +186,6 @@ struct StructDeclarator : public boost::static_visitor<void> {
                 }
 
                 std::string tagname = x.name.s;
-                for( std::string::iterator i = tagname.begin() ; i != tagname.end() ; ++i ) {
-                        *i = toupper( *i );
-                }
 
                 switch( x.right.which() ) {
                 case 1: // Scalor
@@ -200,7 +194,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << inh << " {\n";
                         os << context.class_header;
                         os << "public:\n";
-                        os << "    int tag(){ return (int)TAG_" << tagname << "; }\n\n";
+                        os << "    Tag tag() { return Tag::" << tagname << "; }\n\n";
 
                         os << "public:\n";
                         if( find_in( context.atoms, s.type.s ) ) {
@@ -213,11 +207,11 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "public:\n";
                         os << "    " << x.name.s << "() {}\n";
                         if( context.atoms.find( s.type.s ) != context.atoms.end() ) {
-                                os << "    " << x.name.s << "( const " << s.type.s << "& x )\n"
-                                   << "        : " << s.name.s << "( x ) {}\n";
+                                os << "    " << x.name.s << "(const " << s.type.s << "& x)\n"
+                                   << "        : " << s.name.s << "(x) {}\n";
                         } else {
-                                os << "    " << x.name.s << "( " << pointer_maker( s.type.s ) << " x )\n"
-                                   << "        : " << s.name.s << "( x ) {}\n";
+                                os << "    " << x.name.s << "(" << pointer_maker( s.type.s ) << " x)\n"
+                                   << "        : " << s.name.s << "(x) {}\n";
                         }
                         os << context.class_footer;
                         os << "};\n\n";
@@ -229,13 +223,13 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << inh << " {\n";
                         os << context.class_header;
                         os << "public:\n";
-                        os << "    int tag(){ return (int)TAG_" << tagname << "; }\n\n";
+                        os << "    Tag tag() { return Tag::" << tagname << "; }\n\n";
 
                         os << "public:\n";
                         if( find_in( context.atoms, s.etype.s ) ) {
-                                os << "    std::vector< " << s.etype.s << " > " << s.name.s << ";\n\n";
+                                os << "    std::vector<" << s.etype.s << "> " << s.name.s << ";\n\n";
                         } else if( find_in( context.types, s.etype.s ) ) {
-                                os << "    std::vector< " << pointer_maker( s.etype.s ) << " > "
+                                os << "    std::vector<" << pointer_maker( s.etype.s ) << "> "
                                    << s.name.s << ";\n\n";
                         } else {
                                 throw undefined_type( s.etype.s );
@@ -243,23 +237,23 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "public:\n";
                         os << "    " << x.name.s << "() {}\n";
                         if( find_in( context.atoms, s.etype.s ) ) {
-                                os << "    " << x.name.s << "( const " << s.etype.s << "& x ) { "
-                                   << s.name.s << ".push_back( x ); }\n";
+                                os << "    " << x.name.s << "(const " << s.etype.s << "& x) { "
+                                   << s.name.s << ".push_back(x); }\n";
                         } else if( find_in( context.types, s.etype.s ) ) {
-                                os << "    " << x.name.s << "( " << pointer_maker( s.etype.s ) << " x ) { "
-                                   << s.name.s << ".push_back( x ); }\n";
+                                os << "    " << x.name.s << "(" << pointer_maker( s.etype.s ) << " x) { "
+                                   << s.name.s << ".push_back(x); }\n";
                         } else {
                                 throw undefined_type( s.etype.s );
                         }
                         
                         if( find_in( context.atoms, s.etype.s ) ) {
-                                os << "    " << x.name.s << "( const std::vector< "
-                                   << s.etype.s << " >& x )\n"
-                                   << "        : " << s.name.s << "( x ) {}\n";
+                                os << "    " << x.name.s << "(const std::vector< "
+                                   << s.etype.s << " >& x)\n"
+                                   << "        : " << s.name.s << "(x) {}\n";
                         } else {
-                                os << "    " << x.name.s << "( const std::vector< "
-                                   << pointer_maker( s.etype.s ) << " >& x )\n"
-                                   << "        : " << s.name.s << "( x ) {}\n";
+                                os << "    " << x.name.s << "(const std::vector<"
+                                   << pointer_maker( s.etype.s ) << ">& x)\n"
+                                   << "        : " << s.name.s << "(x) {}\n";
                         }
                         os << context.class_footer;
                         os << "};\n\n";
@@ -271,7 +265,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << inh << " {\n";
                         os << context.class_header;
                         os << "public:\n";
-                        os << "    int tag(){ return (int)TAG_" << tagname << "; }\n\n";
+                        os << "    Tag tag() { return Tag::" << tagname << "; }\n\n";
                         
                         if( inh == "" ) {
                                 os << "    ~" << x.name.s << "() {}\n";
@@ -286,7 +280,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << inh << " {\n";
                         os << context.class_header;
                         os << "public:\n";
-                        os << "    int tag(){ return (int)TAG_" << tagname << "; }\n\n";
+                        os << "    Tag tag() { return Tag::" << tagname << "; }\n\n";
 
                         // メンバ宣言
                         std::vector< std::pair< std::string, std::string > > members;                        
@@ -315,12 +309,12 @@ struct StructDeclarator : public boost::static_visitor<void> {
                                         if( find_in( context.atoms, t.etype.s ) ) {
                                                 members.push_back(
                                                         make_pair(
-                                                                "std::vector< " + t.etype.s + " >",
+                                                                "std::vector<" + t.etype.s + ">",
                                                                 t.name.s ) );
                                         } else if( find_in( context.types, t.etype.s ) ) {
                                                 members.push_back(
                                                         make_pair(
-                                                                "std::vector< " + pointer_maker( t.etype.s ) + " >",
+                                                                "std::vector<" + pointer_maker( t.etype.s ) + ">",
                                                                 t.name.s ) );
                                         } else {
                                                 throw undefined_type( t.etype.s );
@@ -351,7 +345,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         // コンストラクタ宣言
                         os << "\n";
                         os << "    " << x.name.s << "() {}\n";
-                        os << "    " << x.name.s << "( ";
+                        os << "    " << x.name.s << "(";
                         n = 0;
                         for( std::vector< TupleItem >::const_iterator i = s.elements.begin() ;
                              i != s.elements.end() ;
@@ -387,7 +381,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                                 }
                                 n++;
                         }
-                        os << " )\n"
+                        os << ")\n"
                            << "        : ";
 
                         // メンバ初期化宣言
@@ -401,13 +395,13 @@ struct StructDeclarator : public boost::static_visitor<void> {
                                 case 0:
                                 {
                                         Scalor t = boost::get<Scalor>( ti );
-                                        os << t.name.s << "( a" << n << " )";
+                                        os << t.name.s << "(a" << n << ")";
                                         break;
                                 }
                                 case 1:
                                 {
                                         List t = boost::get<List>( ti );
-                                        os << t.name.s << "( a" << n << " )";
+                                        os << t.name.s << "(a" << n << ")";
                                         break;
                                 }
                                 }
@@ -452,7 +446,8 @@ void generate_cpp(
         InheritanceCollector ic( context );
         boost::apply_visitor( ic, v.data );
 
-        os << "#include <vector>\n\n";
+        os << "#include <vector>\n";
+        os << "#include <memory>\n\n";
 
         os << context.module_header;
 
@@ -464,7 +459,7 @@ void generate_cpp(
 
         os << "////////////////////////////////////////////////////////////////\n"
            << "// tag declarations\n";
-        os << "enum Tag {\n";
+        os << "enum class Tag {\n";
         context.tagid = 1;
         TagDeclarator td( os, context );
         boost::apply_visitor( td, v.data );
@@ -484,7 +479,7 @@ void generate_cpp(
 struct shared_ptr_maker {
         std::string operator()( const std::string& x ) const
         {
-                return "boost::shared_ptr< " + x + " >";
+                return "std::shared_ptr<" + x + ">";
         }
 };
 

@@ -23,8 +23,7 @@ void make_action_case(
         case zw::gr::action_shift:
             stencil_indent(
                 os, indent, R"(
-                // shift
-                shifters.push([this, ${dest_index}, tnode]);
+                    { method: 'shift', target: ${dest_index} },
 )",
                 {"dest_index", action_entry.dest_index}
                 );
@@ -32,11 +31,17 @@ void make_action_case(
         case zw::gr::action_reduce: {
             stencil_indent(
                 os, indent, R"(
-                // reduce
-                this.popStack(
-                    ${base}, Nonterminal.${nonterminal}, reducers, null, age);
+                    {
+                        method: 'reduce',
+                        production: {
+                            left: Nonterminal.${nonterminal},
+                            right: {
+                                length: ${right_length}
+                            }
+                        }
+                    },
 )",
-                {"base", action_entry.rule.right().size()},
+                {"right_length", action_entry.rule.right().size()},
                 {"nonterminal", action_entry.rule.left().name()}
                 );
         }
@@ -44,17 +49,14 @@ void make_action_case(
         case zw::gr::action_accept:
             stencil_indent(
                 os, indent, R"(
-                // accept
-                accepts.push(this);
+                    { method: 'accept' },
 )"
                 );
             break;
         case zw::gr::action_error:
             stencil_indent(
                 os, indent, R"(
-                this.sa.syntaxError();
-                this.error = true;
-                break;
+                    { method: 'error' },
 )"
                 );
             break;
@@ -166,6 +168,8 @@ $${labels}
         ];
         return labels[t];
     };
+    exports.getNonterminalLabel = getNonterminalLabel;
+
 )",
         {"labels", [&](std::ostream& os){
                 for (const auto& nonterminal_type: nonterminal_types) {
@@ -181,202 +185,7 @@ $${labels}
     
     stencil(
         os, R"(
-
-    // data Node = TNode | NNode
-
-    var nodeIndex = 0;
-    var tNodeIndex = 0;
-    function TNode(token, value) {
-        this.nodeType = 'TNode';
-        this.nodeIndex = nodeIndex++;
-        this.token = token;
-        this.value = value;
-        this.x = tNodeIndex++;
-        this.depth = 0;
-
-        this.toString = function() {
-            return getTokenLabel(this.token)+': "'+this.value+'"';
-        };
-        this.collect = function(nodes, depth) {
-            nodes[this.nodeIndex] = this;
-            if (this.depth < depth) {
-                this.depth = depth;
-            }
-        };
-    }
-
-    function NNode(nonterminal, successors) {
-        this.nodeType = 'NNode';
-        this.nodeIndex = nodeIndex++;
-        this.nonterminal = nonterminal;
-        this.successors = [successors];
-        this.depth = 0;
-
-        this.toString = function() {
-            return getNonterminalLabel(this.nonterminal);
-        };
-        this.collect = function(nodes, depth) {
-            nodes[this.nodeIndex] = this;
-            if (this.depth < depth) {
-                this.depth = depth;
-            }
-            var x = 0;
-            var n = 0;
-            for(var i = 0 ; i < this.successors.length ; i++) {
-                var successors = this.successors[i];
-                for(var j = 0 ; j < successors.length ; j++) {
-                    var node = successors[j];
-                    if (node != null) {
-                        node.collect(nodes, depth+1);
-                    }
-                    x += node.x;
-                    n++;
-                }
-            }
-            this.x = x / n;
-        };
-    }
-
-    function Cons(car, cdr) {
-        this.car = car;
-        this.cdr = cdr;
-    }
-
-    var entries = null;
-
-    var vertexIndex = 0;
-    function Vertex(stateIndex, node, prev, age) {
-        this.entry = this.getEntry(stateIndex);
-        this.node = node;
-        this.prev = [prev];
-        if (prev == null) {
-            this.x = 0;
-            this.y = 0;
-        } else {
-            this.x = age;
-            this.y = prev.rightY;
-            prev.rightY += 1;
-        }
-        this.rightY = this.y;
-        this.index = vertexIndex++;
-    }
-)"
-        );
-
-    
-    stencil(
-        os, R"(
-    Vertex.prototype = {
-        dumpAux : function() {
-            if (this.stack == null) {
-                return "";
-            } else {
-                return this.stack.prev[0].dumpAux() + ", " + (this.stack.node == null ? "null" : this.stack.node.toString());
-            }
-        },
-        dump : function() {
-            console.log(this.entry.index + ": " + this.dumpAux());
-        },
-        combinable : function(another) {
-            var xs = this;
-            var ys = another;
-            if (xs.entry.index != ys.entry.index) {
-                return false;
-            }
-            if (xs.node.nodeType == 'TNode') {
-                if (ys.node.nodeType != 'TNode' ||
-                    xs.node.token != ys.node.token) {
-                    throw "internal error";
-                }
-                return xs.node.value == ys.node.value;
-            } else {
-                if (ys.node.nodeType != 'NNode' ||
-                    xs.node.nonterminal != ys.node.nonterminal) {
-                    throw "internal error";
-                }
-                return true;
-            }
-        },
-        combine : function(another) {
-            for (var i = 0 ; i < another.prev.length ; i++) {
-                var n = another.prev[i];
-                var shouldInsert = true;
-                for (var j = 0 ; j < this.prev.length ; j++) {
-                    if (n == this.prev[j]) {
-                        shouldInsert = false;
-                        break;
-                    }
-                }
-                if (shouldInsert) {
-                    this.prev.push(n);
-                }
-            }
-
-            if (this.node.nodeType == 'NNode') {
-                var x = another.node.successors;
-                var y = this.node.successors;
-
-                for (var i = 0 ; i < x.length ; i++) {
-                    var shouldInsert = true;
-                    var s = x[i];
-                    for (var j = 0 ; j < y.length ; j++) {
-                        var t = y[j];
-                        if (s.length == t.length) {
-                            var match = true;
-                            for (var k = 0 ; k < s.length ; k++) {
-                                if (s[k] != t[k]) {
-                                    match = false;
-                                    break;
-                                }
-                            }
-                            if (match) {
-                                // already exist
-                                shouldInsert = false;
-                                break;
-                            }
-                        }
-                    }
-                    if (shouldInsert) {
-                        y.push(s);
-                    }
-                }
-            }
-        },
-        post: function(tnode, shifters, reducers, accepts, age) {
-            this.entry.state.apply(
-                this, [tnode, shifters, reducers, accepts, age]);
-        },
-        shift : function(state, node, age) {
-            return this.pushStack(state, node, age);
-        },
-        pushStack : function(stateIndex, value, age) {
-            return new Vertex(stateIndex, value, this, age);
-        },
-        popStack : function(n, nonterminal, reducers, args, age) {
-            args = new Cons(this.node, args);
-            if (n == 1) {
-                var a = [];
-                while(args != null) {
-                    a.push(args.car);
-                    args = args.cdr;
-                }
-                var nnode = new NNode(nonterminal, a);
-                for(var i = 0 ; i < this.prev.length ; i++) {
-                    var p = this.prev[i];
-                    var newStack = p.pushStack(
-                        p.entry.gotof.apply(this, [nonterminal]),
-                        nnode,
-                        age-1);
-                    reducers.push(newStack);
-                }
-                return;
-            }
-            for(var i = 0 ; i < this.prev.length ; i++) {
-                this.prev[i].popStack(
-                    n-1, nonterminal, reducers, args, age);
-            }
-        },
-
+    var Table = [
 )"
         );
 
@@ -385,20 +194,12 @@ $${labels}
         // state header
         stencil(
             os, R"(
-        state_${state_no} : function(tnode, shifters, reducers, accepts, age) {
-$${debmes:state}
-            switch(tnode.token) {
+        {
+            index: ${index},
+            state: (function(){
+                var a = {};
 )",
-            {"state_no", state.no},
-            {"debmes:state", [&](std::ostream& os){
-                    if (options.debug_parser) {
-                        stencil(
-                            os, R"(
-            console.log("state_${state_no} << " + getTokenLabel(tnode.token));
-)",
-                            {"state_no", state.no}
-                            );
-                    }}}
+            {"index", state.no}
             );
 
         // action table
@@ -412,10 +213,9 @@ $${debmes:state}
             // action header 
             stencil(
                 os, R"(
-            case ${case_tag}:
+                a[${case_tag}] = [
 )",
-                {"case_tag", case_tag},
-                {"candidates", action.entries.size()}
+                {"case_tag", case_tag}
                 );
 
             // for each fork
@@ -427,308 +227,66 @@ $${debmes:state}
             }
             stencil(
                 os, R"(
-                break;
+                    null
+                ]; // actions end
 )"
                 );
         }
 
-        // dispatcher footer / state footer
+        // state footer
         stencil(
             os, R"(
-            default:
-                break;
-            }
-        },
-
+                return a;
+            })(), // end state
 )"
             );
         
         // gotof header
         stencil(
             os, R"(
-        gotof_${state_no} : function(nonterminal) {
-)",
-            {"state_no", state.no}
+            gotof: (function(){
+                var a = {};
+)"
             );
             
         // gotof dispatcher
         std::stringstream ss;
-        stencil(
-            ss, R"(
-            switch(nonterminal) {
-)"
-            );
-        bool output_switch = false;
         for (const auto& pair: state.goto_table) {
             stencil(
-                ss, R"(
-            case Nonterminal.${nonterminal}: return ${state_index};
+                os, R"(
+                a[Nonterminal.${nonterminal}] = ${state_index};
 )",
                 {"nonterminal", pair.first.name()},
                 {"state_index", pair.second}
                 );
-            output_switch = true;
         }
 
         // gotof footer
         stencil(
-            ss, R"(
-            default:
-                console.log(getNonterminalLabel(nonterminal));
-                throw "unexpected nontermninal";
-            }
+            os, R"(
+                return a;
+            })() // end gotof
 )"
             );
-        if (output_switch) {
-            os << ss.str();
-        } else {
-            stencil(
-                os, R"(
-            throw "unexpected gotof";
-)"
-                );
-        }
         stencil(os, R"(
-        },
+        }, // end state
 
 )"
             );
     }
     stencil(os, R"(
-        getEntry : function(index) {
-            if (entries == null) {
-                entries = [
-$${entries}
-                    null
-                ];
-            }
-            return entries[index];
-        }
-    };
+        null
+    ];
+    exports.Table = Table;
 
-    function Parser(sa) {
-        this.heads = [];
-        this.heads.push(new Vertex(${first_state}, null, null, 0));
-        this.accepts = [];
-        this.error = false;
-        this.age = 1;
-    }
-    exports.Parser = Parser;
-
-    Parser.prototype = {
-        postFirst : function(token, value) {
-            function PostContext(heads) {
-                this.tnode = new TNode(token, value);
-                this.actives = heads;
-                this.shifters = [];
-            }
-            var p = new PostContext(this.heads);
-            this.heads = null;
-            return p;
-        },
-        postNext : function(context) {
-            var combine = function(src, sin, din, dout) {
-                var dst = [];
-                for (var i = 0 ; i < src.length ; i++) {
-                    var newer = sin(src[i]);
-                    var kill = false;
-                    for(var j = 0  ; j < dst.length ; j++) {
-                        var fixed = din(dst[j]);
-                        if (fixed.combinable(newer)) {
-                            // unite
-                            kill = true;
-                            fixed.combine(newer);
-                            break;
-                        }
-                    }
-                    if (!kill) {
-                        dst.push(dout(src[i]));
-                    }
-                }
-                return dst;
-            };
-
-            if (0 < context.actives.length) {
-                var reducers = [];
-                var curr = context.actives.shift();
-                curr.post(
-                    context.tnode,
-                    context.shifters, reducers, this.accepts,
-                    this.age);
-
-                context.actives = combine(
-                    reducers.concat(context.actives),
-                    function(x) { return x; },
-                    function(x) { return x; },
-                    function(x) { return x; });
-                return true;
-            } else {
-                context.shifters = combine(
-                    context.shifters,
-                    function(x) { return x[0]; },
-                    function(x) { return x[0]; },
-                    function(x) { return x; });
-                for (var i = 0 ; i < context.shifters.length ; i++) {
-                    var tuple = context.shifters[i];
-                    tuple[0] = tuple[0].shift(tuple[1], tuple[2], this.age);
-                }
-
-                this.heads = combine(
-                    context.shifters,
-                    function(x) { return x[0]; },
-                    function(x) { return x; },
-                    function(x) { return x[0]; });
-
-                this.age++;
-
-                this.accepts = combine(
-                    this.accepts,
-                    function(x) { return x; },
-                    function(x) { return x; },
-                    function(x) { return x; });
-
-                return false;
-            }
-        },
-        draw: function(drawer, context) {
-            // collect all living vertices
-            var totalSet = {};
-            var currSet = {};
-            for (var i = 0 ; i < this.accepts.length ; i++) {
-                var p = this.accepts[i];
-                currSet[p.index] = p;
-            }
-            if (context == null) {
-                for (var i = 0 ; i < this.heads.length ; i++) {
-                    var p = this.heads[i];
-                    currSet[p.index] = p;
-                }
-            } else {
-                for (var i = 0 ; i < context.actives.length ; i++) {
-                    var p = context.actives[i];
-                    currSet[p.index] = p;
-                }
-                for (var i = 0 ; i < context.shifters.length ; i++) {
-                    var p = context.shifters[i][0];
-                    currSet[p.index] = p;
-                }
-            }
-
-            while (true) {
-                var keys = Object.keys(currSet);
-                var n = keys.length;
-                if (n == 0) {
-                    break;
-                }
-                var nextSet = {};
-                for (var i = 0 ; i < n ; i++) {
-                    var key = keys[i];
-                    var p = currSet[key];
-                    totalSet[key] = p;
-                    for (var j = 0 ; j < p.prev.length ; j++) {
-                        var q = p.prev[j];
-                        if (q != null) {
-                            nextSet[q.index] = q;
-                        }
-                    }
-                }
-                currSet = nextSet;
-            }
-
-            // collect nodes
-            nodes = {};
-            for (var x in totalSet) {
-                var node = totalSet[x].node;
-                if (node != null) {
-                    node.collect(nodes, 0); // collect recusively
-                }
-            }
-
-            var keys = Object.keys(totalSet);
-            //console.log(keys.join(', '));
-
-            // Xで分類
-            var columns = [];
-            for (var i = 0 ; i < keys.length ; i++) {
-                var key = keys[i];
-                var p = totalSet[key];
-                if (columns[p.x] == null) {
-                    columns[p.x] = [];
-                }
-                columns[p.x].push(p);
-            }
-
-            // vertex描画
-            var gap = 0;
-            for (var i = 0 ; i < columns.length ; i++) {
-                if (columns[i] == null) { gap++; continue; }
-                columns[i].sort(function(a, b) { return a.index - b.index });
-
-                for (var k = 0 ; k < columns[i].length ; k++) {
-                    var p = columns[i][k];
-                    p.y = k;
-
-                    drawer.drawVertex(p.index, p.entry.index, p.x - gap, p.y);
-
-                    for (var j = 0 ; j < p.prev.length ; j++) {
-                        var q = p.prev[j];
-                        if (q != null) {
-                            drawer.drawVertexEdge(p.index, p.x, p.y,
-                                                  q.index, q.x, q.y);
-                        }
-                    }
-
-                }
-            }
-
-            // node描画
-            var keys = Object.keys(nodes);
-            for (var i = 0 ; i < keys.length ; i++) {
-                var p = nodes[keys[i]];
-                drawer.drawNode(p.nodeIndex, p.x, p.depth, p.toString());
-            }
-            for (var i = 0 ; i < keys.length ; i++) {
-                var p = nodes[keys[i]];
-                if (p.successors != null) {
-                    for (var j = 0 ; j < p.successors.length ; j++) {
-                        for (var k = 0 ; k < p.successors[j].length ; k++) {
-                            var q = p.successors[j][k];
-                            drawer.drawNodeEdge(p.nodeIndex, q.nodeIndex);
-                        }
-                    }
-                }
-            }
-
-            // vertex->node描画
-            for (var i = 0 ; i < columns.length ; i++) {
-                if (columns[i] == null) { continue; }
-
-                for (var k = 0 ; k < columns[i].length ; k++) {
-                    var p = columns[i][k];
-                    if (p.node != null) {
-                        drawer.drawVertexToNodeEdge(p.index, p.node.nodeIndex);
-                    }
-                }
-            }
-
-        }
-    };
+    exports.firstState = ${first_state};
 
     return exports;
 })();
 
+exports.${namespace_name} = ${namespace_name};
 )",
             {"first_state", table.first_state()},
-            {"entries", [&](std::ostream& os) {
-                    for (int i = 0 ; i < table.states().size() ; i++) {
-                        stencil(
-                            os, R"(
-        { state: this.state_${i}, gotof: this.gotof_${i}, index: ${i} },
-)",
-                            
-                            {"i", i}
-                            );
-                    }                    
-                }}
-    );
+            {"namespace_name", options.namespace_name}
+        );
 }

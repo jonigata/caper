@@ -109,8 +109,8 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << " {\n";
                         os << "    " << s.type.s << " " << s.name.s << ";\n\n";
                         os << "    " << x.name.s << "() {}\n";
-                        os << "    " << x.name.s << "( const " << s.type.s << "& x )\n"
-                           << "        : " << s.name.s << "( x ) {}\n";
+                        os << "    " << x.name.s << "(const " << s.type.s << "& x)\n"
+                           << "        : " << s.name.s << "(x) {}\n";
                         os << "};\n\n";
                         break;
                 }
@@ -120,8 +120,8 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         os << "struct " << x.name.s << " {\n";
                         os << "    std::vector< " << s.etype.s << " > items;\n\n";
                         os << "    " << x.name.s << "() {}\n";
-                        os << "    " << x.name.s << "( const std::vector< " << s.etype.s << " >& x )\n"
-                           << "        : " << s.name.s << "( x ) {}\n";
+                        os << "    " << x.name.s << "(const std::vector<" << s.etype.s << ">& x)\n"
+                           << "        : " << s.name.s << "(x) {}\n";
                         os << "};\n\n";
                         break;
                 }
@@ -148,7 +148,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         
                         os << "\n";
                         os << "    " << x.name.s << "() {}\n";
-                        os << "    " << x.name.s << "( ";
+                        os << "    " << x.name.s << "(";
                         n = 0;
                         for( std::vector< TupleItem >::const_iterator i = s.elements.begin() ;
                              i != s.elements.end() ;
@@ -164,7 +164,7 @@ struct StructDeclarator : public boost::static_visitor<void> {
                                 }
                                 n++;
                         }
-                        os << " )\n"
+                        os << ")\n"
                            << "        : ";
                         n = 0;
                         for( std::vector< TupleItem >::const_iterator i = s.elements.begin() ;

@@ -68,21 +68,23 @@ $(function(){ // on dom ready
 
     ////////////////////////////////////////////////////////////////
     // parser
+    Caper.import(Foo);
+
     var data = [
-        [caper_parser.Token.token_n, "I"],
-        [caper_parser.Token.token_v, "saw"],
-        [caper_parser.Token.token_det, "a"],
-        [caper_parser.Token.token_n, "man"],
-        [caper_parser.Token.token_prep, "in"],
-        [caper_parser.Token.token_det, "the"],
-        [caper_parser.Token.token_n, "park"],
-        [caper_parser.Token.token_prep, "with"],
-        [caper_parser.Token.token_det, "a"],
-        [caper_parser.Token.token_n, "scope"],
-        [caper_parser.Token.token_eof, "$"]
+        [Foo.Token.token_n, "I"],
+        [Foo.Token.token_v, "saw"],
+        [Foo.Token.token_det, "a"],
+        [Foo.Token.token_n, "man"],
+        [Foo.Token.token_prep, "in"],
+        [Foo.Token.token_det, "the"],
+        [Foo.Token.token_n, "park"],
+        [Foo.Token.token_prep, "with"],
+        [Foo.Token.token_det, "a"],
+        [Foo.Token.token_n, "scope"],
+        [Foo.Token.token_eof, "$"]
     ];
     var processed = [];
-    var parser = new caper_parser.Parser(null);
+    var parser = new Caper.Parser(null);
 
     var context = null;
     $('#step-button').click(
@@ -99,7 +101,7 @@ $(function(){ // on dom ready
                 $('#status').text('');
             }
             if(parser.postNext(context)) {
-                if (0 < context.actives.length) {
+                if (0 < context.A.length) {
                     $('#status').text('reduced');
                 } else {
                     $('#status').text('no more reduce');
@@ -111,7 +113,7 @@ $(function(){ // on dom ready
             window.cy.remove('*');
             parser.draw({
                 drawVertex : function(i, t, x, y) {
-                    window.cy.add({ group: "nodes", data: { id: 'vertex'+i, name: t, faveColor: '#D88' }, position: {x: 100 + x * 100, y: 100 + y * 50} });
+                    window.cy.add({ group: "nodes", data: { id: 'vertex'+i, name: t, faveColor: '#D88' }, position: {x: 100 + x * 50, y: 100 + y * 50} });
                 },
                 drawVertexEdge : function(i0, x0, y0, i1, x1, y1) {
                     window.cy.add({ group: "edges", data: { source: 'vertex'+i0, target: 'vertex'+i1, faveColor: '#D88' } });

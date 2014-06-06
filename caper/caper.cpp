@@ -21,6 +21,7 @@ using std::exit;
 #include "caper_generate_d.hpp"
 #include "caper_generate_java.hpp"
 #include "caper_generate_glr_js.hpp"
+#include "caper_generate_glr_rb.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -59,7 +60,7 @@ void get_commandline_options(
             }
             if (arg == "-cs" || arg == "-CS" ||
                 arg == "-Cs" || arg == "-C#" ||
-                arg == "-CSharp" || arg == "-csharp#" ||
+                arg == "-CSharp" || arg == "-csharp" ||
                 arg == "-c#") {
                 cmdopt.language = "C#";
                 continue;
@@ -78,6 +79,10 @@ void get_commandline_options(
                 arg == "-JavaScript" ||
                 arg == "-JAVASCRIPT") {
                 cmdopt.language = "JavaScript";
+                continue;
+            }
+            if (arg == "-rb" || arg == "-ruby" || arg == "-Ruby") {
+                cmdopt.language = "ruby";
                 continue;
             }
             if (arg == "-lalr1") {
@@ -138,6 +143,7 @@ int main(int argc, const char** argv) {
     generators["lalr1"]["D"]             = generate_d;
 
     generators["glr"]["JavaScript"]     = generate_glr_javascript;
+    generators["glr"]["ruby"]           = generate_glr_ruby;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {

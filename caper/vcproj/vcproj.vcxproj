@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug Static|Win32">
       <Configuration>Debug Static</Configuration>
@@ -28,23 +28,23 @@
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release Static|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug Static|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -100,6 +100,7 @@
       </DataExecutionPrevention>
       <TargetMachine>MachineX86</TargetMachine>
       <AdditionalLibraryDirectories>C:\local\boost_1_55_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug Static|Win32'">
@@ -186,11 +187,14 @@
   <ItemGroup>
     <ClCompile Include="..\caper.cpp" />
     <ClCompile Include="..\caper_cpg.cpp" />
+    <ClCompile Include="..\caper_generate_boo.cpp" />
     <ClCompile Include="..\caper_generate_cpp.cpp" />
     <ClCompile Include="..\caper_generate_csharp.cpp" />
     <ClCompile Include="..\caper_generate_d.cpp" />
     <ClCompile Include="..\caper_generate_java.cpp" />
     <ClCompile Include="..\caper_generate_js.cpp" />
+    <ClCompile Include="..\caper_generate_ruby.cpp" />
+    <ClCompile Include="..\caper_stencil.cpp" />
     <ClCompile Include="..\caper_tgt.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -205,12 +209,15 @@
     <ClInclude Include="..\caper_ast.hpp" />
     <ClInclude Include="..\caper_cpg.hpp" />
     <ClInclude Include="..\caper_error.hpp" />
+    <ClInclude Include="..\caper_generate_boo.hpp" />
     <ClInclude Include="..\caper_generate_cpp.hpp" />
     <ClInclude Include="..\caper_generate_csharp.hpp" />
     <ClInclude Include="..\caper_generate_d.hpp" />
     <ClInclude Include="..\caper_generate_java.hpp" />
     <ClInclude Include="..\caper_generate_js.hpp" />
+    <ClInclude Include="..\caper_generate_ruby.hpp" />
     <ClInclude Include="..\caper_scanner.hpp" />
+    <ClInclude Include="..\caper_stencil.hpp" />
     <ClInclude Include="..\caper_tgt.hpp" />
     <ClInclude Include="..\fastlalr.hpp" />
     <ClInclude Include="..\grammar.hpp" />

@@ -1,6 +1,7 @@
+# Makefile for MinGW-builds
 CXX = g++
-CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -IC:\local\boost_1_55_0
-#CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -IC:\local\boost_1_55_0 -pg
+CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_55_0
+#CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_55_0 -pg
 TARGET = caper
 OBJS = \
 	caper.o \
@@ -12,6 +13,7 @@ OBJS = \
 	caper_generate_js.o \
 	caper_generate_java.o \
 	caper_generate_boo.o \
+	caper_generate_ruby.o \
 	caper_stencil.o
 
 HEADERS = \
@@ -33,6 +35,7 @@ TOP_HEADERS = \
 	caper_generate_d.hpp \
 	caper_generate_java.hpp \
 	caper_generate_boo.hpp \
+	caper_generate_ruby.hpp \
 	caper_format.hpp
 
 $(TARGET): $(OBJS)
@@ -56,6 +59,8 @@ caper_generate_java.o: $(HEADERS) caper_generate_java.hpp caper_generate_java.cp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_java.cpp
 caper_generate_boo.o: $(HEADERS) caper_generate_boo.hpp caper_generate_boo.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_boo.cpp
+caper_generate_ruby.o: $(HEADERS) caper_generate_ruby.hpp caper_generate_ruby.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_ruby.cpp
 caper_stencil.o: $(HEADERS) caper_stencil.hpp caper_stencil.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_stencil.cpp
 

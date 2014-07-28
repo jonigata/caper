@@ -1,5 +1,4 @@
-require './calc1_ast.rb'
-require './calc1_parser.rb'
+require './calc0_parser.rb'
 
 class Scanner
     attr_accessor :input
@@ -33,7 +32,7 @@ class Scanner
                     c = @input.getc
                 end while !c.nil? && c =~ /\d/
                 @input.ungetc c if !c.nil?
-                return :token_Number, Number.new(n)
+                return :token_Number, n
             end
         end
         fail format("bad input char '%s'(%d)\n", c, c.ord)
@@ -54,33 +53,29 @@ class SemanticAction
     def upcast v
         v
     end
-
-    def MakeExpr x
-        TermExpr.new(x)
+    
+    def Identity x
+        x
     end
 
     def MakeAdd(x, y)
-        $stderr.print x.to_s + " + " + y.to_s + "\n"
-        AddExpr.new(x, TermExpr.new(y))
+        $stderr.printf "%d + %d\n", x, y
+        x + y
     end
 
     def MakeSub(x, y)
-        $stderr.print x.to_s + " - " + y.to_s + "\n"
-        SubExpr.new(x, TermExpr.new(y))
-    end
-
-    def MakeTerm x 
-        NumberTerm.new(x)
+        $stderr.printf "%d - %d\n", x, y
+        x - y
     end
 
     def MakeMul(x, y)
-        $stderr.print x.to_s + " * " + y.to_s + "\n"
-        MulTerm.new(x, NumberTerm.new(y))
+        $stderr.printf "%d * %d\n", x, y
+        x * y
     end
 
     def MakeDiv(x, y)
-        $stderr.print x.to_s + " / " + y.to_s + "\n"
-        DivTerm.new(x, NumberTerm.new(y))
+        $stderr.printf "%d / %d\n", x, y
+        x / y
     end
 end
 
@@ -95,8 +90,7 @@ begin
 end while !parser.post(token, v)
 
 if v = parser.accept
-    printf "accepted %d\n", v.calc
-    print v.to_s + "\n"
+    printf "accepted %d\n", v
 else
     print "failed\n"
 end

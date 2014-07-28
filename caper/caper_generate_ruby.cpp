@@ -4,6 +4,7 @@
 // $Id$
 
 #include "caper_ast.hpp"
+#include "caper_error.hpp"
 #include "caper_generate_ruby.hpp"
 #include "caper_format.hpp"
 #include "caper_stencil.hpp"
@@ -60,8 +61,13 @@ void generate_ruby(
     const action_map_type&              actions,
     const tgt::parsing_table&           table) {
 
-        std::string namespace_name(options.namespace_name);
-        namespace_name[0] = std::toupper(namespace_name[0]);
+    if (options.allow_ebnf) {
+        throw unsupported_feature("Ruby", "EBNF");
+    }
+
+    std::string namespace_name(options.namespace_name);
+    if ('a' <= namespace_name[0] && namespace_name[0] <= 'z')
+        namespace_name[0] = namespace_name[0] + 'A' - 'a';
 
     // notice / URL
     stencil(
@@ -70,7 +76,6 @@ void generate_ruby(
 # (http://jonigata.github.io/caper/caper.html)
 
 module ${namespace_name}
-
 )",
         {"namespace_name", namespace_name}
         
@@ -84,12 +89,23 @@ module ${namespace_name}
 $${tokens}
     }
 
+    def self.assert exp, msg = nil
+        if ${debug} && !exp
+            if msg
+                fail msg
+            else
+                fail
+            end
+        end
+    end
+
     def self.token_label token
-        #fail unless Token.has_key? token
+        self.assert Token.has_key? token
         token.to_s
     end
 
 )",
+            {"debug", "$DEBUG"},
             {"tokens", [&](std::ostream& os){
                     int index = 0;
                     for(const auto& token: tokens) {
@@ -171,7 +187,7 @@ $${tokens}
         end
 
         def top
-            fail unless 0 < depth()
+            ${namespace_name}::assert 0 < depth
             if @tmp.size != 0
                 @tmp[@tmp.size - 1]
             else
@@ -223,8 +239,8 @@ $${tokens}
         end
 
         def swap_top_and_second
-            d = depth()
-            fail unless 2 <= d
+            d = depth
+            ${namespace_name}::assert 2 <= d
             x = nth(d - 1)
             set_nth d - 1, nth(d - 2)
             set_nth d - 2, x
@@ -251,12 +267,13 @@ $${tokens}
         end
     end
 
-)");
+)",
+    {"namespace_name", namespace_name}
+    );
 
     // parser
     stencil(
         os, R"(
-
     class Parser
         attr_accessor :sa, :stack, :accepted, :error, :accepted_value
 
@@ -271,6 +288,7 @@ $${entries}
         ]
 
         def entry index
+            index = 0 if index.class == TrueClass || index.class == FalseClass
             Entries[index]
         end
 
@@ -296,30 +314,30 @@ $${entries}
         os, R"(
         def initialize sa
             @sa = sa
-            reset()
+            reset
         end
 
         def reset
             @error = @accepted = false
             @accepted_value = nil
-            clear_stack()
-            rollback_tmp_stack()
+            clear_stack
+            rollback_tmp_stack
             if push_stack(${first_state}, nil, 0)
-                commit_tmp_stack()
+                commit_tmp_stack
             else
-                @sa.stack_overflow()
+                @sa.stack_overflow
                 @error = true
             end
         end
 
         def post token, value
-            rollback_tmp_stack()
+            rollback_tmp_stack
             @error = false
             while method(stack_top.entry.state).call(token, value)
                 ;
             end
             if !@error
-                commit_tmp_stack()
+                commit_tmp_stack
             else
                 recover token, value
             end
@@ -328,6 +346,7 @@ $${entries}
 
         def accept
             return nil if @error
+            return true if @accepted_value == nil
             @accepted_value
         end
 
@@ -340,10 +359,10 @@ $${entries}
         os, R"(
         def push_stack state_index, v = nil, sl = 0
             f = @stack.push(StackFrame.new(entry(state_index), v, sl))
-            fail unless !@error
+            ${namespace_name}::assert !@error
             if !f
                 @error = true
-                @sa.stack_overflow()
+                @sa.stack_overflow
             end
             f
         end
@@ -353,7 +372,7 @@ $${entries}
         end
 
         def stack_top
-            @stack.top()
+            @stack.top
         end
 
         def get_arg base, index
@@ -372,14 +391,15 @@ $${entries}
             @stack.commit_tmp
         end
 
-)"
+)",
+            {"namespace_name", namespace_name}
         );
 
     if (options.recovery) {
         stencil(
             os, R"(
         def recover token, value
-            rollback_tmp_stack()
+            rollback_tmp_stack
             @error = false
 $${debmes:start}
             while !stack_top.entry.handle_error
@@ -397,7 +417,7 @@ $${debmes:post_error_start}
                 ;
             end
 $${debmes:post_error_done}
-            commit_tmp_stack();
+            commit_tmp_stack
             # repost original token
             # if it still causes error, discard it;
 $${debmes:repost_start}
@@ -414,37 +434,37 @@ $${debmes:repost_done}
             {"token_eof", options.token_prefix + "eof"},
             {"debmes:start", {
                     options.debug_parser ?
-                        R"(        $stderr.print("recover rewinding start: stack depth = " + @stack.depth())
+                        R"(        $stderr.print "recover rewinding start: stack depth = " + @stack.depth
 )" :
                         ""}},
             {"debmes:failed", {
                     options.debug_parser ?
-                        R"(        $stderr.print("recover rewinding failed")
+                        R"(        $stderr.print "recover rewinding failed"
 )" :
                         ""}},
             {"debmes:done", {
                     options.debug_parser ?
-                        R"(        $stderr.print("recover rewinding done: stack depth = " + @stack.depth())
+                        R"(        $stderr.print "recover rewinding done: stack depth = " + @stack.depth
 )" :
                         ""}},
             {"debmes:post_error_start", {
                     options.debug_parser ?
-                        R"(        $stderr.print("posting error token")
+                        R"(        $stderr.print "posting error token"
 )" :
                         ""}},
             {"debmes:post_error_done", {
                     options.debug_parser ?
-                        R"(        $stderr.print("posting error token done")
+                        R"(        $stderr.print "posting error token done"
 )" :
                         ""}},
             {"debmes:repost_start", {
                     options.debug_parser ?
-                        R"(        $stderr.print("reposting original token")
+                        R"(        $stderr.print "reposting original token"
 )" :
                         ""}},
             {"debmes:repost_done", {
                     options.debug_parser ? 
-                        R"(        $stderr.print("reposting original token done")
+                        R"(        $stderr.print "reposting original token done"
 )" :
                         ""}}
             );
@@ -471,24 +491,28 @@ $${debmes:repost_done}
         end
         def seq_trail nonterminal, base
             # '*', '+' trailer
-            @stack.swap_top_and_second()
+            ${namespace_name}::assert base == 2
+            @stack.swap_top_and_second
             stack_top.sequence_length += 1
             true
         end
         def seq_trail2 nonterminal, base
             # '/' trailer
-            @stack.swap_top_and_second()
+            ${namespace_name}::assert base == 3
+            @stack.swap_top_and_second
             pop_stack 1 # erase delimiter
-            @stack.swap_top_and_second()
+            @stack.swap_top_and_second
             stack_top.sequence_length += 1
             true
         end
         def opt_nothing nonterminal, base
             # same as head of '*'
+            ${namespace_name}::assert base == 0
             seq_head nonterminal, base
         end
         def opt_just nonterminal, base
             # same as head of '+'
+            ${namespace_name}::assert base == 1
             seq_head nonterminal, base
         end
         def seq_get_range base, index
@@ -496,9 +520,10 @@ $${debmes:repost_done}
             # distinguishing 0-length-vector against scalar value is
             # caller's responsibility
             n = base - index
+            ${namespace_name}::assert 0 < n
             prev_actual_index = 0
-            actual_index = @stack.depth()
-            while (n -= 1) > 0
+            actual_index = @stack.depth
+            while (n -= 1) >= 0
                 actual_index -= 1
                 prev_actual_index = actual_index
                 actual_index -= @stack.nth(actual_index).sequence_length
@@ -507,6 +532,7 @@ $${debmes:repost_done}
         end
         def seq_get_arg base, index
             r = seq_get_range(base, index)
+            ${namespace_name}::assert r.end - r.begin == 0
             # multiple value appearing here is not supported now
             @stack.nth(r.begin).value
         end
@@ -521,10 +547,12 @@ $${debmes:repost_done}
         def stack_nth_top n
             r = seq_get_range(n + 1, 0)
             # multiple value appearing here is not supported now
+            ${namespace_name}::assert r.end - r.begin == 0
             @stack.nth(r.begin)
         end
 
-)"
+)",
+                {"namespace_name", namespace_name}
             );
     }
 
@@ -695,7 +723,7 @@ $${debmes:state}
             when :${case_tag}
                 # shift
                 push_stack ${dest_index}, value, 0
-                return false
+                false
 )",
                         {"case_tag", case_tag},
                         {"dest_index", action.dest_index}
@@ -756,7 +784,7 @@ $${debmes:state}
                 # accept
                 @accepted = true
                 @accepted_value = get_arg(1, 0)
-                return false
+                false
 )",
                         {"case_tag", case_tag}
                         );
@@ -765,12 +793,13 @@ $${debmes:state}
                     stencil(
                         os, R"(
             when :${case_tag}
-                fail unless false
-                @sa.syntax_error()
+                ${namespace_name}::assert false
+                @sa.syntax_error
                 @error = true
-                return false
+                false
 )",
-                        {"case_tag", case_tag}
+                        {"case_tag", case_tag},
+                        {"namespace_name", namespace_name}
                         );
                     break;
             }
@@ -813,7 +842,7 @@ $${debmes:state}
             stencil(
                 os, R"(
                 # reduce
-                return call_${index}_${sa_name}(:${nonterminal}, ${base}${args})
+                call_${index}_${sa_name} :${nonterminal}, ${base}${args}
 )",
                 {"index", index},
                 {"sa_name", signature[0]},
@@ -831,11 +860,12 @@ $${debmes:state}
         stencil(
             os, R"(
             else
-                @sa.syntax_error()
+                @sa.syntax_error
                 @error = true
-                return false
+                false
             end
         end
+
 )"
             );
         
@@ -859,7 +889,7 @@ $${debmes:state}
             stencil(
                 ss, R"(
             when :${nonterminal}
-                return ${state_index}
+                ${state_index}
 )",
                 {"nonterminal", pair.first.name()},
                 {"state_index", pair.second}
@@ -871,20 +901,22 @@ $${debmes:state}
         stencil(
             ss, R"(
             else
-                fail unless false
-                return false
+                ${namespace_name}::assert false
+                false
             end
-)"
+)",
+                {"namespace_name", namespace_name}
             );
         if (output_switch) {
             os << ss.str();
         } else {
             stencil(
                 os, R"(
-            fail unless false
+            ${namespace_name}::assert false
             true
-)"
-                );
+)",
+                {"namespace_name", namespace_name}
+            );
         }
         stencil(os, R"(
         end
@@ -894,7 +926,6 @@ $${debmes:state}
     }
     stencil(os, R"(
     end
-
 end
 )"
         );

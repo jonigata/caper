@@ -1,5 +1,4 @@
-require './calc1_ast.rb'
-require './calc1_parser.rb'
+require './recovery1_parser.rb'
 
 class Scanner
     attr_accessor :input
@@ -11,18 +10,22 @@ class Scanner
     def get
         begin
             c = @input.getc
-            return :token_eof, 0 if c.nil? || c == ?\n
+            return :token_NewLine, 0 if c == ?\n
         end while c =~ /\s/
 
         case c
-        when ?+
-            return :token_Add, 0
         when ?-
-            return :token_Sub, 0
+            return :token_Minus, 0
+        when ?+
+            return :token_Plus, 0
         when ?*
-            return :token_Mul, 0
+            return :token_Star, 0
         when ?/
-            return :token_Div, 0
+            return :token_Slash, 0
+        when ?(
+            return :token_LParen, 0
+        when ?)
+            return :token_RParen, 0
         else
             return :token_eof, 0 if c.nil?
             if c =~ /\d/
@@ -33,7 +36,7 @@ class Scanner
                     c = @input.getc
                 end while !c.nil? && c =~ /\d/
                 @input.ungetc c if !c.nil?
-                return :token_Number, Number.new(n)
+                return :token_Number, n
             end
         end
         fail format("bad input char '%s'(%d)\n", c, c.ord)
@@ -55,33 +58,59 @@ class SemanticAction
         v
     end
 
-    def MakeExpr x
-        TermExpr.new(x)
-    end
+	def DoLine1
+		0
+	end
+	
+	def DoLine2 exp
+		print "Exp: " + exp.to_s + "\n"
+		exp
+	end
+	
+	def DoLine3
+		print "catched\n"
+		-1
+	end
+	
+	def DoAddExp1 exp1
+		exp1
+	end
 
-    def MakeAdd(x, y)
-        $stderr.print x.to_s + " + " + y.to_s + "\n"
-        AddExpr.new(x, TermExpr.new(y))
-    end
+	def DoAddExp2 exp1, exp2
+		exp1 + exp2
+	end
 
-    def MakeSub(x, y)
-        $stderr.print x.to_s + " - " + y.to_s + "\n"
-        SubExpr.new(x, TermExpr.new(y))
-    end
+	def DoAddExp3 exp1, exp2
+		exp1 - exp2
+	end
 
-    def MakeTerm x 
-        NumberTerm.new(x)
-    end
+	def DoMulExp1 exp1
+		exp1
+	end
 
-    def MakeMul(x, y)
-        $stderr.print x.to_s + " * " + y.to_s + "\n"
-        MulTerm.new(x, NumberTerm.new(y))
-    end
+	def DoMulExp2 exp1, exp2
+		exp1 * exp2
+	end
 
-    def MakeDiv(x, y)
-        $stderr.print x.to_s + " / " + y.to_s + "\n"
-        DivTerm.new(x, NumberTerm.new(y))
-    end
+	def DoMulExp3 exp1, exp2
+		exp1 / exp2
+	end
+	
+	def DoUnaryExp1 exp1
+		exp1
+	end
+	
+	def DoUnaryExp2 exp1
+		-exp1
+	end
+	
+	def DoPrimExp1 num1
+		num1
+	end
+	
+	def DoPrimExp2 exp1
+		exp1
+	end
 end
 
 s = Scanner.new
@@ -94,9 +123,13 @@ begin
     #p Calc::token_label(token)
 end while !parser.post(token, v)
 
+if parser.error
+    $stderr.print "error occured: " + Calc::token_label(token) + "\n"
+    exit 1
+end
+
 if v = parser.accept
-    printf "accepted %d\n", v.calc
-    print v.to_s + "\n"
+    print "accepted\n"
 else
     print "failed\n"
 end

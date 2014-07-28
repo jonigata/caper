@@ -83,6 +83,8 @@ begin
     #p Rec::token_label(token)
 end while !parser.post(token, v)
 
-if v = parser.accept
-    $stdout.printf("accepted %d\n", v)
+if parser.accept
+    print "accepted\n"
+else
+    print "failed\n"
 end

@@ -582,7 +582,7 @@ $${debmes:repost_done}
             std::string get_arg = "getArg";
             for (const auto& arg: sa.args) {
                 if (arg.type.extension != Extension::None) {
-                    get_arg = "seqGetArg";
+                    get_arg = "seq_get_seq";
                     break;
                 }
             }

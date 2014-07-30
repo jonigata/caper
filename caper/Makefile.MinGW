@@ -14,6 +14,7 @@ OBJS = \
 	caper_generate_java.o \
 	caper_generate_boo.o \
 	caper_generate_ruby.o \
+	caper_generate_php.o \
 	caper_stencil.o
 
 HEADERS = \
@@ -36,6 +37,7 @@ TOP_HEADERS = \
 	caper_generate_java.hpp \
 	caper_generate_boo.hpp \
 	caper_generate_ruby.hpp \
+	caper_generate_php.hpp \
 	caper_format.hpp
 
 $(TARGET): $(OBJS)
@@ -61,6 +63,8 @@ caper_generate_boo.o: $(HEADERS) caper_generate_boo.hpp caper_generate_boo.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_boo.cpp
 caper_generate_ruby.o: $(HEADERS) caper_generate_ruby.hpp caper_generate_ruby.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_ruby.cpp
+caper_generate_php.o: $(HEADERS) caper_generate_php.hpp caper_generate_php.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ caper_generate_php.cpp
 caper_stencil.o: $(HEADERS) caper_stencil.hpp caper_stencil.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper_stencil.cpp
 

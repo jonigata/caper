@@ -22,6 +22,7 @@ using std::exit;
 #include "caper_generate_java.hpp"
 #include "caper_generate_boo.hpp"
 #include "caper_generate_ruby.hpp"
+#include "caper_generate_php.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -86,6 +87,10 @@ void get_commandline_options(
                 cmdopt.language = "Ruby";
                 continue;
             }
+            if (arg == "-php" || arg == "-PHP") {
+                cmdopt.language = "PHP";
+                continue;
+            }
             if (arg == "-lalr1") {
                 cmdopt.algorithm = "lalr1";
                 continue;
@@ -116,7 +121,7 @@ void get_commandline_options(
     }
 
     if (state < 2) {
-        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -d | -java | -boo | -ruby] input_filename output_filename" << std::endl;
+        std::cerr << "caper: usage: caper [-c++ | -js | -cs | -d | -java | -boo | -ruby | -php] input_filename output_filename" << std::endl;
         exit(1);
     }
 
@@ -144,6 +149,7 @@ int main(int argc, const char** argv) {
     generators["D"]             = generate_d;
     generators["Boo"]           = generate_boo;
     generators["Ruby"]          = generate_ruby;
+    generators["PHP"]          = generate_php;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {

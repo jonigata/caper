@@ -1,212 +1,1038 @@
-// Copyright (C) 2006 Naoyuki Hirayama.
+// Copyright (C) 2014 Katayama Hirofumi MZ.
 // All Rights Reserved.
 
 // $Id$
 
 #include "caper_ast.hpp"
+#include "caper_error.hpp"
 #include "caper_generate_php.hpp"
+#include "caper_format.hpp"
+#include "caper_stencil.hpp"
+#include "caper_finder.hpp"
+#include <algorithm>
+#include <boost/tuple/tuple.hpp>
+#include <boost/tuple/tuple_comparison.hpp>
 
-void generate_php(
-        const std::string&                      filename,
-        std::ostream&                           os,
-        const GenerateOptions&                  options,
-        const symbol_map_type&                  terminal_types,
-        const symbol_map_type&                  nonterminal_types,
-        const std::map< size_t, std::string >&  token_id_map,
-        const action_map_type&                  actions,
-        const tgt::parsing_table&               table )
-{
-        if( !options.external_token ) {
-                // token enumeration
-                os << "final class Token {\n";
-                for( size_t i = 0 ; i < token_id_map.size() ; i++ ) {
-                        os << "    const " << options.token_prefix << (*token_id_map.find( i )).second
-                           << " = " << i << ";\n";
-                }
-                os << "}\n";
-        }
+namespace {
 
-        // parser class header
-        os << "class Parser {\n"
-           << "{\n"
-           << "    Parser( $sa ) {\n"
-           << "        $this->semantic_action = $sa;\n"
-           << "        $this->this.stack = array();\n"
-           << "        $this->this.tmp_stack = array();\n"
-           << "    }\n"
-           <<
-                ;
+std::string make_type_name(const Type& x) {
+    switch(x.extension) {
+        case Extension::None:
+            return x.name;
+        case Extension::Star:
+        case Extension::Plus:
+        case Extension::Slash:
+            return "Sequence<" + x.name + ">";
+        case Extension::Question:
+            return "Optional<" + x.name + ">";
+        default:
+            assert(0);
+            return "";
+    }
+}
+        
+void make_signature(
+    const std::map<std::string, Type>&      nonterminal_types,
+    const tgt::parsing_table::rule_type&    rule,
+    const SemanticAction&                   sa,
+    std::vector<std::string>&               signature) {
+    // function name
+    signature.push_back(sa.name);
 
-        // public interface
-        os << "    function reset()\n"
-           << "    {\n"
-           << "        $this->error = false;\n"
-           << "        $this->accepted_value = null;\n"
-           << "        $this->clear_stack();\n"
-           << "        $this->reset_tmp_stack();\n"
-           << "        $this->push_stack( "
-           << table.first_state() << ", "
-           << table.first_state() << ", null );\n"
-           << "        $this->commit_tmp_stack();\n"
-           << "    }\n\n"
-           << "    function post( $token, $value )\n"
-           << "    {\n"
-           << "        $this->reset_tmp_stack();\n"
-           << "        while( $this->post_aux( $token, $value ) );\n"
-           << "        if( !$this->error ) {\n"
-           << "            $this->commit_tmp_stack();\n"
-           << "        }\n"
-           << "        return $this->accepted_value;\n"
-           << "    }\n\n"
-                ;
+    // return value
+    signature.push_back(
+        make_type_name(*finder(nonterminal_types, rule.left().name())));
 
-        // stack operation
-        os << "    function push_stack( $s, $g, $v )\n"
-           << "    {\n"
-           << "        $this->stack->push( $s, $g, $v );\n"
-           << "    }\n\n"
-           << "    $this->pop_stack = function( n )\n"
-           << "    {\n"
-           << "        $this->stack.length -= n * 3;\n"
-           << "    }\n\n"
-           << "    $this->stack_top_state = function()\n"
-           << "    {\n"
-           << "        return $this->stack[ $this->stack.length - 3 ];\n"
-           << "    }\n\n"
-           << "    $this->stack_top_gotof = function()\n"
-           << "    {\n"
-           << "        return $this->stack[ $this->stack.length - 2 ];\n"
-           << "    }\n\n"
-           << "    $this->get_arg = function( base, index )\n"
-           << "    {\n"
-           << "        return $this->stack[ $this->stack.length - ( 3 * ( base-index ) + 2 ) ];\n"
-           << "    }\n\n"
-           << "    $this->clear_stack = function()\n"
-           << "    {\n"
-           << "        $this->stack.length = 0;\n"
-           << "    }\n\n"
-           << "    $this->reset_tmp_stack = function()\n"
-           << "    {\n"
-           << "    }\n\n"
-           << "    $this->commit_tmp_stack = function()\n"
-           << "    {\n"
-           << "    }\n\n"
-                ;
-
-        // states handler
-        for( tgt::parsing_table::states_type::const_iterator i = table.states().begin();
-             i != table.states().end() ;
-             ++i ) {
-                const tgt::parsing_table::state& s = *i;
-
-                // gotof header
-                os << "    $this->gotof_" << s.no << " = new Array( " << table.rules().size() << " );\n";
-
-                // gotof dispatcher
-                int rule_index = 0;
-                for( tgt::parsing_table::rules_type::const_iterator j = table.rules().begin() ;
-                     j != table.rules().end() ;
-                     ++j ) {
-
-                        // 本当は nonterminal 1つにつき1行でよいが、大差ないし不便なので rule 1つにつき1行とする
-                        tgt::parsing_table::state::goto_table_type::const_iterator k =
-                                (*i).goto_table.find( (*j).left() );
-
-                        if( k != (*i).goto_table.end() ) {
-                                os << "    $this->gotof_" << s.no << "[ " << rule_index << " ] = "
-                                   << "function( o, v ) {\n"
-                                   << "        o.push_stack( o.state_" << (*k).second
-                                   << ", o.gotof_" << (*k).second << ", v );\n"
-                                   << "        return true;\n"
-                                   << "    };\n";
-                        }
-                        rule_index++;
-                }
-
-                // gotof footer
-
-                // state header
-                os << "    $this->state_" << s.no << " = new Array( " << token_id_map.size() << " );\n";
-
-                // dispatcher header
-
-                // action table
-                for( tgt::parsing_table::state::action_table_type::const_iterator j = s.action_table.begin();
-                     j != s.action_table.end() ;
-                     ++j ) {
-                        // action header 
-                        os << "    $this->state_" << s.no << "[ " << options.token_prefix 
-                           << (*token_id_map.find( (*j).first )).second << " ] = function( o, v )\n"
-                           << "        {\n";
-
-                        // action
-                        const tgt::parsing_table::action* a = &(*j).second;
-                        switch( a->type ) {
-                        case zw::gr::action_shift:
-                                os << "            // shift\n"
-                                   << "            o.push_stack( o.state_" << a->dest_index << ", "
-                                   << "o.gotof_" << a->dest_index << ", v);\n"
-                                   << "            return false;\n";
-                                break;
-                        case zw::gr::action_reduce:
-                                os << "            // reduce\n";
-                                {
-                                        size_t base = table.rules()[ a->rule_index ].right().size();
-                                        
-                                        const tgt::parsing_table::rule_type& rule = table.rules()[a->rule_index];
-                                        action_map_type::const_iterator k = actions.find( rule );
-                                        if( k != actions.end() ) {
-                                                const semantic_action& sa = (*k).second;
-
-                                                // automatic argument conversion
-                                                os << "            var r = o.sa." << sa.name << "( ";
-                                                for( size_t l = 0 ; l < sa.args.size() ; l++ ) {
-                                                        const semantic_action_argument& arg =
-                                                                (*sa.args.find( l )).second;
-                                                        if( l != 0 ) { os << ", "; }
-                                                        os << "o.get_arg( " << base << ", " << arg.src_index << ")";
-                                                }
-                                                os << " );\n";
-                                                
-                                                os << "            o.pop_stack( " << base << " );\n";
-                                                os << "            return ( o.stack_top_gotof()[ "
-                                                   << a->rule_index << " ] )( o, r );\n";
-                                        } else {
-                                                os << "            // o.sa.run_semantic_action();\n";
-                                                os << "            o.pop_stack( " << base << " );\n";
-                                                os << "            return ( o.stack_top_gotof()[ "
-                                                   << a->rule_index << " ] )( nil );\n";
-                                        }
-                                }
-                                break;
-                        case zw::gr::action_accept:
-                                os << "            // accept\n"
-                                   << "            // run_semantic_action();\n"
-                                   << "            o.accepted_value = o.get_arg( 1, 0 );\n" // implicit root
-                                   << "            return false;\n";
-                                break;
-                        case zw::gr::action_error:
-                                os << "            o.sa.syntax_error();\n";
-                                os << "            o.error = true;\n"; 
-                                os << "            return false;\n";
-                                break;
-                        }
-
-                        // action footer
-                        os << "        }\n";
-                }
-
-                // state footer
-        }
-
-        // parser class footer
-        os << "    $this->reset();\n";
-        os << "}\n\n";
-
-        // namespace footer
-
-
-        // once footer
+    // arguments
+    for (const auto& arg: sa.args) {
+        signature.push_back(make_type_name(arg.type));
+    }
 }
 
+}
 
+void generate_php(
+    const std::string&                  src_filename,
+    std::ostream&                       os,
+    const GenerateOptions&              options,
+    const std::map<std::string, Type>&,
+    const std::map<std::string, Type>&  nonterminal_types,
+    const std::vector<std::string>&     tokens,
+    const action_map_type&              actions,
+    const tgt::parsing_table&           table) {
+
+    if (options.allow_ebnf) {
+        throw unsupported_feature("PHP", "EBNF");
+    }
+
+    std::string namespace_name(options.namespace_name);
+
+    // notice / URL
+    stencil(
+        os, R"(
+<?php
+
+// This file was automatically generated by Caper.
+// (http://jonigata.github.io/caper/caper.html)
+
+namespace ${namespace_name};
+)",
+        {"namespace_name", namespace_name}
+        );
+
+    if (!options.external_token) {
+        // token enumeration
+        stencil(
+            os, R"(
+
+class Token
+{
+$${tokens1}
+}
+
+function token_label(${d}token)
+{
+    ${d}labels = array(
+$${tokens2}
+    );
+    assert(array_key_exists(${d}token, ${d}labels));
+    return ${d}labels[${d}token];
+}
+)",
+            {"d", "$"},
+            {"tokens1", [&](std::ostream& os){
+                    int index = 0;
+                    for(const auto& token: tokens) {
+                        stencil(
+                            os, R"(
+    const ${prefix}${token} = ${index};
+)",
+                            {"prefix", options.token_prefix},
+                            {"token", token},
+                            {"index", index}
+                            );
+                        index++;
+                    }
+                }},
+            {"tokens2", [&](std::ostream& os){
+                    int index = 0;
+                    for(const auto& token: tokens) {
+                        stencil(
+                            os, R"(
+        ${index} => "${prefix}${token}",
+)",
+                            {"prefix", options.token_prefix},
+                            {"token", token},
+                            {"index", index}
+                            );
+                        index++;
+                    }
+                }}
+            );
+    }
+
+    // nonterminal
+    stencil(
+        os, R"(
+
+class Nonterminal
+{
+)"
+        );
+    {
+        int index = 0;
+        for (const auto& nonterminal_type: nonterminal_types) {
+            stencil(
+                os, R"(
+    const ${nonterminal_name} = ${index};
+)",
+                {"nonterminal_name", nonterminal_type.first},
+                {"index", index}
+                );
+            index++;
+        }
+    }
+    stencil(
+        os, R"(
+}
+)"
+        );
+    
+    stencil(
+        os, R"(
+
+class Stack
+{
+    public ${d}stack;
+    public ${d}tmp;
+    public ${d}gap;
+    
+    function __construct()
+    {
+        ${d}this->stack = array();
+        ${d}this->tmp = array();
+        ${d}this->gap = 0;
+    }
+
+    function rollback_tmp()
+    {
+        ${d}this->gap = count(${d}this->stack);
+        ${d}this->tmp = array();
+    }
+
+    function commit_tmp()
+    {
+        array_splice(${d}this->stack, ${d}this->gap, count(${d}this->stack) - ${d}this->gap);
+        ${d}this->stack = array_merge(${d}this->stack, ${d}this->tmp);
+        ${d}this->tmp = array();
+    }
+
+    function push(${d}x)
+    {
+        ${d}this->tmp[] = ${d}x;
+        return TRUE;
+    }
+
+    function pop(${d}n)
+    {
+        if (count(${d}this->tmp) < ${d}n) {
+            ${d}n -= count(${d}this->tmp);
+            ${d}this->tmp = array();
+            ${d}this->gap -= ${d}n;
+        } else {
+            array_splice(${d}this->tmp, count(${d}this->tmp) - ${d}n, ${d}n);
+        }
+    }
+
+    function top()
+    {
+        assert(0 < ${d}this->depth());
+        if (count(${d}this->tmp) != 0) {
+            return ${d}this->tmp[count(${d}this->tmp) - 1];
+        } else {
+            return ${d}this->stack[${d}this->gap - 1];
+        }
+    }
+
+    function get_arg(${d}base, ${d}index)
+    {
+        ${d}n = count(${d}this->tmp);
+        if (${d}base - ${d}index <= ${d}n) {
+            return ${d}this->tmp[${d}n - (${d}base - ${d}index)];
+        } else {
+            return ${d}this->stack[${d}this->gap - (${d}base - ${d}n) + ${d}index];
+        }
+    }
+
+    function clear()
+    {
+        ${d}this->stack = array();
+        ${d}this->tmp = array();
+        ${d}this->gap = 0;
+    }
+
+    function is_empty()
+    {
+        if (0 < count(${d}this->tmp)) {
+            return FALSE;
+        } else {
+            return ${d}this->gap == 0;
+        }
+    }
+
+    function depth()
+    {
+        return ${d}this->gap + count(${d}this->tmp);
+    }
+
+    function nth(${d}index)
+    {
+        if (${d}this->gap <= ${d}index) {
+            return ${d}this->tmp[${d}index - ${d}this->gap];
+        } else {
+            return ${d}this->stack[${d}index];
+        }
+    }
+
+    function set_nth(${d}index, ${d}obj)
+    {
+        if (${d}this->gap <= ${d}index) {
+            ${d}this->tmp[${d}index - ${d}this->gap] = ${d}obj;
+        } else {
+            ${d}this->stack[index] = ${d}obj;
+        }
+    }
+
+    function swap_top_and_second()
+    {
+        ${d}d = depth();
+        assert(2 <= ${d}d);
+        ${d}x = ${d}this->nth(${d}d - 1);
+        ${d}this->set_nth(${d}d - 1, ${d}this->nth(${d}d - 2));
+        ${d}this->set_nth(${d}d - 2, ${d}x);
+    }
+}
+
+class StackFrame
+{
+    public ${d}entry;
+    public ${d}value;
+    public ${d}sequence_length;
+
+    function __construct(${d}entry, ${d}v, ${d}sl)
+    {
+        ${d}this->entry = ${d}entry;
+        ${d}this->value = ${d}v;
+        ${d}this->sequence_length = ${d}sl;
+    }
+}
+
+class TableEntry
+{
+    public ${d}state;
+    public ${d}gotof;
+    public ${d}handle_error;
+
+    function __construct(${d}s, ${d}g, ${d}he)
+    {
+        ${d}this->state = ${d}s;
+        ${d}this->gotof = ${d}g;
+        ${d}this->handle_error = ${d}he;
+    }
+}
+)",
+    {"d", "$"}
+    );
+
+    // parser
+    stencil(
+        os, R"(
+
+class Parser
+{
+    public ${d}sa;
+    public ${d}stack;
+    public ${d}accepted;
+    public ${d}error;
+    public ${d}accepted_value;
+    public ${d}entries;
+
+    function __construct(${d}sa)
+    {
+        ${d}this->entries = array();
+)",
+            {"d", "$"}
+        );
+
+    // table
+    stencil(
+        os, R"(
+$${entries}
+
+        ${d}this->sa = ${d}sa;
+        ${d}this->do_reset();
+    }
+
+    function entry(${d}index)
+    {
+        return ${d}this->entries[${d}index];
+    }
+)",
+        {"d", "$"},
+        {"entries", [&](std::ostream& os) {
+                int i = 0;
+                for (const auto& state: table.states()) {
+                    stencil(
+                        os, R"(
+        ${d}this->entries[] = new TableEntry("state_${i}", "gotof_${i}", ${handle_error});
+)",
+                        {"d", "$"},
+                        {"i", i},
+                        {"handle_error", (state.handle_error ? "TRUE" : "FALSE")}
+                        );
+                    ++i;
+                }
+            }}
+        );
+
+    
+    stencil(
+        os, R"(
+
+    function do_reset()
+    {
+        ${d}this->error = FALSE;
+        ${d}this->accepted = FALSE;
+        ${d}this->accepted_value = NULL;
+        ${d}this->clear_stack();
+        ${d}this->rollback_tmp_stack();
+        if (${d}this->push_stack(${first_state}, NULL, 0)) {
+            ${d}this->commit_tmp_stack();
+        } else {
+            ${d}this->sa->stack_overflow();
+            ${d}this->error = TRUE;
+        }
+    }
+
+    function post(${d}token, ${d}value)
+    {
+        ${d}this->rollback_tmp_stack();
+        ${d}this->error = FALSE;
+        while (call_user_func(array(${d}this, ${d}this->stack_top()->entry->state), ${d}token, ${d}value)) {
+            ;
+        }
+        if (!${d}this->error) {
+            ${d}this->commit_tmp_stack();
+        } else {
+            ${d}this->recover(${d}token, ${d}value);
+        }
+        return ${d}this->accepted || ${d}this->error;
+    }
+
+    function accept(&${d}v)
+    {
+        if (${d}this->error) {
+            return FALSE;
+        }
+        ${d}v = ${d}this->accepted_value;
+        return TRUE;
+    }
+)",
+        {"d", "$"},
+        {"first_state", table.first_state()}
+        );
+
+    // stack operation
+    stencil(
+        os, R"(
+
+    function push_stack(${d}state_index, ${d}v = NULL, ${d}sl = 0)
+    {
+        ${d}f = ${d}this->stack->push(new StackFrame(${d}this->entry(${d}state_index), ${d}v, ${d}sl));
+        assert(!${d}this->error);
+        if (!${d}f) {
+            ${d}this->error = TRUE;
+            ${d}this->sa->stack_overflow();
+        }
+        return ${d}f;
+    }
+
+    function pop_stack(${d}n)
+    {
+        ${d}this->stack->pop(${d}n);
+    }
+
+    function stack_top()
+    {
+        return ${d}this->stack->top();
+    }
+
+    function get_arg(${d}base, ${d}index)
+    {
+        return ${d}this->stack->get_arg(${d}base, ${d}index)->value;
+    }
+
+    function clear_stack()
+    {
+        ${d}this->stack = new Stack();
+    }
+
+    function rollback_tmp_stack()
+    {
+        ${d}this->stack->rollback_tmp();
+    }
+
+    function commit_tmp_stack()
+    {
+        ${d}this->stack->commit_tmp();
+    }
+)",
+            {"d", "$"}
+        );
+
+    if (options.recovery) {
+        stencil(
+            os, R"(
+
+    function recover(${d}token, ${d}value)
+    {
+        global ${d}errors;
+        ${d}this->rollback_tmp_stack();
+        ${d}this->error = FALSE;
+$${debmes:start}
+        while (!${d}this->stack_top()->entry->handle_error)
+        {
+            ${d}this->pop_stack(1);
+            if (${d}this->stack->is_empty()) {
+$${debmes:failed}
+                ${d}this->error = TRUE;
+                return;
+            }
+        }
+$${debmes:done}
+        // post error_token;
+$${debmes:post_error_start}
+        while (call_user_func(array(${d}this, ${d}this->stack_top()->entry->state), \${namespace_name}\Token::${recovery_token}, null)) {
+            ;
+        }
+$${debmes:post_error_done}
+        ${d}this->commit_tmp_stack();
+        // repost original token
+        // if it still causes error, discard it;
+$${debmes:repost_start}
+        while (call_user_func(array(${d}this, ${d}this->stack_top()->entry->state), ${d}token, ${d}value)) {
+            ;
+        }
+$${debmes:repost_done}
+        if (!${d}this->error) {
+            ${d}this->commit_tmp_stack();
+        }
+        if (${d}token != \${namespace_name}\Token::${token_eof}) {
+            ${d}this->error = FALSE;
+        }
+    }
+)",
+            {"d", "$"},
+            {"namespace_name", namespace_name},
+            {"recovery_token", options.token_prefix + options.recovery_token},
+            {"token_eof", options.token_prefix + "eof"},
+            {"debmes:start", {
+                    options.debug_parser ?
+                        R"(        trigger_error(sprintf("recover rewinding start: stack depth = %d", $this->stack->depth()));
+)" :
+                        ""}},
+            {"debmes:failed", {
+                    options.debug_parser ?
+                        R"(        trigger_error("recover rewinding failed");
+)" :
+                        ""}},
+            {"debmes:done", {
+                    options.debug_parser ?
+                        R"(        trigger_error(sprintf("recover rewinding done: stack depth = %d\n", $this->stack->depth()));
+)" :
+                        ""}},
+            {"debmes:post_error_start", {
+                    options.debug_parser ?
+                        R"(        trigger_error("posting error token");
+)" :
+                        ""}},
+            {"debmes:post_error_done", {
+                    options.debug_parser ?
+                        R"(        trigger_error("posting error token done");
+)" :
+                        ""}},
+            {"debmes:repost_start", {
+                    options.debug_parser ?
+                        R"(        trigger_error("reposting original token");
+)" :
+                        ""}},
+            {"debmes:repost_done", {
+                    options.debug_parser ? 
+                        R"(        trigger_error("reposting original token done");
+)" :
+                        ""}}
+            );
+    } else {
+        stencil(
+            os, R"(
+
+    function recover(${d}token, ${d}value)
+    {
+        ;
+    }
+)",
+            {"d", "$"}
+            );
+    }
+
+    if (options.allow_ebnf) {
+        stencil(
+            os, R"(
+
+    // EBNF support member functions
+    function seq_head(${d}nonterminal, ${d}base)
+    {
+        // '*': ${d}base == 0
+        // '+': ${d}base == 1
+        ${d}dest = call_user_func(array(${d}this, ${d}this->stack_nth_top(${d}base)->entry->gotof), ${d}nonterminal);
+        return ${d}this->push_stack(${d}dest, null, ${d}base);
+    }
+    function seq_trail(${d}nonterminal, ${d}base)
+    {
+        // '*', '+' trailer
+        assert(${d}base == 2);
+        ${d}this->stack->swap_top_and_second();
+        ${d}this->stack_top()->sequence_length += 1;
+        return TRUE;
+    }
+    function seq_trail2(${d}nonterminal, ${d}base)
+    {
+        // '/' trailer
+        assert(${d}base == 3);
+        ${d}this->stack->swap_top_and_second();
+        ${d}this->pop_stack(1); // erase delimiter
+        ${d}this->stack->swap_top_and_second();
+        ${d}this->stack_top()->sequence_length += 1;
+        return TRUE;
+    }
+    function opt_nothing(${d}nonterminal, ${d}base)
+    {
+        // same as head of '*'
+        assert(${d}base == 0);
+        return ${d}this->seq_head(${d}nonterminal, ${d}base);
+    }
+    function opt_just(${d}nonterminal, ${d}base)
+    {
+        // same as head of '+'
+        assert(${d}base == 1);
+        return ${d}this->seq_head(${d}nonterminal, ${d}base);
+    }
+    function seq_get_range(${d}base, ${d}index)
+    {
+        // returns begin = end if length = 0 (includes scalar value)
+        // distinguishing 0-length-vector against scalar value is
+        // caller's responsibility
+        ${d}n = ${d}base - ${d}index;
+        assert(0 < ${d}n);
+        ${d}prev_actual_index = 0;
+        ${d}actual_index = ${d}this->stack->depth();
+        while ((${d}n -= 1) >= 0)
+        {
+            ${d}actual_index -= 1;
+            ${d}prev_actual_index = ${d}actual_index;
+            ${d}actual_index -= ${d}this->stack->nth(${d}actual_index)->sequence_length;
+        }
+        return range(${d}actual_index, ${d}prev_actual_index);
+    }
+    function range_begin(${d}a)
+    {
+        assert(count(${d}a) > 0);
+        return ${d}a[0];
+    }
+    function range_end(${d}a)
+    {
+        assert(count(${d}a) > 0);
+        return ${d}a[count(${d}a) - 1];
+    }
+    function seq_get_arg(${d}base, ${d}index)
+    {
+        ${d}r = ${d}this->seq_get_range(${d}base, ${d}index);
+        assert(${d}this->range_end(${d}r) - ${d}this->range_begin(${d}r) == 0);
+        // multiple value appearing here is not supported now
+        return ${d}this->stack->nth(${d}r[0])->value;
+    }
+    function seq_get_seq(${d}base, ${d}index)
+    {
+        ${d}r = ${d}this->seq_get_range(${d}base, ${d}index);
+        ${d}a = array();
+        for (${d}r as ${d}i) {
+            a[] = ${d}this->stack->nth(${d}i).value
+        }
+        return ${d}a;
+    }
+    function stack_nth_top(${d}n)
+    {
+        ${d}r = ${d}this->seq_get_range(${d}n + 1, 0);
+        // multiple value appearing here is not supported now
+        assert(${d}this->range_end(${d}r) - ${d}this->range_begin(${d}r) == 0);
+        return ${d}this->stack->nth(${d}this->range_begin(${d}r));
+    }
+
+)",
+                {"d", "$"}
+            );
+    }
+
+    stencil(
+        os, R"(
+
+    function call_nothing(${d}nonterminal, ${d}base)
+    {
+        ${d}this->pop_stack(${d}base);
+        ${d}dest_index = call_user_func(
+            array(${d}this, ${d}this->stack_top()->entry->gotof), ${d}nonterminal);
+        return ${d}this->push_stack(${d}dest_index, NULL, 0);
+    }
+)",
+            {"d", "$"}
+        );
+
+    // member function signature -> index
+    std::map<std::vector<std::string>, int> stub_indices;
+    {
+        // member function name -> count
+        std::unordered_map<std::string, int> stub_counts; 
+
+        // action handler stub
+        for (const auto& pair: actions) {
+            const auto& rule = pair.first;
+            const auto& sa = pair.second;
+
+            if (sa.special) {
+                continue;
+            }
+
+            // make signature
+            std::vector<std::string> signature;
+            make_signature(
+                nonterminal_types,
+                rule,
+                sa,
+                signature);
+
+            // skip duplicated
+            if (0 < stub_indices.count(signature)) {
+                continue;
+            }
+
+            // make function name
+            if (stub_counts.count(sa.name) == 0) {
+                stub_counts[sa.name] = 0;
+            }
+            int stub_index = stub_counts[sa.name];
+            stub_indices[signature] = stub_index;
+            stub_counts[sa.name] = stub_index+1;
+
+            // header
+            stencil(
+                os, R"(
+
+    function call_${stub_index}_${sa_name}(${d}nonterminal, ${d}base${args})
+    {
+)",
+                {"d", "$"},
+                {"stub_index", stub_index},
+                {"sa_name", sa.name},
+                {"args", [&](std::ostream& os) {
+                        for (size_t l = 0 ; l < sa.args.size() ; l++) {
+                            os << ", $arg_index" << l;
+                        }
+                    }}
+                );
+
+            // check sequence conciousness
+            std::string get_arg = "get_arg";
+            for (const auto& arg: sa.args) {
+                if (arg.type.extension != Extension::None) {
+                    get_arg = "seq_get_arg";
+                    break;
+                }
+            }
+
+            // automatic argument conversion
+            for (size_t l = 0 ; l < sa.args.size() ; l++) {
+                const auto& arg = sa.args[l];
+                if (arg.type.extension == Extension::None) {
+                    stencil(
+                        os, R"(
+        ${d}arg${index} = ${d}this->sa->downcast(${d}this->${get_arg}(${d}base, ${d}arg_index${index}));
+)",
+                        {"d", "$"},
+                        {"get_arg", get_arg},
+                        {"index", l}
+                        );
+                } else {
+                    stencil(
+                        os, R"(
+        ${d}arg${index} = ${d}this->sa->downcast(${d}this->set_get_arg(${d}base, ${d}arg_index${index}));
+)",
+                        {"d", "$"},
+                        {"index", l}
+                        );
+                }
+            }
+
+            // semantic action / automatic value conversion
+            stencil(
+                os, R"(
+        ${d}v = ${d}this->sa->upcast(${d}this->sa->${semantic_action_name}(${args}));
+        ${d}this->pop_stack(${d}base);
+        ${d}dest_index = call_user_func(
+            array(${d}this, ${d}this->stack_top()->entry->gotof), ${d}nonterminal);
+        return ${d}this->push_stack(${d}dest_index, ${d}v, 0);
+    }
+)",
+                {"d", "$"},
+                {"semantic_action_name", sa.name},
+                {"args", [&](std::ostream& os) {
+                        bool first = true;
+                        for (size_t l = 0 ; l < sa.args.size() ; l++) {
+                            if (first) { first = false; }
+                            else { os << ", "; }
+                            os << "$arg" << l;
+                        }
+                    }}
+                );
+        }
+    }
+
+    // states handler
+    for (const auto& state: table.states()) {
+        // state header
+        stencil(
+            os, R"(
+
+    function state_${state_no}(${d}token, ${d}value)
+    {
+$${debmes:state}
+        switch (${d}token)
+        {
+)",
+            {"d", "$"},
+            {"state_no", state.no},
+            {"debmes:state", [&](std::ostream& os){
+                    if (options.debug_parser) {
+                        stencil(
+                            os, R"(
+            ${d}errors .= sprintf("state_${state_no} << " . \${namespace_name}\token_label(token));
+)",
+                            {"state_no", state.no},
+                            {"namespace_name", namespace_name}
+                            );
+                    }}}
+            );
+
+        // reduce action cache
+        typedef boost::tuple<
+            std::vector<std::string>,
+            std::string,
+            size_t,
+            std::vector<int>>
+            reduce_action_cache_key_type;
+        typedef 
+            std::map<reduce_action_cache_key_type,
+                     std::vector<std::string>>
+            reduce_action_cache_type;
+        reduce_action_cache_type reduce_action_cache;
+
+        // action table
+        for (const auto& pair: state.action_table) {
+            const auto& token = pair.first;
+            const auto& action = pair.second;
+
+            const auto& rule = action.rule;
+
+            // action header 
+            std::string case_tag =
+                options.token_prefix + tokens[token];
+
+            // action
+            switch (action.type) {
+                case zw::gr::action_shift:
+                    stencil(
+                        os, R"(
+        case \${namespace_name}\Token::${case_tag}:
+            // shift
+            ${d}this->push_stack(${dest_index}, ${d}value, 0);
+            return FALSE;
+)",
+                        {"d", "$"},
+                        {"namespace_name", namespace_name},
+                        {"case_tag", case_tag},
+                        {"dest_index", action.dest_index}
+                        );
+                    break;
+                case zw::gr::action_reduce: {
+                    size_t base = rule.right().size();
+                    const std::string& rule_name = rule.left().name();
+
+                    auto k = finder(actions, rule);
+                    if (k && !(*k).special) {
+                        const auto& sa = *k;
+
+                        std::vector<std::string> signature;
+                        make_signature(
+                            nonterminal_types,
+                            rule,
+                            sa,
+                            signature);
+
+                        reduce_action_cache_key_type key =
+                            boost::make_tuple(
+                                signature,
+                                rule_name,
+                                base,
+                                sa.source_indices);
+
+                        reduce_action_cache[key].push_back(case_tag);
+                    } else {
+                        stencil(
+                            os, R"(
+        case \${namespace_name}\Token::${case_tag}:
+)",
+                            {"namespace_name", namespace_name},
+                            {"case_tag", case_tag}
+                            );
+                        std::string funcname = "call_nothing";
+                        if (k) {
+                            const auto& sa = *k;
+                            assert(sa.special);
+                            funcname = sa.name;
+                        }
+                        stencil(
+                            os, R"(
+            // reduce
+            return ${d}this->${funcname}(\${namespace_name}\Nonterminal::${nonterminal}, ${base}, 0);
+)",
+                            {"d", "$"},
+                            {"namespace_name", namespace_name},
+                            {"funcname", funcname},
+                            {"nonterminal", rule.left().name()},
+                            {"base", base}
+                            );
+                    }
+                }
+                    break;
+                case zw::gr::action_accept:
+                    stencil(
+                        os, R"(
+        case \${namespace_name}\Token::${case_tag}:
+            // accept
+            ${d}this->accepted = TRUE;
+            ${d}this->accepted_value = ${d}this->get_arg(1, 0);
+            return FALSE;
+)",
+                        {"d", "$"},
+                        {"namespace_name", namespace_name},
+                        {"case_tag", case_tag}
+                        );
+                    break;
+                case zw::gr::action_error:
+                    stencil(
+                        os, R"(
+        case \${namespace_name}\Token::${case_tag}:
+            assert(FALSE);
+            ${d}this->sa->syntax_error();
+            ${d}this->error = TRUE;
+            return FALSE;
+)",
+                        {"d", "$"},
+                        {"namespace_name", namespace_name},
+                        {"case_tag", case_tag},
+                        {"namespace_name", namespace_name}
+                        );
+                    break;
+            }
+
+            // action footer
+        }
+
+        // flush reduce action cache
+        for(const auto& pair: reduce_action_cache) {
+            const reduce_action_cache_key_type& key = pair.first;
+            const std::vector<std::string>& cases = pair.second;
+
+            const std::vector<std::string>& signature = key.get<0>();
+            const std::string& nonterminal_name = key.get<1>();
+            size_t base = key.get<2>();
+            const std::vector<int>& arg_indices = key.get<3>();
+
+            for (size_t j = 0 ; j < cases.size() ; j++){
+                // fall through, be aware when port to other language
+                stencil(
+                    os, R"(
+        case \${namespace_name}\Token::${case}:
+)",
+                    {"namespace_name", namespace_name},
+                    {"case", cases[j]}
+                    );
+            }
+
+            int index = stub_indices[signature];
+
+            stencil(
+                os, R"(
+            // reduce
+            return ${d}this->call_${index}_${sa_name}(\${namespace_name}\Nonterminal::${nonterminal}, ${base}${args});
+)",
+                {"d", "$"},
+                {"namespace_name", namespace_name},
+                {"index", index},
+                {"sa_name", signature[0]},
+                {"nonterminal", nonterminal_name},
+                {"base", base},
+                {"args", [&](std::ostream& os) {
+                        for(const auto& x: arg_indices) {
+                            os  << ", " << x;
+                        }
+                    }}
+                );
+        }
+
+        // dispatcher footer / state footer
+        stencil(
+            os, R"(
+        default:
+            ${d}this->sa->syntax_error();
+            ${d}this->error = TRUE;
+            return FALSE;
+        }
+    }
+)",
+                {"d", "$"}
+            );
+        
+        // gotof header
+        stencil(
+            os, R"(
+
+    function gotof_${state_no}(${d}nonterminal)
+    {
+)",
+            {"d", "$"},
+            {"state_no", state.no}
+            );
+
+        // gotof dispatcher
+        std::stringstream ss;
+        stencil(
+            ss, R"(
+        switch (${d}nonterminal)
+        {
+)",
+                {"d", "$"}
+        );
+        bool output_switch = false;
+        for (const auto& pair: state.goto_table) {
+            stencil(
+                ss, R"(
+        case \${namespace_name}\Nonterminal::${nonterminal}:
+            return ${state_index};
+)",
+                {"d", "$"},
+                {"namespace_name", namespace_name},
+                {"nonterminal", pair.first.name()},
+                {"state_index", pair.second}
+                );
+            output_switch = true;
+        }
+
+        // gotof footer
+        stencil(
+            ss, R"(
+        default:
+            assert(FALSE);
+            return FALSE;
+        }
+)"
+            );
+        if (output_switch) {
+            os << ss.str();
+        } else {
+            stencil(
+                os, R"(
+        assert(FALSE);
+        return TRUE;
+)"
+            );
+        }
+        stencil(os, R"(
+    }
+)"
+            );
+    }
+    stencil(os, R"(
+}
+)"
+        );
+}

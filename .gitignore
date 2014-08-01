@@ -6,6 +6,7 @@ capella/capella
 caper/samples/*/*.exe
 caper/samples/*/*.exe.mdb
 caper/samples/ruby/*_parser.rb
+caper/samples/php/*_parser.php
 caper/vcproj/Debug
 caper/vcproj/Release
 caper/vcproj/*.sdf

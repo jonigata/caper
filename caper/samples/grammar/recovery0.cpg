@@ -3,15 +3,17 @@
 %dont_use_stl;
 %recover error;
 
-Do<int> : [] List
-        | [] Star
-        ;
+MyDo<int> :
+    [] MyList |
+    [] Star
+    ;
 
-List<int> : [PackList] LParen ListItems(0) RParen
-	  | [PackListError] LParen error RParen
-	  ;
+MyList<int> :
+    [PackList] LParen MyListItems(0) RParen |
+    [PackListError] LParen error RParen
+    ;
 
-ListItems<int>
-          : [MakeList] Number(0)
-          | [AddToList] ListItems(0) Comma Number(1)
-          ;
+MyListItems<int> :
+    [MakeList] Number(0) |
+    [AddToList] MyListItems(0) Comma Number(1)
+    ;

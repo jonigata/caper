@@ -471,34 +471,29 @@ void make_first_and_follow(
 
 template <class Token, class Traits>
 void make_vector_first(
-    symbol_set<Token, Traits>&                  s,
+    terminal_set<Token, Traits>&                s,
     const first_collection<Token, Traits>&      first,
     const std::vector<symbol<Token, Traits>>&   v) {
+
+    // n”Ô–Ú‚Ì—v‘f‚Éepsilon‚ªŠÜ‚Ü‚ê‚Ä‚¢‚éê‡A
+    // n+1”Ô–Ú‚Ì—v‘f‚à’Ç‰Á‚·‚é
 
     bool next = false;
     for (const auto& x: v) {
         next = false;
 
-        if (x.is_terminal()) {
-            s.insert(x);
-            return;
-        }
-
         auto j = first.find(x);
         assert(j != first.end());
 
         for (const auto& k: (*j).second) {
+            assert(!k.is_nonterminal());
             if (k.is_epsilon()) {
                 next = true;
             } else {
-                s.insert(k);
+                s.insert(k.as_terminal());
             }
         }
         if (!next) { break; }
-    }
-
-    if (next) {
-        s.insert(epsilon<Token, Traits>());
     }
 }
 
@@ -589,10 +584,12 @@ make_lr1_closure(
     item_set<Token, Traits>&                      J,
     const first_collection<Token, Traits>&        first,
     const grammar<Token, Traits>&                 g) {
+
     typedef symbol<Token, Traits>               symbol_type;
     typedef rule<Token, Traits>                 rule_type;
     typedef item<Token, Traits>                 item_type;
     typedef symbol_set<Token, Traits>           symbol_set_type;
+    typedef terminal_set<Token, Traits>         terminal_set_type;
     typedef item_set<Token, Traits>             item_set_type;
     typedef std::vector<symbol<Token, Traits>>  symbol_vector_type;
 
@@ -617,7 +614,7 @@ make_lr1_closure(
             v.push_back(x.lookahead());
 
             // f is FIRST(ƒÀa)
-            symbol_set_type f;
+            terminal_set_type f;
             make_vector_first(f, first, v); 
 
             for (const rule_type& z:

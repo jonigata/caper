@@ -142,6 +142,14 @@ make_lalr_table(
     symbol_set_type all_symbols;
     collect_symbols(terminals, nonterminals, all_symbols, g);
 
+    terminal_type dummy("#", Token(-1));
+    terminals.insert(dummy);
+    all_symbols.insert(dummy);
+
+    terminal_type eof("$", Traits::eof());
+    terminals.insert(eof);
+    all_symbols.insert(eof);
+        
     // 接続チェック
     check_reachable(g);
 
@@ -186,8 +194,7 @@ make_lalr_table(
 
         if (s.kernel.count(root_core)) {
             table.first_state(s.no);
-            s.generate_map[root_core].insert(
-                terminal_type("$", Traits::eof()));
+            s.generate_map[root_core].insert(eof);
         }
     }
 
@@ -216,8 +223,6 @@ make_lalr_table(
     // we determined in step(2) were generated spontaneously.
 
     // determine lookahead p.296
-    terminal_type dummy("#", Token(-1));
-
     for (auto& s: states) {
         for (const auto& k: s.kernel) {
             item_set_type J;

@@ -41,7 +41,6 @@ class epsilon {
 public:
     epsilon(){}
     epsilon(const epsilon<Token, Traits>&) {}
-    ~epsilon(){}
 
     epsilon<Token, Traits>& operator=(const epsilon<Token, Traits>&) {
         return *this;
@@ -102,8 +101,7 @@ private:
 
 public:
     struct hash {
-        size_t
-        operator()(const terminal< Token, Traits >& s) const {
+        size_t operator()(const terminal< Token, Traits >& s) const {
             return size_t(s.token_);
         }
     };
@@ -117,8 +115,7 @@ bool operator==(const terminal<Token, Traits>& x,
 }
 
 template <class Token,class Traits>
-std::ostream& operator<<( std::ostream& os, const terminal< Token, Traits >& r )
-{
+std::ostream& operator<<(std::ostream& os, const terminal< Token, Traits >& r) {
     os << r.display_;
     return os;
 }
@@ -164,7 +161,6 @@ public:
     explicit nonterminal(const std::string& x) : name_(intern(x)) {}
     explicit nonterminal(const std::string* n) : name_(n) {}
     nonterminal(const nonterminal<Token, Traits>& x) : name_(x.name_) {}
-    ~nonterminal() {}
 
     const std::string& name() const { return *name_; }
     const std::string* identity() const { return name_; }
@@ -429,7 +425,6 @@ public:
     explicit rule(const nonterminal_type& x)
     : imp(std::make_shared<rule_imp>(x)) {}
     rule(const rule<Token, Traits>& x) : imp(x.imp) {}
-    ~rule(){}
 
     rule<Token, Traits>& operator=(const rule<Token, Traits>& x) {
         imp = x.imp;
@@ -565,7 +560,6 @@ public:
     explicit grammar(const rule<Token, Traits>& r)
         : imp(std::make_shared<grammar_imp>(r)){}
     grammar(const grammar& x) : imp(x.imp) {}
-    ~grammar(){}
 
     grammar& operator=(const grammar& x) {
         imp = x.imp;

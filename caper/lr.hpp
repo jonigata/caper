@@ -345,8 +345,8 @@ std::ostream& operator<<(std::ostream& os, const lr1_collection<Token, Traits>& 
 
 template <class Token, class Traits>
 void collect_symbols(
-    symbol_set<Token, Traits>&      terminals,
-    symbol_set<Token, Traits>&      nonterminals,
+    terminal_set<Token, Traits>&    terminals,
+    nonterminal_set<Token, Traits>& nonterminals,
     symbol_set<Token, Traits>&      all_symbols,
     const grammar<Token, Traits>&   g) {
 
@@ -354,8 +354,8 @@ void collect_symbols(
         nonterminals.insert(rule.left());
         all_symbols.insert(rule.left());
         for (const auto& x: rule.right()) {
-            if (x.is_terminal()) { terminals.insert(x); }
-            if (x.is_nonterminal()) { nonterminals.insert(x); }
+            if (x.is_terminal()) { terminals.insert(x.as_terminal()); }
+            if (x.is_nonterminal()) { nonterminals.insert(x.as_nonterminal()); }
             all_symbols.insert(x); 
         }
     }
@@ -391,9 +391,7 @@ template <class Token, class Traits>
 void make_first_and_follow(
     first_collection<Token, Traits>&    first,
     follow_collection<Token, Traits>&   follow,
-    const symbol_set<Token, Traits>&    terminals,
-    const symbol_set<Token, Traits>&,
-    const symbol_set<Token, Traits>&,
+    const terminal_set<Token, Traits>&  terminals,
     const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
 
@@ -598,11 +596,16 @@ make_lr1_closure(
     typedef item_set<Token, Traits>             item_set_type;
     typedef std::vector<symbol<Token, Traits>>  symbol_vector_type;
 
+    static int call_count = 0;
+
+    //std::cerr << "make_lr1_closure start: " << call_count << std::endl;
+    call_count++;
     size_t J_size;
     do {
         item_set_type new_items;  // ‘}“ü‚·‚é€
 
         J_size = J.size();
+        //std::cerr << "J_size: " << J_size << std::endl;
 
         for (const item_type& x: J) {
             // x is [item(A¨ƒ¿EBƒÀ, a)]
@@ -635,6 +638,7 @@ make_lr1_closure(
 
         merge_sets(J, new_items);
     } while (J_size != J.size());
+    //std::cerr << "make_lr1_closure done" << std::endl;
 }
 
 /*============================================================================
@@ -928,7 +932,7 @@ template <class Token, class Traits>
 struct null_reporter {
     typedef rule<Token, Traits> rule_type;
 
-    void operator()(const rule_type&, const rule_type& y) {
+    void operator()(const rule_type&, const rule_type&) {
         // do nothing
     }
 };

@@ -127,6 +127,7 @@ make_lalr_table(
     typedef lr0_collection<Token, Traits>               lr0_collection_type; 
     typedef symbol_set<Token, Traits>                   symbol_set_type; 
     typedef terminal_set<Token, Traits>                 terminal_set_type; 
+    typedef nonterminal_set<Token, Traits>              nonterminal_set_type; 
     typedef core<Token, Traits>                         core_type; 
     typedef item<Token, Traits>                         item_type; 
     typedef item_set<Token, Traits>                     item_set_type; 
@@ -138,8 +139,8 @@ make_lalr_table(
     typedef typename state_type::propagate_type         propagate_type;
 
     // 記号の収集
-    symbol_set_type terminals;    
-    symbol_set_type nonterminals;    
+    terminal_set_type terminals;    
+    nonterminal_set_type nonterminals;    
     symbol_set_type all_symbols;
     collect_symbols(terminals, nonterminals, all_symbols, g);
 
@@ -157,7 +158,7 @@ make_lalr_table(
     // FIRST, FOLLOWの作成
     first_collection<Token, Traits> first;
     follow_collection<Token, Traits> follow;
-    make_first_and_follow(first, follow, terminals, nonterminals, all_symbols, g);
+    make_first_and_follow(first, follow, terminals, g);
 
     // 表の作成
     table.set_grammar(g);
@@ -381,7 +382,7 @@ make_lalr_table(
         // すなわち、goto(I(i),A)=I(j)であれば、goto[i,A]=jとする。
         for (const auto& A: nonterminals) {
             item_set_type gt2;
-            make_lr1_goto(gt2, s.items, A, first, g);
+            make_lr1_goto(gt2, s.items, symbol_type(A), first, g);
 
             core_set_type gt;
             items_to_cores(gt, gt2);

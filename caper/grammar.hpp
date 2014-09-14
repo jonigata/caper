@@ -87,6 +87,12 @@ public:
         return *this;
     }
     
+    Token token() const { return token_; }
+
+    int cmp(const terminal<Token, Traits>& y) const {
+        return token_ - y.token_;
+    }
+
 private:
     std::string     display_;
     Token           token_;

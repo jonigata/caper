@@ -126,6 +126,7 @@ make_lalr_table(
     typedef rule<Token, Traits>                         rule_type; 
     typedef lr0_collection<Token, Traits>               lr0_collection_type; 
     typedef symbol_set<Token, Traits>                   symbol_set_type; 
+    typedef terminal_set<Token, Traits>                 terminal_set_type; 
     typedef core<Token, Traits>                         core_type; 
     typedef item<Token, Traits>                         item_type; 
     typedef item_set<Token, Traits>                     item_set_type; 
@@ -241,7 +242,7 @@ make_lalr_table(
                     if (!(l.rule() == j.rule())) { continue; }
                     if (l.cursor() != j.cursor()+ 1) { continue; }
 
-                    if (j.lookahead() == symbol_type(dummy)) {
+                    if (j.lookahead() == dummy) {
                         // êÊì«Ç›ì`îd
                         s.propagate_map[k].insert(
                             std::make_pair(goto_state, l));
@@ -274,11 +275,11 @@ make_lalr_table(
                 auto f1 = s.propagate_map.find(j);
                 if (f1 == s.propagate_map.end()) { continue; }
 
-                const symbol_set_type& sg = (*f0).second;
+                const terminal_set_type& sg = (*f0).second;
                 const propagate_type& propagate = (*f1).second;
 
                 for (const auto& k: propagate) {
-                    symbol_set_type& dg =
+                    terminal_set_type& dg =
                         states[k.first].generate_map[k.second];
 
                     size_t n = dg.size();

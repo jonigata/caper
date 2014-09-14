@@ -112,15 +112,17 @@ std::ostream& operator<<(std::ostream& os, const core<Token, Traits>& y) {
 template <class Token, class Traits>
 class item {
 public:
-    typedef zw::gr::core<Token, Traits>   core_type;
-    typedef zw::gr::item<Token, Traits>   self_type;
-    typedef zw::gr::symbol<Token, Traits> symbol_type;
-    typedef zw::gr::rule<Token, Traits>   rule_type;
+    typedef zw::gr::core<Token, Traits>     core_type;
+    typedef zw::gr::item<Token, Traits>     self_type;
+    typedef zw::gr::symbol<Token, Traits>   symbol_type;
+    typedef zw::gr::terminal<Token, Traits> terminal_type;
+    typedef zw::gr::rule<Token, Traits>     rule_type;
 
 public:
-    item(const rule_type& r, int c, const symbol_type& s)
+    item(const rule_type& r, int c, const terminal_type& s)
         : core_(r, c), lookahead_(s) {}
-    item(const core_type& x, const symbol_type& y) : core_(x), lookahead_(y) {}
+    item(const core_type& x, const terminal_type& y)
+        : core_(x), lookahead_(y) {}
     item(const self_type& x) : core_(x.core_), lookahead_(x.lookahead_) {}
 
     self_type& operator=(const self_type& x) {
@@ -129,8 +131,8 @@ public:
         return *this;
     }
 
-    const core_type& core() const           { return core_; }
-    const symbol_type& lookahead() const    { return lookahead_; }
+    const core_type&        core() const    { return core_; }
+    const terminal_type& lookahead() const  { return lookahead_; }
 
     int                     id() const      { return core_.id(); }
     const rule_type&        rule() const    { return core_.rule(); }
@@ -146,8 +148,8 @@ public:
     }
 
 private:
-    core_type   core_;
-    symbol_type lookahead_;
+    core_type       core_;
+    terminal_type   lookahead_;
 
 };
 
@@ -395,6 +397,8 @@ void make_first_and_follow(
     const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
 
+    // TODO: followバグってるっぽい(使ってない)
+
     // nullable
     symbol_set_type nullable;
 
@@ -586,6 +590,7 @@ make_lr1_closure(
     const grammar<Token, Traits>&                 g) {
 
     typedef symbol<Token, Traits>               symbol_type;
+    typedef terminal<Token, Traits>             terminal_type;
     typedef rule<Token, Traits>                 rule_type;
     typedef item<Token, Traits>                 item_type;
     typedef symbol_set<Token, Traits>           symbol_set_type;
@@ -622,7 +627,7 @@ make_lr1_closure(
                 // z is [rule(B→γ)]
 
                 // 各lookahead
-                for (const symbol_type& s: f) {
+                for (const terminal_type& s: f) {
                     new_items.insert(item_type(z, 0, s));
                 }
             }
@@ -784,6 +789,7 @@ public:
     typedef parsing_table<Token,Traits> self_type;
     typedef symbol<Token, Traits>       symbol_type;
     typedef symbol_set<Token, Traits>   symbol_set_type;
+    typedef terminal_set<Token, Traits> terminal_set_type;
     typedef grammar<Token, Traits>      grammar_type;
     typedef rule<Token, Traits>         rule_type;
     typedef core<Token, Traits>         core_type; 
@@ -806,7 +812,7 @@ public:
         typedef core_set<Token, Traits>                 core_set_type;
         typedef std::map<Token, action>                 action_table_type;
         typedef std::map<symbol_type, int>              goto_table_type; // index to states_
-        typedef std::map<core_type, symbol_set_type>    generate_map_type;
+        typedef std::map<core_type, terminal_set_type>  generate_map_type;
         typedef std::set<std::pair<int, core_type>>     propagate_type;
         typedef std::map<core_type, propagate_type>     propagate_map_type;
 

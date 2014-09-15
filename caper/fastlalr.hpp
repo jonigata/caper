@@ -157,8 +157,10 @@ make_lalr_table(
 
     // FIRST, FOLLOWÇÃçÏê¨
     first_collection<Token, Traits> first;
-    follow_collection<Token, Traits> follow;
     make_first(first, terminals, g);
+
+    follow_collection<Token, Traits> follow;
+    make_follow(follow, first, g, eof);
 
     // ï\ÇÃçÏê¨
     table.set_grammar(g);

@@ -389,6 +389,8 @@ void make_first(
     const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
 
+    // firstの値は terminal | epsilon (nonterminalはありえない)
+
     // nullable
     symbol_set_type nullable;
 
@@ -397,8 +399,7 @@ void make_first(
         first[x].insert(x);
     }
 
-    // repeat until FIRST, FOLLOW,
-    // and nullable did not change in this iteration.
+    // repeat until FIRST and nullable did not change in this iteration.
     bool repeat;
     do {
         repeat = false;
@@ -424,30 +425,88 @@ void make_first(
     }
 }
 
-template <class Token, class Traits>
-void make_vector_first(
-    terminal_set<Token, Traits>&                s,
-    const first_collection<Token, Traits>&      first,
-    const std::vector<symbol<Token, Traits>>&   v) {
+template <class Token, class Traits, class It>
+void make_range_first(
+    symbol_set<Token, Traits>&              s,
+    const first_collection<Token, Traits>&  first,
+    It                                      b,
+    It                                      e) {
 
     // n番目の要素にepsilonが含まれている場合、
     // n+1番目の要素も追加する
 
-    for (const auto& x: v) {
-        auto j = first.find(x);
+    for (auto i = b ; i != e ; ++i) {
+        auto j = first.find(*i);
         assert(j != first.end());
 
-        bool next = false;
+        bool trail = false;
         for (const auto& k: (*j).second) {
             assert(!k.is_nonterminal());
             if (k.is_epsilon()) {
-                next = true;
+                trail = true;
             } else {
                 s.insert(k.as_terminal());
             }
         }
-        if (!next) { break; }
+        if (!trail) { return; }
     }
+
+    s.insert(epsilon<Token, Traits>());
+}
+
+template <class Token, class Traits>
+void make_vector_first(
+    symbol_set<Token, Traits>&                  s,
+    const first_collection<Token, Traits>&      first,
+    const std::vector<symbol<Token, Traits>>&   v) {
+
+    make_range_first(s, first, v.begin(), v.end());
+}
+
+template <class Token, class Traits>
+void make_follow(
+    follow_collection<Token, Traits>&       follow,
+    const first_collection<Token, Traits>&  first,
+    const grammar<Token, Traits>&           g,
+    const terminal<Token, Traits>&          eof) {
+
+    typedef symbol_set<Token, Traits>   symbol_set_type;
+
+    // nullable
+    follow[g.root_rule().left()].insert(eof);
+
+    // repeat until FOLLOW and nullable did not change in this iteration.
+    bool repeat;
+    do {
+        repeat = false;
+
+        // for each production X -> Y1Y2...Yk
+        for (const auto& rule: g) {
+            const auto& follow_a = follow[rule.left()];
+            const auto& right = rule.right();
+
+            // if Y1...Yk are all nullable(or if k = 0)
+            size_t right_size = right.size();
+            for (size_t i = 0 ; i < right_size ; i++) {
+                auto& follow_b = follow[right[i]];
+
+                symbol_set_type s;
+                make_range_first(s, first, right.begin() + 1, right.end());
+
+                bool trail = false;
+                for (const auto& k: s) {
+                    if (k.is_epsilon()) {
+                        trail = true;
+                    } else {
+                        repeat = repeat || follow_b.insert(k).second;
+                    }
+                }
+                if (trail) {
+                    repeat = repeat || merge_sets(follow_b, follow_a);
+                }
+            }
+        }
+    } while(repeat);
 }
 
 /*============================================================================
@@ -569,7 +628,7 @@ make_lr1_closure(
             v.push_back(x.lookahead());
 
             // f is FIRST(βa)
-            terminal_set_type f;
+            symbol_set_type f;
             make_vector_first(f, first, v); 
 
             for (const rule_type& z:
@@ -577,8 +636,11 @@ make_lr1_closure(
                 // z is [rule(B→γ)]
 
                 // 各lookahead
-                for (const terminal_type& s: f) {
-                    new_items.insert(item_type(z, 0, s));
+                for (const symbol_type& s: f) {
+                    assert(!s.is_nonterminal());
+                    if (s.is_terminal()) {
+                        new_items.insert(item_type(z, 0, s.as_terminal()));
+                    }
                 }
             }
         }

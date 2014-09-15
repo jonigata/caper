@@ -376,21 +376,24 @@ void collect_symbols(
  *==========================================================================*/
 
 template <class Token, class Traits>
-bool all_nullable(
-    const std::unordered_set<symbol<Token, Traits>, typename symbol<Token, Traits>::hash>& nullable,
-    const std::vector<symbol<Token, Traits>>&    rule_right,
-    int b, int e) {
-    bool flag = true;
-    for (int j = b ; j <e ; j++) {
-        const auto& s = rule_right[j];
-        if (s.is_epsilon()) { continue; }
+bool is_nullable(
+    const symbol_set<Token, Traits>&    nullable,
+    const symbol<Token, Traits>&        s) {
+    return s.is_epsilon() || 0 < nullable.count(s);
+}
 
-        if (nullable.count(s) == 0) {
-            flag = false;
-            break;
+template <class Token, class Traits>
+bool all_nullable(
+    const symbol_set<Token, Traits>&            nullable,
+    const std::vector<symbol<Token, Traits>>&   rule_right,
+    int b, int e) {
+
+    for (int j = b ; j < e ; j++) {
+        if (!is_nullable(nullable, rule_right[j])) {
+            return false;
         }
     }
-    return flag;
+    return true;
 }
 
 template <class Token, class Traits>

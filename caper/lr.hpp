@@ -27,7 +27,13 @@ namespace gr {
  *
  *==========================================================================*/
 
-template < class D, class S > inline void merge_sets( D& x, const S& y ) { x.insert( y.begin(), y.end() ); }
+template < class D, class S > inline
+bool
+merge_sets( D& x, const S& y ) {
+    size_t x_size = x.size();
+    x.insert( y.begin(), y.end() );
+    return x.size() != x_size;
+}
 
 /*============================================================================
  *
@@ -428,37 +434,29 @@ void make_first_and_follow(
                 // if Y1...Yi-1 are all nullable(or if i = 1)
                 if (all_nullable(nullable, rule.right(), 0, i)) {
                     // then FIRST[X] = FIRST[X] unify FIRST[Yi]
-                    symbol_set_type s = first[rule.left()];
-                    merge_sets(s, first[rule.right()[i]]);
-
-                    if (first[rule.left()] != s) {
-                        repeat = true;
-                        first[rule.left()] = s;
-                    }
+                    repeat =
+                        repeat || 
+                        merge_sets(first[rule.left()],
+                                   first[rule.right()[i]]);
                 }
+
                 // if Yi+1...Yk are all nullable(or if i = k)
                 if (all_nullable(nullable, rule.right(), i+1, k)) {
                     // then FOLLOW[Yi] = FOLLOW[Yi] unify FOLLOW[X]
-                    symbol_set_type s = follow[rule.right()[i]];
-                    merge_sets(s, follow[rule.left()]);
-
-                    if (follow[rule.right()[i]] != s) {
-                        repeat = true;
-                        follow[rule.right()[i]] = s;
-                    }
+                    repeat =
+                        repeat ||
+                        merge_sets(follow[rule.right()[i]],
+                                   follow[rule.left()]);
                 }
 
                 for (int j = i+1 ; j < k ; j++) {
                     // if Yi+1...Yj-1 are all nullable(or if i+1 = j)
                     // then FOLLOW[Yi] = FOLLOW[Yi] unify FIRST[Yj]
                     if (all_nullable(nullable, rule.right(), i+1, j)) {
-                        symbol_set_type s = follow[rule.right()[i]];
-                        merge_sets(s, first[rule.right()[j]]);
-
-                        if (follow[rule.right()[i]] != s) {
-                            repeat = true;
-                            follow[rule.right()[i]] = s;
-                        }
+                        repeat =
+                            repeat || 
+                            merge_sets(follow[rule.right()[i]],
+                                       first[rule.right()[j]]);
                     }
                 }
             }
@@ -600,12 +598,8 @@ make_lr1_closure(
 
     //std::cerr << "make_lr1_closure start: " << call_count << std::endl;
     call_count++;
-    size_t J_size;
-    do {
+    while(true) {
         item_set_type new_items;  // ‘}“ü‚·‚é€
-
-        J_size = J.size();
-        //std::cerr << "J_size: " << J_size << std::endl;
 
         for (const item_type& x: J) {
             // x is [item(A¨ƒ¿EBƒÀ, a)]
@@ -636,8 +630,10 @@ make_lr1_closure(
             }
         }
 
-        merge_sets(J, new_items);
-    } while (J_size != J.size());
+        if (!merge_sets(J, new_items)) {
+            break;
+        }
+    }
     //std::cerr << "make_lr1_closure done" << std::endl;
 }
 

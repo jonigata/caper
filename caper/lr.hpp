@@ -383,28 +383,11 @@ bool is_nullable(
 }
 
 template <class Token, class Traits>
-bool all_nullable(
-    const symbol_set<Token, Traits>&            nullable,
-    const std::vector<symbol<Token, Traits>>&   rule_right,
-    int b, int e) {
-
-    for (int j = b ; j < e ; j++) {
-        if (!is_nullable(nullable, rule_right[j])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-template <class Token, class Traits>
-void make_first_and_follow(
+void make_first(
     first_collection<Token, Traits>&    first,
-    follow_collection<Token, Traits>&   follow,
     const terminal_set<Token, Traits>&  terminals,
     const grammar<Token, Traits>&       g) {
     typedef symbol_set<Token, Traits>     symbol_set_type;
-
-    // TODO: followバグってるっぽい(使ってない)
 
     // nullable
     symbol_set_type nullable;
@@ -416,56 +399,25 @@ void make_first_and_follow(
 
     // repeat until FIRST, FOLLOW,
     // and nullable did not change in this iteration.
-    bool repeat = true;
-    while (repeat) {
+    bool repeat;
+    do {
         repeat = false;
 
         // for each production X -> Y1Y2...Yk
         for (const auto& rule: g) {
             // if Y1...Yk are all nullable(or if k = 0)
-            int k = int(rule.right().size());
-            if (all_nullable(nullable, rule.right(), 0, k)) {
-                // nullable[X] = true
-                if (!nullable.count(rule.left())) {
-                    repeat = true; 
-                    nullable.insert(rule.left());
+            for (const auto& e: rule.right()) {
+                repeat = repeat || merge_sets(first[rule.left()], first[e]);
+                if (!is_nullable(nullable, e)) {
+                    goto next;
                 }
             }
+            repeat = repeat || nullable.insert(rule.left()).second;
 
-            // for each i from 1 to k, each j from i + 1 to k
-            for (int i = 0 ; i < k ; i++) {
-                // if Y1...Yi-1 are all nullable(or if i = 1)
-                if (all_nullable(nullable, rule.right(), 0, i)) {
-                    // then FIRST[X] = FIRST[X] unify FIRST[Yi]
-                    repeat =
-                        repeat || 
-                        merge_sets(first[rule.left()],
-                                   first[rule.right()[i]]);
-                }
-
-                // if Yi+1...Yk are all nullable(or if i = k)
-                if (all_nullable(nullable, rule.right(), i+1, k)) {
-                    // then FOLLOW[Yi] = FOLLOW[Yi] unify FOLLOW[X]
-                    repeat =
-                        repeat ||
-                        merge_sets(follow[rule.right()[i]],
-                                   follow[rule.left()]);
-                }
-
-                for (int j = i+1 ; j < k ; j++) {
-                    // if Yi+1...Yj-1 are all nullable(or if i+1 = j)
-                    // then FOLLOW[Yi] = FOLLOW[Yi] unify FIRST[Yj]
-                    if (all_nullable(nullable, rule.right(), i+1, j)) {
-                        repeat =
-                            repeat || 
-                            merge_sets(follow[rule.right()[i]],
-                                       first[rule.right()[j]]);
-                    }
-                }
-            }
-
+          next:
+            ;
         }
-    }
+    } while(repeat);
 
     for (const auto& x: nullable) {
         first[x].insert(epsilon<Token, Traits>());
@@ -481,13 +433,11 @@ void make_vector_first(
     // n番目の要素にepsilonが含まれている場合、
     // n+1番目の要素も追加する
 
-    bool next = false;
     for (const auto& x: v) {
-        next = false;
-
         auto j = first.find(x);
         assert(j != first.end());
 
+        bool next = false;
         for (const auto& k: (*j).second) {
             assert(!k.is_nonterminal());
             if (k.is_epsilon()) {

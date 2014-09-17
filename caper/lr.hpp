@@ -153,6 +153,21 @@ public:
         return lookahead_.cmp(y.lookahead_);
     }
 
+public:
+    struct hash {
+        size_t operator()(const item<Token, Traits>& s) const {
+            // large prime numbers
+            const int p1 = 73856093;
+            const int p2 = 19349663;
+            const int p3 = 83492791;
+            
+            return
+                p1 * s.id() +
+                p2 * s.cursor() +
+                p3 * s.lookahead().token();
+        }
+    };
+
 private:
     core_type       core_;
     terminal_type   lookahead_;
@@ -230,7 +245,7 @@ std::ostream& operator<<(std::ostream& os, const core_set<Token, Traits>& s) {
  *==========================================================================*/
 
 template <class Token, class Traits>
-class item_set : public std::set<item<Token, Traits>> {
+class item_set : public std::unordered_set<item<Token, Traits>, typename item<Token, Traits>::hash> {
 };
 
 template <class Token, class Traits>
@@ -608,10 +623,10 @@ make_lr1_closure(
 
     item_set_type Jdash = J; // 次のイテレーションでソースにする項
 
-    //static int call_count = 0;
-
-    ///std::cerr << "make_lr1_closure start: " << call_count << std::endl;
-    //call_count++;
+    static int call_count = 0;
+    
+    //std::cerr << "make_lr1_closure start: " << call_count << std::endl;
+    call_count++;
     while(true) {
         //std::cerr << "J.size() = " << J.size() << ", Jdash.size() = " << Jdash.size() << std::endl;
         item_set_type new_items;  // 挿入する項
@@ -654,7 +669,7 @@ make_lr1_closure(
         if (!merge_sets(J, new_items)) {
             break;
         }
-        Jdash = new_items;
+        Jdash.swap(new_items);
     }
     //std::cerr << "make_lr1_closure done" << std::endl;
 }

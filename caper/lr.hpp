@@ -606,14 +606,17 @@ make_lr1_closure(
     typedef item_set<Token, Traits>             item_set_type;
     typedef std::vector<symbol<Token, Traits>>  symbol_vector_type;
 
-    static int call_count = 0;
+    item_set_type Jdash = J; // 次のイテレーションでソースにする項
 
-    //std::cerr << "make_lr1_closure start: " << call_count << std::endl;
-    call_count++;
+    //static int call_count = 0;
+
+    ///std::cerr << "make_lr1_closure start: " << call_count << std::endl;
+    //call_count++;
     while(true) {
+        //std::cerr << "J.size() = " << J.size() << ", Jdash.size() = " << Jdash.size() << std::endl;
         item_set_type new_items;  // 挿入する項
 
-        for (const item_type& x: J) {
+        for (const item_type& x: Jdash) {
             // x is [item(A→α・Bβ, a)]
             if (x.over()) { continue; }
 
@@ -639,7 +642,10 @@ make_lr1_closure(
                 for (const symbol_type& s: f) {
                     assert(!s.is_nonterminal());
                     if (s.is_terminal()) {
-                        new_items.insert(item_type(z, 0, s.as_terminal()));
+                        item_type item(z, 0, s.as_terminal());
+                        if (J.count(item) == 0) {
+                            new_items.insert(item);
+                        }
                     }
                 }
             }
@@ -648,6 +654,7 @@ make_lr1_closure(
         if (!merge_sets(J, new_items)) {
             break;
         }
+        Jdash = new_items;
     }
     //std::cerr << "make_lr1_closure done" << std::endl;
 }

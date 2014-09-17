@@ -557,8 +557,7 @@ make_lr0_closure(
             if (!y.is_nonterminal()) { continue; }
             if (added.find(y.identity()) != added.end()) { continue; }
 
-            for (const rule_type& z:
-                     (*g.dictionary().find(y.identity())).second) {
+            for (const rule_type& z: g.dictionary().at(y.identity())) {
                 new_cores.insert(core_type(z, 0)); 
             }
             added.insert(y.identity());
@@ -649,8 +648,7 @@ make_lr1_closure(
             symbol_set_type f;
             make_vector_first(f, first, v); 
 
-            for (const rule_type& z:
-                     (*g.dictionary().find(y.identity())).second) {
+            for (const rule_type& z: g.dictionary().at(y.identity())) {
                 // z is [rule(BÅ®É¡)]
 
                 // äelookahead

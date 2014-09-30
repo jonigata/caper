@@ -235,6 +235,14 @@ void make_cpg_parser(cpg::parser& p) {
             return Value(p);
         },
         token_directive_namespace, token_identifier);
+    make_rule(
+        g, p,
+        "NamespaceDecl",
+        [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<NamespaceDecl>(range(args), "");
+            return Value(p);
+        },
+        token_directive_namespace);
 
     // ..%smart_pointeréŒ¾
     make_rule(

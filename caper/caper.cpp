@@ -23,6 +23,7 @@ using std::exit;
 #include "caper_generate_boo.hpp"
 #include "caper_generate_ruby.hpp"
 #include "caper_generate_php.hpp"
+#include "caper_generate_haxe.hpp"
 #include <sstream>
 #include <fstream>
 #include <iostream>
@@ -91,6 +92,11 @@ void get_commandline_options(
                 cmdopt.language = "PHP";
                 continue;
             }
+            if (arg == "-haxe" || arg == "-HAXE" ||
+                arg == "-Haxe" || arg == "-haXe") {
+                cmdopt.language = "Haxe";
+                continue;
+            }
             if (arg == "-lalr1") {
                 cmdopt.algorithm = "lalr1";
                 continue;
@@ -149,7 +155,8 @@ int main(int argc, const char** argv) {
     generators["D"]             = generate_d;
     generators["Boo"]           = generate_boo;
     generators["Ruby"]          = generate_ruby;
-    generators["PHP"]          = generate_php;
+    generators["PHP"]           = generate_php;
+    generators["Haxe"]          = generate_haxe;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {

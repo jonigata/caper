@@ -1,0 +1,37 @@
+%token Number<Int> LParen RParen;
+%token Minus Plus Star Slash NewLine;
+%namespace;
+%recover error;
+
+Input<Int>
+    : [] Input Line
+    | [] Line
+    ;
+
+Line<Int>
+    : [doLine1] NewLine
+    | [doLine2] AddExp(0) NewLine
+    | [doLine3] error NewLine
+    ;
+
+AddExp<Int>
+    : [doAddExp1] MulExp(0)
+    | [doAddExp2] AddExp(0) Plus MulExp(1)
+    | [doAddExp3] AddExp(0) Minus MulExp(1)
+    ;
+
+MulExp<Int>
+    : [doMulExp1] UnaryExp(0)
+    | [doMulExp2] MulExp(0) Star UnaryExp(1)
+    | [doMulExp3] MulExp(0) Slash UnaryExp(1)
+    ;
+
+UnaryExp<Int>
+    : [doUnaryExp1] PrimExp(0)
+    | [doUnaryExp2] Minus UnaryExp(0)
+    ;
+
+PrimExp<Int>
+    : [doPrimExp1] Number(0)
+    | [doPrimExp2] LParen AddExp(0) RParen
+    ;

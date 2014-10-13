@@ -1,0 +1,14 @@
+%token Number<Int> Add Sub Mul Div;
+%namespace;
+
+Expr<Int> 
+	: [identity] Term(0)
+	| [makeAdd] Expr(0) Add Term(1)
+	| [makeSub] Expr(0) Sub Term(1)
+	;
+
+Term<Int> 
+	: [identity] Number(0)
+	| [makeMul] Term(0) Mul Number(1)
+	| [makeDiv] Term(0) Div Number(1)
+	;

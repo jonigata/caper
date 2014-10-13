@@ -1,0 +1,18 @@
+%token Number<Int> LParen RParen Comma Star;
+%namespace;
+%recover error;
+
+MyDo<Int> :
+    [] MyList |
+    [] Star
+    ;
+
+MyList<Int> :
+    [packList] LParen MyListItems(0) RParen |
+    [packListError] LParen error RParen
+    ;
+
+MyListItems<Int> :
+    [makeList] Number(0) |
+    [addToList] MyListItems(0) Comma Number(1)
+    ;

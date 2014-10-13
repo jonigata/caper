@@ -1,0 +1,4 @@
+%token Hello<String> World<String>;
+%namespace;
+
+HelloWorld<String> : [greet] Hello(0) World(1);

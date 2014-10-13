@@ -1,0 +1,4 @@
+%token Hello World;
+%namespace;
+
+HelloWorld<Int> : [greet] Hello World;

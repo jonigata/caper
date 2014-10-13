@@ -1,0 +1,7 @@
+%token Number<Int> LParen RParen Comma Star;
+%namespace;
+%recover error;
+%allow_ebnf;
+
+Document<Int> : [document] LParen Number+(0) RParen
+              ;

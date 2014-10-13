@@ -41,7 +41,8 @@ std::string make_arg_decl(const Type& x, size_t l, const std::string& smart_poin
     std::string y = make_type_name(x, smart_pointer_tag) + " arg" + sl;
     switch (x.extension) {
         case Extension::None:
-            return y;
+            assert(0);
+            return "";
         case Extension::Star:
         case Extension::Plus:
         case Extension::Question:

@@ -70,6 +70,17 @@ void make_signature(
     }
 }
 
+void make_generics_parameters(
+    std::ostream& os, const std::map<std::string, Type>& nonterminal_types) {
+
+    bool first = true;
+    for (const auto& nonterminal_type: nonterminal_types) {
+        if (first) { first = false; }
+        else { os << ", "; }
+        os << nonterminal_type.first;
+    }
+}
+
 } // unnamed namespace
 
 void generate_haxe(
@@ -243,17 +254,17 @@ class Stack<T> {
     // parser class header
     stencil(
         os, R"(
-private typedef State = Parser->Token->Dynamic->Bool;
+private typedef State<${generics_parameters}> = Parser<${generics_parameters}>->Token->Dynamic->Bool;
 private typedef Gotof = Nonterminal->Int;
 
-private typedef TableEntry = {
-    state: State,
+private typedef TableEntry<${generics_parameters}> = {
+    state: State<${generics_parameters}>,
     gotof: Gotof,
     handleError: Bool,
 };
 
-private typedef StackFrame = {
-    entry: TableEntry,
+private typedef StackFrame<${generics_parameters}> = {
+    entry: TableEntry<${generics_parameters}>,
     value: Dynamic,
     sequenceLength: Int,
 };
@@ -264,7 +275,11 @@ private typedef Range = {
 };
 
 private enum Nonterminal {
-)");
+)",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }}
+        );
 
 
     for (const auto& nonterminal_type: nonterminal_types) {
@@ -283,22 +298,15 @@ private enum Nonterminal {
 )"
         );
     
-    
-    for (const auto& nonterminal_type: nonterminal_types) {
-        stencil(
-            os, R"(
-private typedef ${nonterminal_name} = Dynamic;
-)",
-            {"nonterminal_name", nonterminal_type.first}
-            );
-    }
-
     stencil(
         os, R"(
-private typedef SemanticAction = {
+private typedef SemanticAction<${generics_parameters}> = {
     function syntaxError(): Void;
     function stackOverflow(): Void;
-)"
+)",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }}
         );
     
     {
@@ -357,8 +365,9 @@ private typedef SemanticAction = {
         os, R"(
 }
 
-class Parser {
-    public function new(sa: SemanticAction){ this.sa = sa; reset(); }
+class Parser<${generics_parameters}> {
+
+    public function new(sa: SemanticAction<${generics_parameters}>){ this.sa = sa; reset(); }
 
     public function reset() {
         this.failed = false;
@@ -394,6 +403,9 @@ class Parser {
     public function error(): Bool { return this.failed; }
 
 )",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }},
         {"first_state", table.first_state()}
         );
 
@@ -405,15 +417,18 @@ class Parser {
     var failed: Bool;
     var accepted_value: Dynamic;
 
-    var sa: SemanticAction;
+    var sa: SemanticAction<${generics_parameters}>;
 
-)"
+)",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }}
         );
 
     // stack operation
     stencil(
         os, R"(
-    var stack: Stack<StackFrame>;
+    var stack: Stack<StackFrame<${generics_parameters}>>;
 
     function pushStack(stateIndex: Int, v: Dynamic, sl: Int = 0): Bool {
 	var f = this.stack.push({
@@ -433,7 +448,7 @@ class Parser {
 $${pop_stack_implementation}
     }
 
-    function stackTop(): StackFrame {
+    function stackTop(): StackFrame<${generics_parameters}> {
         return this.stack.top();
     }
 
@@ -454,6 +469,9 @@ $${pop_stack_implementation}
     }
 
 )",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }},
         {"pop_stack_implementation", [&](std::ostream& os) {
                 if (options.allow_ebnf) {
                     stencil(
@@ -622,12 +640,15 @@ $${debmes:repost_done}
         }
         return a;
     }
-    function stack_nth_top(n: Int): StackFrame {
+    function stack_nth_top(n: Int): StackFrame<${generics_parameters}> {
         var r = this.seq_get_range(n + 1, 0);
         // multiple value appearing here is not supported now
         return this.stack.nth(r.begin);
     }
-)"
+)",
+            {"generics_parameters", [&](std::ostream& os) {
+                    make_generics_parameters(os, nonterminal_types);
+                }}
             );
     }
 
@@ -756,7 +777,7 @@ $${debmes:repost_done}
         // state header
         stencil(
             os, R"(
-    static function state_${state_no}(self: Parser, token: Token, value:  Dynamic): Bool {
+    static function state_${state_no}(self: Dynamic, token: Token, value:  Dynamic): Bool {
 $${debmes:state}
         switch(token) {
 )",
@@ -998,11 +1019,14 @@ $${debmes:state}
 $${entries}
     ];
 
-    function entry(n: Int): TableEntry {
+    function entry(n: Int): TableEntry<${generics_parameters}> {
         return entries[n];
     }
 
 )",
+        {"generics_parameters", [&](std::ostream& os) {
+                make_generics_parameters(os, nonterminal_types);
+            }},
         {"entries", [&](std::ostream& os) {
                 int i = 0;
                 for (const auto& state: table.states()) {

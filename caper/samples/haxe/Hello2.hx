@@ -16,7 +16,7 @@ class Hello2 {
 
         parser.post(Token.Hello, 'Guten Tag');
         parser.post(Token.World, 'Welt');
-        parser.post(Token.eof, 3);
+        parser.post(Token.Eof, 3);
 
         return;
     }

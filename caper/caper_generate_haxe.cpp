@@ -15,6 +15,16 @@
 
 namespace {
 
+std::string capitalize_token(const std::string s) {
+    if (s == "eof") {
+        return "Eof";
+    } else if (s == "error") {
+        return "Error";
+    } else {
+        return s;
+    }
+}
+
 std::string make_type_name(const Type& x) {
     switch(x.extension) {
         case Extension::None:
@@ -42,10 +52,10 @@ std::string make_arg_decl(const Type& x, size_t l) {
         case Extension::Plus:
         case Extension::Slash:
             return
-                y + " = seq_get_sequence(base, argIndex" + sl + ")";
+                y + " = seqGetSequence(base, argIndex" + sl + ")";
         case Extension::Question:
             return
-                y + " = seq_get_optional(base, argIndex" + sl + ")";
+                y + " = seqGetOptional(base, argIndex" + sl + ")";
         default:
             assert(0);
             return "";
@@ -131,7 +141,7 @@ $${labels}
                             os, R"(
     ${token};
 )",
-                            {"token", token}
+                            {"token", capitalize_token(token)}
                             );
                     }
                 }},
@@ -141,7 +151,7 @@ $${labels}
                             os, R"(
             case ${token}: "${token}";
 )",
-                            {"token", token}
+                            {"token", capitalize_token(token)}
                             );
                     }
                 }}
@@ -397,7 +407,7 @@ class Parser<${generics_parameters}> {
     public function accept(): Dynamic {
         //assert(this.accepted);
         if (this.failed) { return null; }
-        return this.accepted_value;
+        return this.acceptedValue;
     }
 
     public function error(): Bool { return this.failed; }
@@ -415,7 +425,7 @@ class Parser<${generics_parameters}> {
 
     var accepted: Bool;
     var failed: Bool;
-    var accepted_value: Dynamic;
+    var acceptedValue: Dynamic;
 
     var sa: SemanticAction<${generics_parameters}>;
 
@@ -527,8 +537,8 @@ $${debmes:repost_done}
     }
 
 )",
-            {"recovery_token", options.recovery_token},
-            {"token_eof", "eof"},
+            {"recovery_token", capitalize_token(options.recovery_token)},
+            {"token_eof", capitalize_token("eof")},
             {"debmes:start", {
                     options.debug_parser ?
                         R"(        trace('recover rewinding start: stack depth = ' + this.stack.depth());
@@ -579,19 +589,19 @@ $${debmes:repost_done}
         stencil(
             os, R"(
     // EBNF support member functions
-    function seq_head(nonterminal: Nonterminal, base: Int): Bool {
+    function seqHead(nonterminal: Nonterminal, base: Int): Bool {
         // case '*': base == 0
         // case '+': base == 1
-        var dest = (stack_nth_top(base).entry.gotof)(nonterminal);
+        var dest = (stackNthTop(base).entry.gotof)(nonterminal);
         return pushStack(dest, null, base);
     }
-    function seq_trail(nonterminal: Nonterminal, base: Int): Bool {
+    function seqTrail(nonterminal: Nonterminal, base: Int): Bool {
         // '*', '+' trailer
         this.stack.swapTopAndSecond();
         stackTop().sequenceLength++;
         return true;
     }
-    function seq_trail2(nonterminal: Nonterminal, base: Int): Bool {
+    function seqTrail2(nonterminal: Nonterminal, base: Int): Bool {
         // '/' trailer
         this.stack.swapTopAndSecond();
         popStack(1); // erase delimiter
@@ -599,15 +609,15 @@ $${debmes:repost_done}
         stackTop().sequenceLength++;
         return true;
     }
-    function opt_nothing(nonterminal: Nonterminal, base: Int): Bool {
+    function optNothing(nonterminal: Nonterminal, base: Int): Bool {
         // same as head of '*'
-        return seq_head(nonterminal, base);
+        return seqHead(nonterminal, base);
     }
-    function opt_just(nonterminal: Nonterminal, base: Int): Bool {
+    function optJust(nonterminal: Nonterminal, base: Int): Bool {
         // same as head of '+'
-        return seq_head(nonterminal, base);
+        return seqHead(nonterminal, base);
     }
-    function seq_get_range(base: Int, index: Int): Range {
+    function seqGetRange(base: Int, index: Int): Range {
         // returns beg = end if length = 0 (includes scalar value)
         // distinguishing 0-length-vector against scalar value is
         // caller's responsibility
@@ -621,18 +631,18 @@ $${debmes:repost_done}
         }
         return { begin: actualIndex, end: prevActualIndex};
     }
-    function seq_get_arg(base: Int, index: Int): Dynamic {
-        var r = seq_get_range(base, index);
+    function seqGetArg(base: Int, index: Int): Dynamic {
+        var r = seqGetRange(base, index);
         // multiple value appearing here is not supported now
         return this.stack.nth(r.begin).value;
     }
-    function seq_get_optional(base: Int, index: Int): Dynamic {
-        var r = seq_get_range(base, index);
+    function seqGetOptional(base: Int, index: Int): Dynamic {
+        var r = seqGetRange(base, index);
         if (r.begin == r.end) { return null; }
         return this.stack.nth(r.begin);
     }
-    function seq_get_sequence<T>(base: Int, index: Int): Array<T> {
-        var r = seq_get_range(base, index);
+    function seqGetSequence<T>(base: Int, index: Int): Array<T> {
+        var r = seqGetRange(base, index);
         var a = new Array<T>();
         if (r.begin == r.end) { return null; }
         for (i in r.begin...r.end) {
@@ -640,8 +650,8 @@ $${debmes:repost_done}
         }
         return a;
     }
-    function stack_nth_top(n: Int): StackFrame<${generics_parameters}> {
-        var r = this.seq_get_range(n + 1, 0);
+    function stackNthTop(n: Int): StackFrame<${generics_parameters}> {
+        var r = this.seqGetRange(n + 1, 0);
         // multiple value appearing here is not supported now
         return this.stack.nth(r.begin);
     }
@@ -721,7 +731,7 @@ $${debmes:repost_done}
             std::string get_arg = "getArg";
             for (const auto& arg: sa.args) {
                 if (arg.type.extension != Extension::None) {
-                    get_arg = "seq_get_arg";
+                    get_arg = "seqGetArg";
                     break;
                 }
             }
@@ -814,7 +824,7 @@ $${debmes:state}
             const auto& rule = action.rule;
 
             // action header 
-            std::string case_tag = tokens[token];
+            std::string case_tag = capitalize_token(tokens[token]);
 
             // action
             switch (action.type) {
@@ -884,7 +894,7 @@ $${debmes:state}
         case ${case_tag}:
             // accept
             self.accepted = true;
-            self.accepted_value = self.getArg(1, 0);
+            self.acceptedValue = self.getArg(1, 0);
             return false;
 )",
                         {"case_tag", case_tag}

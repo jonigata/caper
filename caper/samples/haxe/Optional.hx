@@ -22,7 +22,7 @@ class Optional {
         //trace(s);
     
         if (s.length == 0) {
-            return { token: Token.eof, value: null, rest: '' };
+            return { token: Token.Eof, value: null, rest: '' };
         }
     
         switch(s.charAt(0)) {

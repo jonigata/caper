@@ -13,7 +13,7 @@ class Hello1 {
 
         parser.post(Token.Hello, 1);
         parser.post(Token.World, 2);
-        parser.post(Token.eof, 3);
+        parser.post(Token.Eof, 3);
 
         return;
     }

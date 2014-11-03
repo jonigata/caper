@@ -56,6 +56,9 @@ void stencil_output(
 struct StencilBinding {
     std::string     name;
     StencilCallback callback;
+
+    StencilBinding(const std::string& n, StencilCallback cb)
+        : name(n), callback{ cb } {}
 };
 
 inline

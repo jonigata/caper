@@ -191,8 +191,10 @@
     <ClCompile Include="..\caper_generate_cpp.cpp" />
     <ClCompile Include="..\caper_generate_csharp.cpp" />
     <ClCompile Include="..\caper_generate_d.cpp" />
+    <ClCompile Include="..\caper_generate_haxe.cpp" />
     <ClCompile Include="..\caper_generate_java.cpp" />
     <ClCompile Include="..\caper_generate_js.cpp" />
+    <ClCompile Include="..\caper_generate_php.cpp" />
     <ClCompile Include="..\caper_generate_ruby.cpp" />
     <ClCompile Include="..\caper_stencil.cpp" />
     <ClCompile Include="..\caper_tgt.cpp" />
@@ -213,8 +215,10 @@
     <ClInclude Include="..\caper_generate_cpp.hpp" />
     <ClInclude Include="..\caper_generate_csharp.hpp" />
     <ClInclude Include="..\caper_generate_d.hpp" />
+    <ClInclude Include="..\caper_generate_haxe.hpp" />
     <ClInclude Include="..\caper_generate_java.hpp" />
     <ClInclude Include="..\caper_generate_js.hpp" />
+    <ClInclude Include="..\caper_generate_php.hpp" />
     <ClInclude Include="..\caper_generate_ruby.hpp" />
     <ClInclude Include="..\caper_scanner.hpp" />
     <ClInclude Include="..\caper_stencil.hpp" />

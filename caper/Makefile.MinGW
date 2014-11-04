@@ -1,7 +1,7 @@
 # Makefile for MinGW-builds
 CXX = g++
-CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_55_0
-#CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_55_0 -pg
+CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_56_0 -L/c/local/boost_1_56_0/stage/lib
+#CXXFLAGS = -Wall -static -std=c++11 -O9 --input-charset=cp932 -I/c/local/boost_1_56_0 -L/c/local/boost_1_56_0/stage/lib -pg
 TARGET = caper
 OBJS		= $(TARGET).o caper_cpg.o caper_tgt.o caper_generate_cpp.o caper_generate_d.o \
 	caper_generate_csharp.o caper_generate_js.o caper_generate_java.o caper_generate_boo.o \
@@ -32,7 +32,7 @@ TOP_HEADERS = \
 	caper_format.hpp
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lboost_filesystem -lboost_system
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJS) -lboost_filesystem-mgw48-mt-s-1_56 -lboost_system-mgw48-mt-s-1_56
 
 caper.o: $(TOP_HEADERS) caper.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ caper.cpp

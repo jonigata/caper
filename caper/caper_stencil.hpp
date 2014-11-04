@@ -57,8 +57,16 @@ struct StencilBinding {
     std::string     name;
     StencilCallback callback;
 
+    StencilBinding() {}
     StencilBinding(const std::string& n, StencilCallback cb)
         : name(n), callback{ cb } {}
+    StencilBinding(const StencilBinding& sb)
+        : name(sb.name), callback(sb.callback) {}
+    StencilBinding& operator=(const StencilBinding& sb) {
+        name = sb.name;
+        callback = sb.callback;
+        return *this;
+    }
 };
 
 inline
@@ -70,6 +78,7 @@ void stencil_setup(
     std::map<std::string, StencilCallback>& m,
     const StencilBinding& b,
     T... args) {
+    assert(!b.name.empty());
     m[b.name] = b.callback;
     stencil_setup(m, args...);
 }

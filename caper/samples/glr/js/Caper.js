@@ -66,6 +66,7 @@ var Caper = (function() {
                 this.A = heads.concat();
                 this.R = [];
                 this.Q = {};
+                this.Re = [];
             }
             return new PostContext(this.U);
         },
@@ -76,6 +77,8 @@ var Caper = (function() {
             } else if (context.R.length != 0) {
                 this.reducer(context);
                 return true;
+            } else if (context.Re.length != 0) {
+                this.e_reducer(context);
             } else {
                 this.shifter(context);
                 return false;
@@ -97,9 +100,14 @@ var Caper = (function() {
                         context.Q[alpha.target].push(v);
                         break;
                     case 'reduce':
-                        v.children.forEach(function(x) {
-                            context.R.push({v: v, x: x, p: alpha.production});
-                        });
+                        var p = alpha.production;
+                        if (0 < p.right.length) {
+                            v.children.forEach(function(x) {
+                                context.R.push({v: v, x: x, p: p});
+                            });
+                        } else {
+                            context.Re.push({v: v, p: p});
+                        }
                         break;
                     }
                 });
@@ -140,6 +148,31 @@ var Caper = (function() {
                     self.U.push(u);
                 }
             });
+        },
+        e_reducer: function(context) {
+            var Un = [];
+            context.Re.forEach(function(a) {
+                var v = a.v;
+                var p = a.p;
+                var N = p.left;
+                var s = Grammar.Table[v.state].gotof[N];
+                var w = Un.find(function(w) { return w.state == s; });
+                if (w != null) {
+                    var x = new NodeVertex(
+                        new NonterminalNode(N), self.age - 1);
+                    w.children.push(x);
+                    x.children.push(v);
+                } else {
+                    var w = new StateVertex(s, self.age);
+                    var x = new NodeVertex(
+                        new NonterminalNode(n), self.age - 1);
+                    w.children.push(x);
+                    x.children.push(v);
+                    Un.push(w);
+                }
+            });
+            context.Re = [];
+            context.A = Un;
         },
         shifter: function(context) {
             console.log('shift');

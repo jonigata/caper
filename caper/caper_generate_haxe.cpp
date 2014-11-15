@@ -655,6 +655,23 @@ $${debmes:repost_done}
         // multiple value appearing here is not supported now
         return this.stack.nth(r.begin);
     }
+
+    function opt_nothing(nonterminal: Nonterminal, base: Int): Bool {
+        return optNothing(nonterminal, base);
+    }
+    function opt_just(nonterminal: Nonterminal, base: Int): Bool {
+        return optJust(nonterminal, base);
+    }
+    function seq_head(nonterminal: Nonterminal, base: Int): Bool {
+        return seqHead(nonterminal, base);
+    }
+    function seq_trail(nonterminal: Nonterminal, base: Int): Bool {
+        return seqTrail(nonterminal, base);
+    }
+    function seq_trail2(nonterminal: Nonterminal, base: Int): Bool {
+        return seqTrail2(nonterminal, base);
+    }
+
 )",
             {"generics_parameters", [&](std::ostream& os) {
                     make_generics_parameters(os, nonterminal_types);

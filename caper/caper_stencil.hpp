@@ -57,16 +57,11 @@ struct StencilBinding {
     std::string     name;
     StencilCallback callback;
 
-    StencilBinding() {}
     StencilBinding(const std::string& n, StencilCallback cb)
         : name(n), callback{ cb } {}
-    StencilBinding(const StencilBinding& sb)
-        : name(sb.name), callback(sb.callback) {}
-    StencilBinding& operator=(const StencilBinding& sb) {
-        name = sb.name;
-        callback = sb.callback;
-        return *this;
-    }
+private:
+    StencilBinding& operator=(const StencilBinding&) = delete;
+    StencilBinding(const StencilBinding&) = delete;
 };
 
 inline
@@ -97,7 +92,7 @@ void stencil(
     const StencilBinding& b0
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0);
+    stencil_setup(m, std::cref(b0));
     stencil_output(os, t, m);
 }
 
@@ -108,7 +103,7 @@ void stencil(
     const StencilBinding& b1
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1);
+    stencil_setup(m, std::cref(b0), std::cref(b1));
     stencil_output(os, t, m);
 }
 
@@ -120,7 +115,7 @@ void stencil(
     const StencilBinding& b2
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2));
     stencil_output(os, t, m);
 }
 
@@ -133,7 +128,7 @@ void stencil(
     const StencilBinding& b3
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2), std::cref(b3));
     stencil_output(os, t, m);
 }
 
@@ -147,7 +142,8 @@ void stencil(
     const StencilBinding& b4
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4));
     stencil_output(os, t, m);
 }
 
@@ -162,7 +158,8 @@ void stencil(
     const StencilBinding& b5
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5));
     stencil_output(os, t, m);
 }
 
@@ -178,7 +175,9 @@ void stencil(
     const StencilBinding& b6
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5, b6);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5),
+                  std::cref(b6));
     stencil_output(os, t, m);
 }
 
@@ -195,7 +194,9 @@ void stencil(
     const StencilBinding& b7
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5, b6, b7);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5),
+                  std::cref(b6), std::cref(b7));
     stencil_output(os, t, m);
 }
 
@@ -213,7 +214,9 @@ void stencil(
     const StencilBinding& b8
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5, b6, b7, b8);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5),
+                  std::cref(b6), std::cref(b7), std::cref(b8));
     stencil_output(os, t, m);
 }
 
@@ -232,7 +235,10 @@ void stencil(
     const StencilBinding& b9
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5),
+                  std::cref(b6), std::cref(b7), std::cref(b8),
+                  std::cref(b9));
     stencil_output(os, t, m);
 }
 
@@ -252,7 +258,10 @@ void stencil(
     const StencilBinding& b10
     ) {
     std::map<std::string, StencilCallback> m;
-    stencil_setup(m, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10);
+    stencil_setup(m, std::cref(b0), std::cref(b1), std::cref(b2),
+                  std::cref(b3), std::cref(b4), std::cref(b5),
+                  std::cref(b6), std::cref(b7), std::cref(b8),
+                  std::cref(b9), std::cref(b10));
     stencil_output(os, t, m);
 }
 

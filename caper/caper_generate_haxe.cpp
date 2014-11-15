@@ -264,17 +264,14 @@ class Stack<T> {
     // parser class header
     stencil(
         os, R"(
-private typedef State<${generics_parameters}> = Parser<${generics_parameters}>->Token->Dynamic->Bool;
-private typedef Gotof = Nonterminal->Int;
-
-private typedef TableEntry<${generics_parameters}> = {
-    state: State<${generics_parameters}>,
-    gotof: Gotof,
+private typedef TableEntry = {
+    state: Int,
+    gotof: Int,
     handleError: Bool,
 };
 
 private typedef StackFrame<${generics_parameters}> = {
-    entry: TableEntry<${generics_parameters}>,
+    entry: TableEntry,
     value: Dynamic,
     sequenceLength: Int,
 };
@@ -297,7 +294,7 @@ private enum Nonterminal {
             os, R"(
     ${nonterminal_name};
 )",
-            {"nonterminal_name", nonterminal_type.first}
+{ "nonterminal_name", "Nonterminal_" + nonterminal_type.first }
             );
     }
     
@@ -395,7 +392,7 @@ class Parser<${generics_parameters}> {
     public function post(token: Token, value: Dynamic): Bool {
         rollbackTmpStack();
         this.failed = false;
-        while((stackTop().entry.state)(this, token, value)){ }
+        while(state_table(stackTop().entry.state, this, token, value)){ }
         if (!this.failed) {
             commitTmpStack();
         } else {
@@ -520,13 +517,13 @@ $${debmes:failed}
 $${debmes:done}
         // post error_token;
 $${debmes:post_error_start}
-        while((stackTop().entry.state)(this, Token.${recovery_token}, null)){}
+        while(state_table(stackTop().entry.state, this, Token.${recovery_token}, null)){}
 $${debmes:post_error_done}
         commitTmpStack();
         // repost original token
         // if it still causes error, discard it;
 $${debmes:repost_start}
-        while((stackTop().entry.state)(this, token, value)){ }
+        while(state_table(stackTop().entry.state, this, token, value)){ }
 $${debmes:repost_done}
         if (!this.failed) {
             commitTmpStack();
@@ -592,7 +589,7 @@ $${debmes:repost_done}
     function seqHead(nonterminal: Nonterminal, base: Int): Bool {
         // case '*': base == 0
         // case '+': base == 1
-        var dest = (stackNthTop(base).entry.gotof)(nonterminal);
+        var dest = gotof_table(stackNthTop(base).entry.gotof, nonterminal);
         return pushStack(dest, null, base);
     }
     function seqTrail(nonterminal: Nonterminal, base: Int): Bool {
@@ -622,7 +619,7 @@ $${debmes:repost_done}
         // distinguishing 0-length-vector against scalar value is
         // caller's responsibility
         var n = base - index;
-        var prevActualIndex = null;
+        var prevActualIndex = 0;
         var actualIndex = this.stack.depth();
         while(0 < n--) {
             actualIndex--;
@@ -684,7 +681,7 @@ $${debmes:repost_done}
         os, R"(
     function call_nothing(nonterminal: Nonterminal, base: Int): Bool {
         popStack(base);
-        var dest_index = (stackTop().entry.gotof)(nonterminal);
+        var dest_index = gotof_table(stackTop().entry.gotof, nonterminal);
         return pushStack(dest_index, null);
     }
 
@@ -780,7 +777,7 @@ $${debmes:repost_done}
                 os, R"(
         var r = this.sa.${semantic_action_name}(${args});
         popStack(base);
-        var dest_index = (stackTop().entry.gotof)(nonterminal);
+        var dest_index = gotof_table(stackTop().entry.gotof, nonterminal);
         return pushStack(dest_index, r);
     }
 
@@ -804,7 +801,7 @@ $${debmes:repost_done}
         // state header
         stencil(
             os, R"(
-    static function state_${state_no}(self: Dynamic, token: Token, value:  Dynamic): Bool {
+    static function state_${state_no}<${generics_parameters}>(self:Parser<${generics_parameters}>, token: Token, value:  Dynamic): Bool {
 $${debmes:state}
         switch(token) {
 )",
@@ -817,7 +814,10 @@ $${debmes:state}
 )",
                             {"state_no", state.no}
                             );
-                    }}}
+                    }}},
+			{ "generics_parameters", [&](std::ostream& os) {
+					make_generics_parameters(os, nonterminal_types);
+			} }
             );
 
         // reduce action cache
@@ -899,7 +899,7 @@ $${debmes:state}
             return self.${funcname}(${nonterminal}, /*pop*/ ${base});
 )",
                             {"funcname", funcname},
-                            {"nonterminal", rule.left().name()},
+                            {"nonterminal", "Nonterminal_"+rule.left().name()},
                             {"base", base}
                             );
                     }
@@ -963,7 +963,7 @@ $${debmes:state}
 )",
                 {"index", index},
                 {"sa_name", signature[0]},
-                {"nonterminal", nonterminal_name},
+                {"nonterminal", "Nonterminal_"+nonterminal_name},
                 {"base", base},
                 {"args", [&](std::ostream& os) {
                         for(const auto& x: arg_indices) {
@@ -1005,7 +1005,7 @@ $${debmes:state}
         for (const auto& pair: state.goto_table) {
             stencil(
                 ss, R"(
-        case ${nonterminal}: return ${state_index};
+        case Nonterminal_${nonterminal}: return ${state_index};
 )",
                 {"nonterminal", pair.first.name()},
                 {"state_index", pair.second}
@@ -1046,7 +1046,7 @@ $${debmes:state}
 $${entries}
     ];
 
-    function entry(n: Int): TableEntry<${generics_parameters}> {
+    function entry(n: Int): TableEntry {
         return entries[n];
     }
 
@@ -1059,7 +1059,7 @@ $${entries}
                 for (const auto& state: table.states()) {
                     stencil(
                         os, R"(
-        { state: state_${i}, gotof: gotof_${i}, handleError: ${handle_error} },
+        { state: ${i}, gotof: ${i}, handleError: ${handle_error} },
 )",
                             
                         {"i", i},
@@ -1069,6 +1069,51 @@ $${entries}
                 }                    
             }}
         );
+
+		stencil(
+			os,
+			R"(
+	static function state_table<${generics_parameters}>(index:Int, self:Parser<${generics_parameters}>, token:Token, value:Dynamic):Bool {
+		return switch index {
+$${states}
+			case _: throw "state_table faild.";
+		}
+	}
+)", { "generics_parameters", [&](std::ostream& os) {
+		make_generics_parameters(os, nonterminal_types);
+	} },
+	{ "states", [&](std::ostream& os){
+		int i = 0;
+		for (const auto& state : table.states()){
+			stencil(
+				os, R"(
+			case ${i}: state_${i}(self, token, value);
+)", { "i", i });
+			++i;
+		}
+	}}
+        );
+
+		stencil(
+			os,
+			R"(
+	static function gotof_table(index:Int, nonterminal: Nonterminal):Int {
+		return switch index {
+$${gotofs}
+			case _: throw "gotof_table faild.";
+		}
+	}
+)", { "gotofs", [&](std::ostream& os){
+			int i = 0;
+			for (const auto& state : table.states()){
+				stencil(
+					os, R"(
+			case ${i}: gotof_${i}(nonterminal);
+)", { "i", i });
+				++i;
+			}
+		} }
+		);
 
     // parser class footer
     // namespace footer

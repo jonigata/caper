@@ -3,13 +3,13 @@ import Calc1Parser;
 enum Term {
     Mul(a: Term, b: Int);
     Div(a: Term, b: Int);
-    Term(a: Int);
+    Term_Int(a: Int);
 }
 
 enum Expr {
     Add(a: Expr, b: Term);
     Sub(a: Expr, b: Term);
-    Expr(a: Term);
+    Expr_Term(a: Term);
 }
 
 class SemanticAction {
@@ -24,7 +24,7 @@ class SemanticAction {
         return Sub(a, b);
     }
     public function makeExpr(a: Term): Expr {
-        return Expr(a);
+        return Expr_Term(a);
     }
     public function makeMul(a: Term, b: Int): Term {
         return Mul(a, b);
@@ -33,7 +33,7 @@ class SemanticAction {
         return Div(a, b);
     }
     public function makeTerm(a: Int): Term {
-        return Term(a);
+        return Term_Int(a);
     }
 }
 

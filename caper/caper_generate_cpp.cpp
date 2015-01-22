@@ -674,7 +674,7 @@ $${debmes:repost_done}
             return !bool(*this);
         }
         T operator*() const {
-            value_type v;
+            T v;
             sa_->downcast(v, s_->nth(p_).value);
             return v;
         }

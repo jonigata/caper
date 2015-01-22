@@ -40,6 +40,10 @@ public:
         : caper_error(a, "undefined symbol " + an) {
     }
 };
+class empty_type_tag : public caper_error {
+public:
+    empty_type_tag(int a) : caper_error(a, "empty type tag") {}
+};
 class unexpected_char : public caper_error {
 public:
     unexpected_char(int a, int c)

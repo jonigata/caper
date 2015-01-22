@@ -165,6 +165,9 @@ public:
                         }
                 }
             }
+            if (ss.str() == "") {
+                throw empty_type_tag(addr_);
+            }
             v = value(b, TypeTag(ss.str()));
             return token_typetag;
         }

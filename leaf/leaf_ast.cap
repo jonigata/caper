@@ -13,10 +13,10 @@ module-footer = @{
 }@
 
 class-footer = @{
-	void alpha( AlphaContext& );
+    void alpha( AlphaContext& );
     void encode( EncodeContext&, bool, Value& );
     void entype( EntypeContext&, bool, type_t );
-	void display( int indent, std::ostream& );
+    void display( int indent, std::ostream& );
 
 }@
 
@@ -36,8 +36,8 @@ type Block = Statements(statements), bool(expanded);
 
 type Statements = Statement*(v);
 type Statement = FunDecl | FunDef | StructDef |
-				 VarDecl | IfThenElse | MultiExpr |
-				 SectionLabel | ThrowStatement | Invoke;
+                 VarDecl | IfThenElse | MultiExpr |
+                 SectionLabel | ThrowStatement | Invoke;
 
 type FunDecl = FunSig(sig);
 type FunDef = FunSig(sig), Block(body), symmap_t(freevars);
@@ -70,8 +70,8 @@ type LogicalAndElems = Equality*(v);
 type Equality = Relational | EqualityEq | EqualityNe;
 
 type Relational = Additive
-	 			| RelationalLt | RelationalGt
-				| RelationalLe | RelationalGe;
+                  | RelationalLt | RelationalGt
+                  | RelationalLe | RelationalGe;
 
 type EqualityEq = Equality(lhs), Relational(rhs);
 type EqualityNe = Equality(lhs), Relational(rhs);
@@ -96,7 +96,7 @@ type MemberExpr = MemberRef | PrimExpr;
 type MemberRef = PrimExpr(expr), Identifier(field);
 
 type PrimExpr = LiteralBoolean | LiteralInteger | LiteralChar
-              | VarRef | Parenthized | FunCall | Lambda
+                | VarRef | Parenthized | FunCall | Lambda
 			  | LiteralStruct;
 type LiteralBoolean = bool(data);
 type LiteralInteger = int(data);
@@ -106,8 +106,8 @@ type Parenthized = MultiExpr(exprs);
 type FunCall = Identifier(func), ActualArgs(aargs);
 type LiteralStruct = Identifier(name), LiteralMembers(members);
 type Lambda = symbol_t(name),
-			  FormalArgs(fargs), TypeExpr(result_type), Block(body),
-			  symmap_t(freevars);
+              FormalArgs(fargs), TypeExpr(result_type), Block(body),
+              symmap_t(freevars);
 
 type ActualArgs = ActualArg*(v);
 type ActualArg = Expr(expr);

@@ -149,8 +149,6 @@ struct Header {
         : id(aid), beg(abeg), end(aend), t(NULL) {}
     Header(int aid, const Header& h)
         : id(aid), beg(h.beg), end(h.end), t(NULL) { }
-    Header(int aid, const Addr& abeg, const Addr& aend)
-        : id(aid), beg(abeg), end(aend), t(NULL) {}
 
     Header operator+( const Header& h ) const
     {

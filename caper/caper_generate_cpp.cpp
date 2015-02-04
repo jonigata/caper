@@ -403,16 +403,16 @@ private:
     // parser class header
     stencil(
         os, R"(
-template <${token_parameter}class Value, class SemanticAction,
-          unsigned int StackSize = ${default_stack_size}>
+template <${token_parameter}class _Value, class _SemanticAction,
+          unsigned int _StackSize = ${default_stack_size}>
 class Parser {
 public:
-    typedef Token token_type;
-    typedef Value value_type;
+    typedef _Token token_type;
+    typedef _Value value_type;
 
     enum Nonterminal {
 )",
-        {"token_parameter", options.external_token ? "class Token, " : ""},
+        {"token_parameter", options.external_token ? "class _Token, " : ""},
         {"default_stack_size", options.dont_use_stl ? "1024" : "0"}
         );
 
@@ -430,7 +430,7 @@ public:
     };
 
 public:
-    Parser(SemanticAction& sa) : sa_(sa) { reset(); }
+    Parser(_SemanticAction& sa) : sa_(sa) { reset(); }
 
     void reset() {
         error_ = false;
@@ -475,7 +475,7 @@ public:
     stencil(
         os, R"(
 private:
-    typedef Parser<${token_paremter}Value, SemanticAction, StackSize> self_type;
+    typedef Parser<${token_paremter}_Value, _SemanticAction, _StackSize> self_type;
 
     typedef bool (self_type::*state_type)(token_type, const value_type&);
     typedef int (self_type::*gotof_type)(Nonterminal);
@@ -483,7 +483,7 @@ private:
     bool            accepted_;
     bool            error_;
     value_type      accepted_value_;
-    SemanticAction& sa_;
+    _SemanticAction& sa_;
 
     struct table_entry {
         state_type  state;
@@ -501,13 +501,13 @@ private:
     };
 
 )",
-        {"token_paremter", options.external_token ? "Token, " : ""}
+        {"token_paremter", options.external_token ? "_Token, " : ""}
         );
 
     // stack operation
     stencil(
         os, R"(
-    Stack<stack_frame, StackSize> stack_;
+    Stack<stack_frame, _StackSize> stack_;
 
     bool push_stack(int state_index, const value_type& v, int sl = 0) {
         bool f = stack_.push(stack_frame(entry(state_index), v, sl));
@@ -567,7 +567,7 @@ $${pop_stack_implementation}
     if (options.recovery) {
         stencil(
             os, R"(
-    void recover(Token token, const value_type& value) {
+    void recover(token_type token, const value_type& value) {
         rollback_tmp_stack();
         error_ = false;
 $${debmes:start}
@@ -640,7 +640,7 @@ $${debmes:repost_done}
     } else {
         stencil(
             os, R"(
-    void recover(Token, const value_type&) {
+    void recover(token_type, const value_type&) {
     }
 
 )"
@@ -661,10 +661,10 @@ $${debmes:repost_done}
     template <class T>
     class Optional {
     public:
-        typedef Stack<stack_frame, StackSize> stack_type;
+        typedef Stack<stack_frame, _StackSize> stack_type;
 
     public:
-        Optional(SemanticAction& sa, stack_type& s, const Range& r)
+        Optional(_SemanticAction& sa, stack_type& s, const Range& r)
             : sa_(&sa), s_(&s), p_(r.beg == r.end ? -1 : r.beg){}
 
         operator bool() const {
@@ -689,14 +689,14 @@ $${debmes:repost_done}
     template <class T>
     class Sequence {
     public:
-        typedef Stack<stack_frame, StackSize> stack_type;
+        typedef Stack<stack_frame, _StackSize> stack_type;
 
         class const_iterator {
         public:
             typedef T value_type;
 
         public:
-            const_iterator(SemanticAction& sa, stack_type& s, int p)
+            const_iterator(_SemanticAction& sa, stack_type& s, int p)
                 : sa_(&sa), s_(&s), p_(p){}
             const_iterator(const const_iterator& x) : s_(x.s_), p_(x.p_){}
             const_iterator& operator=(const const_iterator& x) {
@@ -728,7 +728,7 @@ $${debmes:repost_done}
         };
 
     public:
-        Sequence(SemanticAction& sa, stack_type& stack, const Range& r)
+        Sequence(_SemanticAction& sa, stack_type& stack, const Range& r)
             : sa_(sa), stack_(stack), range_(r) {
         }
 
@@ -740,7 +740,7 @@ $${debmes:repost_done}
         }
 
     private:
-        SemanticAction& sa_;
+        _SemanticAction& sa_;
         stack_type&     stack_;
         Range           range_;
 

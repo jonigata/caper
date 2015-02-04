@@ -349,49 +349,52 @@ void get_commandline_options(
     cmdopt.language = "C++";
 
     int state = 0;
-    for (int index = 1 ; index <argc ; index++) {
-        if (argv[index][0] == '-') {
-            if (strcmp(argv[index], "-c++") == 0 ||
-                strcmp(argv[index], "-cpp") == 0) {
+    for (int index = 1 ; index < argc ; index++) {
+        std::string arg = argv[index];
+        if (arg[0] == '-') {
+            if (arg == "-c++" || arg == "-cpp") {
                 cmdopt.language = "C++";
                 continue;
             }
-            if (strcmp(argv[index], "-c++-shared") == 0 ||
-                strcmp(argv[index], "-cpp-shared") == 0) {
+            if (arg == "-c++-shared" || arg == "-cpp-shared") {
                 cmdopt.language = "C++-shared";
                 continue;
             }
-            if (strcmp(argv[index], "-c++-variant") == 0 ||
-                strcmp(argv[index], "-cpp-variant") == 0) {
+            if (arg == "-c++-variant" || arg == "-cpp-variant") {
                 cmdopt.language = "C++-variant";
                 continue;
             }
-            if (strcmp(argv[index], "-c++-stub") == 0 ||
-                strcmp(argv[index], "-cpp-stub") == 0) {
+            if (arg == "-c++-stub" || arg == "-cpp-stub") {
                 cmdopt.language = "C++-stub";
                 continue;
             }
-            if (strcmp(argv[index], "-c++-shared-stub") == 0 ||
-                strcmp(argv[index], "-cpp-shared-stub") == 0) {
+            if (arg == "-c++-shared-stub" || arg == "-cpp-shared-stub") {
                 cmdopt.language = "C++-shared-stub";
                 continue;
             }
-            if (strcmp(argv[index], "-c++-variant-stub") == 0 ||
-                strcmp(argv[index], "-cpp-variant-stub") == 0) {
+            if (arg == "-c++-variant-stub" || arg == "-cpp-variant-stub") {
                 cmdopt.language = "c++-variant-stub";
                 continue;
             }
-            if (strcmp(argv[index], "-dot") == 0) {
+            if (arg == "-c++11" || arg == "-cpp11") {
+                cmdopt.language = "C++11";
+                continue;
+            }
+            if (arg == "-c++11-shared" || arg == "-cpp11-shared") {
+                cmdopt.language = "C++11-shared";
+                continue;
+            }
+            if (arg == "-dot") {
                 cmdopt.language = "dot";
                 continue;
             }
-            std::cerr << "unknown option: " << argv[index] << std::endl;
+            std::cerr << "unknown option: " << arg << std::endl;
             exit(1);
         }
 
         switch (state) {
-            case 0: cmdopt.infile = argv[index]; state++; break;
-            case 1: cmdopt.outfile = argv[index]; state++; break;
+            case 0: cmdopt.infile = arg; state++; break;
+            case 1: cmdopt.outfile = arg; state++; break;
             default:
                 std::cerr << "too many arguments" << std::endl;
                 exit(1);
@@ -426,6 +429,8 @@ int main(int argc, char** argv) {
     generators["C++-stub"] = generate_stub_cpp_normal;
     generators["C++-shared-stub"] = generate_stub_cpp_shared;
     generators["C++-variant-stub"] = generate_stub_cpp_variant;
+    generators["C++11"] = generate_cpp11_normal;
+    generators["C++11-shared"] = generate_cpp11_shared;
     generators["dot"] = generate_dot;
 
     std::ifstream ifs(cmdopt.infile.c_str());

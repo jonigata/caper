@@ -248,15 +248,10 @@ struct StructDeclarator : public boost::static_visitor<void> {
                         throw undefined_type(s.etype.s);
                     }
                         
-                    if (find_in(context.atoms, s.etype.s)) {
-                        os << "    " << x.name.s << "(const std::vector<"
-                           << s.etype.s << ">& x)\n"
-                           << "        : " << s.name.s << "(x) {}\n";
-                    } else {
-                        os << "    " << x.name.s << "(const std::vector<"
-                           << pointer_maker(s.etype.s)<< ">& x)\n"
-                           << "        : " << s.name.s << "(x) {}\n";
-                    }
+                    os << "    template <class V>\n"
+                       << "    " << x.name.s << "(const V& v)\n"
+                       << "        : " << s.name.s << "(std::begin(v), std::end(v)) {}\n";
+                    
                     os << context.class_footer;
                     os << "};\n\n";
                     break;

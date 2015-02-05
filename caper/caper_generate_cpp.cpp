@@ -693,7 +693,11 @@ $${debmes:repost_done}
 
         class const_iterator {
         public:
-            typedef T value_type;
+            typedef T                       value_type;
+            typedef std::input_iterator_tag iterator_category;
+            typedef value_type              reference;
+            typedef value_type*             pointer;
+            typedef size_t                  difference_type;
 
         public:
             const_iterator(_SemanticAction& sa, stack_type& s, int p)

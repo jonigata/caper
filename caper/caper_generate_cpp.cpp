@@ -407,12 +407,13 @@ template <${token_parameter}class _Value, class _SemanticAction,
           unsigned int _StackSize = ${default_stack_size}>
 class Parser {
 public:
-    typedef _Token token_type;
+    typedef ${token_source} token_type;
     typedef _Value value_type;
 
     enum Nonterminal {
 )",
         {"token_parameter", options.external_token ? "class _Token, " : ""},
+        {"token_source", options.external_token ? "_Token" : "Token"},
         {"default_stack_size", options.dont_use_stl ? "1024" : "0"}
         );
 

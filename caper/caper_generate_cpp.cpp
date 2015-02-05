@@ -680,7 +680,7 @@ $${debmes:repost_done}
         }
 
     private:
-        SemanticAction* sa_;
+        _SemanticAction* sa_;
         stack_type*     s_;
         int             p_;
 
@@ -721,7 +721,7 @@ $${debmes:repost_done}
                 return !((*this)==x);
             }
         private:
-            SemanticAction* sa_;
+            _SemanticAction* sa_;
             stack_type*     s_;
             int             p_;
 

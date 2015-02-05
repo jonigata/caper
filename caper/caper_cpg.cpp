@@ -370,6 +370,18 @@ void make_cpg_parser(cpg::parser& p) {
         g, p,
         "Derivation",
         [](const arguments_type& args) -> Value {
+            auto p = std::make_shared<Choise>(
+                range(args),
+                get_symbol<Identifier>(args[1]) +
+                "<" + get_symbol<TypeTag>(args[2]) + ">",
+                std::vector<std::shared_ptr<Term>>());
+            return Value(p);
+        },
+        token_lbracket, token_identifier, token_typetag, token_rbracket);
+    make_rule(
+        g, p,
+        "Derivation",
+        [](const arguments_type& args) -> Value {
             auto q = get_node<Choise>(args[0]);
             q->elements.push_back(get_node<Term>(args[1]));
 

@@ -75,6 +75,29 @@ void make_signature(
     }
 }
 
+std::string normalize_internal_sa_name(const std::string& s) {
+    std::string r;
+    for(auto c: s) {
+        if (c == '<' || c == '>') {
+            r += "__";
+        } else {
+            r += c;
+        }
+    }
+    return r;
+}
+
+std::string normalize_sa_call(const std::string& s) {
+    std::string prefix;
+    for(auto c: s) {
+        if (c == '<' || c == '>') {
+            prefix = "template ";
+            break;
+        }
+    }
+    return prefix + s;
+}
+
 } // unnamed namespace
 
 void generate_cpp(
@@ -879,7 +902,7 @@ $${debmes:repost_done}
     bool call_${stub_index}_${sa_name}(Nonterminal nonterminal, int base${args}) {
 )",
                 {"stub_index", stub_index},
-                {"sa_name", sa.name},
+                {"sa_name", normalize_internal_sa_name(sa.name)},
                 {"args", [&](std::ostream& os) {
                         for (size_t l = 0 ; l < sa.args.size() ; l++) {
                             os << ", int arg_index" << l;
@@ -930,7 +953,7 @@ $${debmes:repost_done}
 
 )",
                 {"nonterminal_type", make_type_name(rule_type, options.smart_pointer_tag)},
-                {"semantic_action_name", sa.name},
+                {"semantic_action_name", normalize_sa_call(sa.name)},
                 {"args", [&](std::ostream& os) {
                         bool first = true;
                         for (size_t l = 0 ; l < sa.args.size() ; l++) {
@@ -1106,7 +1129,7 @@ $${debmes:state}
             return call_${index}_${sa_name}(Nonterminal_${nonterminal}, /*pop*/ ${base}${args});
 )",
                 {"index", index},
-                {"sa_name", signature[0]},
+                {"sa_name", normalize_internal_sa_name(signature[0])},
                 {"nonterminal", nonterminal_name},
                 {"base", base},
                 {"args", [&](std::ostream& os) {

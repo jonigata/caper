@@ -169,12 +169,20 @@ tgt::symbol find_symbol(
     return tgt::symbol();
 }
     
-struct Pending {
-    std::string extended_name;
+struct PendingKey {
+    std::string element;
     Extension   extension;
-    tgt::symbol element;
-    std::string source_name;
-    tgt::symbol skip;
+    std::string skip;
+
+    bool operator<(const PendingKey& rhs) const {
+        return
+            std::make_tuple(element, extension, skip) <
+            std::make_tuple(rhs.element, rhs.extension, rhs.skip);
+    }
+};
+
+struct PendingValue {
+    std::string extended_name;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -188,7 +196,7 @@ void make_target_rule(
     const std::map<std::string, Type>&  nonterminal_types,
     const std::unordered_map<std::string, tgt::terminal>&       terminals,
     const std::unordered_map<std::string, tgt::nonterminal>&    nonterminals,
-    std::vector<Pending>&               pending) {
+    std::map<PendingKey, PendingValue>& pendings) {
 
     tgt::rule r(rule_left);
 
@@ -197,6 +205,8 @@ void make_target_rule(
     int source_index = 0;
     int max_index = -1;
     for (const auto& term: choise->elements) {
+        auto item = term->item;
+
         if (0 <= term->argument_index) {
             // セマンティックアクションの引数として用いられる
             if (0 < args.count(term->argument_index)) {
@@ -208,16 +218,16 @@ void make_target_rule(
             Type type;
 
             // 引数になる場合、型が必要
-            if (auto l = finder(nonterminal_types, term->item->name)) {
+            if (auto l = finder(nonterminal_types, item->name)) {
                 type.name = (*l).name;
             }
-            if (auto l = finder(terminal_types, term->item->name)) {
+            if (auto l = finder(terminal_types, item->name)) {
                 if ((*l).name == "") {
-                    throw untyped_terminal(term->range.beg, term->item->name);
+                    throw untyped_terminal(term->range.beg, item->name);
                 }
                 type.name = (*l).name;
             }
-            type.extension = term->item->extension;
+            type.extension = item->extension;
             assert(type.name != "");
 
             SemanticAction::Argument arg(source_index, type);
@@ -225,30 +235,17 @@ void make_target_rule(
             max_index = (std::max)(max_index, term->argument_index);
         }
 
-        tgt::symbol symbol =
-            find_symbol(term->item->name, terminals, nonterminals);
-        if (term->item->extension != Extension::None) {
-            tgt::symbol skip;
-            if (term->item->extension == Extension::Slash) {
-                skip = find_symbol(term->item->skip, terminals, nonterminals);
-            }
-
+        if (item->extension != Extension::None) {
             std::string extended_name =
-                make_extended_name(
-                    term->item->name,
-                    terminals,
-                    nonterminals);
+                make_extended_name(item->name, terminals, nonterminals);
+
+            PendingKey k { item->name, item->extension, item->skip };
+            PendingValue v { extended_name };
+            
             r << tgt::nonterminal(extended_name);
-            Pending p {
-                extended_name,
-                    term->item->extension,
-                    symbol,
-                    term->item->name,
-                    skip
-                    };
-            pending.push_back(p);
+            pendings[k] = v;
         } else {
-            r << symbol;
+            r << find_symbol(item->name, terminals, nonterminals);
         }
         source_index++;
     }
@@ -315,7 +312,7 @@ void make_target_parser(
     }
 
     // pending(あとでまとめてEBNFを展開したルールを作成する
-    std::vector<Pending> pending;
+    std::map<PendingKey, PendingValue> pending;
 
     // 規則
     tgt::grammar g;
@@ -340,33 +337,36 @@ void make_target_parser(
     }
 
     for (const auto& p: pending) {
-        tgt::nonterminal name(p.extended_name);
-        nonterminals[p.extended_name] = name;
-        nonterminal_types[p.extended_name] =
-            Type{p.source_name, p.extension};
+        const PendingKey& k = p.first;
+        const PendingValue& v = p.second;
+        tgt::nonterminal name(v.extended_name);
+        nonterminals[v.extended_name] = name;
+        nonterminal_types[v.extended_name] = Type{k.element, k.extension};
 
-        if (p.extension == Extension::Question) {
+        tgt::symbol element = find_symbol(k.element, terminals, nonterminals);
+
+        if (k.extension == Extension::Question) {
             tgt::rule list0(name);
-            tgt::rule list1(name); list1 << p.element;
+            tgt::rule list1(name); list1 << element;
             g << list0;
             g << list1;
             actions[list0] = SemanticAction { "opt_nothing", true };
             actions[list1] = SemanticAction { "opt_just", true };
-        } else if (p.extension == Extension::Slash) {
-            assert(!p.skip.is_epsilon());
-            tgt::rule list0(name); list0 << p.element;
-            tgt::rule list1(name); list1 << name << p.skip << p.element;
+        } else if (k.extension == Extension::Slash) {
+            tgt::symbol skip = find_symbol(k.skip, terminals, nonterminals);
+
+            tgt::rule list0(name); list0 << element;
+            tgt::rule list1(name); list1 << name << skip << element;
             g << list0;
             g << list1;
             actions[list0] = SemanticAction { "seq_head", true };
             actions[list1] = SemanticAction { "seq_trail2", true };
-            
         } else {
             tgt::rule list0(name);
-            if (p.extension == Extension::Plus) {
-                list0 << p.element;
+            if (k.extension == Extension::Plus) {
+                list0 << element;
             }
-            tgt::rule list1(name); list1 << name << p.element;
+            tgt::rule list1(name); list1 << name << element;
             g << list0;
             g << list1;
             actions[list0] = SemanticAction { "seq_head", true };

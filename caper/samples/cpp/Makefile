@@ -7,7 +7,7 @@ CC	    = clang++
 	$(CC) $(CPPFLAGS) -c -o $@ $<
 
 %.ipp : ../grammar/%.cpg ../../caper
-	../../caper $< $@ --debug
+	../../caper $< $@
 
 all: hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional 
 
@@ -99,6 +99,6 @@ clean :
 	rm -f *.ipp
 	rm -f hello0 hello1 hello2 calc0 calc1 calc2 recovery0 recovery1 rawlist0 rawlist1 rawlist2 rawoptional list0 list1 list2 optional
 
-test : calc2.o
+test : calc2
 	cd ../test; $(MAKE)
 

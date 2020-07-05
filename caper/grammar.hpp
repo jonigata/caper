@@ -510,7 +510,6 @@ bool operator<(const rule<Token, Traits>& x, const rule<Token, Traits>& y) {
 
 template <class Token,class Traits>
 std::ostream& operator<<(std::ostream& os, const rule<Token, Traits>& r) {
-    typedef rule<Token, Traits> rule_type;
     os << r.left()<< " ::= ";
     for (const auto& x: r.right()) {
         os << x << " ";

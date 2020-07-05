@@ -1,5 +1,5 @@
 %token Identifier<Identifier> BulkText<BulkText>
-       BaseDef AtomDef TypeDef ClassHeaderDef ClassFooterDef ModuleHeaderDef ModuleFooterDef
+       BaseDef AtomDef TypeDef ClassHeaderDef ClassFooterDef ModuleHeaderDef ModuleFooterDef NamespaceDef
        List Optional LParen RParen LChevron RChevron Pipe Equal Comma Semicolon Colon;
 %namespace capella;
 %dont_use_stl;
@@ -17,6 +17,7 @@ Declaration<Declaration>
         | [MakeClassFooterDef] ClassFooterDef Equal BulkText(0)
         | [MakeModuleHeaderDef] ModuleHeaderDef Equal BulkText(0)
         | [MakeModuleFooterDef] ModuleFooterDef Equal BulkText(0)
+        | [MakeNamespaceDef] NamespaceDef Equal Identifier(0) Semicolon
         ;
 
 Atom<Atom>

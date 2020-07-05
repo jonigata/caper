@@ -10,6 +10,7 @@
 #include "capella_generate_boost.hpp"
 #include "capella_generate_stub.hpp"
 #include "capella_generate_dot.hpp"
+#include "capella_generate_cs.hpp"
 #include <set>
 #include <map>
 #include <sstream>
@@ -37,6 +38,7 @@ public:
         reserved_["class-footer"] = token_ClassFooterDef;
         reserved_["module-header"] = token_ModuleHeaderDef;
         reserved_["module-footer"] = token_ModuleFooterDef;
+        reserved_["namespace"] = token_NamespaceDef;
         lines_.push_back(0);
     }
     ~scanner(){}
@@ -76,9 +78,9 @@ public:
         }
 
         // 識別子
-        if (isalpha(c)|| c == '_' || c == ':') {
+        if (isalpha(c) || c == '_' || c == ':') {
             std::stringstream ss;
-            while (c != EOF &&(isalpha(c)|| isdigit(c)|| c == '-' || c == '_' || c == ':')) {
+            while (c != EOF && (isalpha(c) || isdigit(c) || c == '-' || c == '_' || c == ':' || c == '.')) {
                 if (c == ':') {
                     c = sgetc();
                     if (c == ':') {
@@ -97,7 +99,7 @@ public:
             reserved_type::const_iterator  i = reserved_.find(ss.str());
             if (i != reserved_.end()) {
                 v = Value(range(b, addr_), Reserved(ss.str()));
-                return(*i).second;
+                return (*i).second;
             } else {
                 v = Value(range(b, addr_), Identifier(ss.str()));
                 return token_Identifier;
@@ -259,6 +261,9 @@ struct SemanticAction {
     Declaration MakeModuleFooterDef(const BulkText& x) {
         return ModuleFooterDef(x);
     }
+    Declaration MakeNamespaceDef(const Identifier& x) {
+        return NamespaceDef(x);
+    }
     Declaration MakeTypeDef(const Identifier& x, const TypeDefRight& y) {
         return TypeDef(x, y);
     }
@@ -388,6 +393,10 @@ void get_commandline_options(
                 cmdopt.language = "dot";
                 continue;
             }
+            if (arg == "-cs") {
+                cmdopt.language = "C#";
+                continue;
+            }
             std::cerr << "unknown option: " << arg << std::endl;
             exit(1);
         }
@@ -432,6 +441,7 @@ int main(int argc, char** argv) {
     generators["C++11"] = generate_cpp11_normal;
     generators["C++11-shared"] = generate_cpp11_shared;
     generators["dot"] = generate_dot;
+    generators["C#"] = generate_cs;
 
     std::ifstream ifs(cmdopt.infile.c_str());
     if (!ifs) {

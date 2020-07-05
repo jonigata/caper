@@ -80,6 +80,7 @@ struct ClassHeaderDef;
 struct ClassFooterDef;
 struct ModuleHeaderDef;
 struct ModuleFooterDef;
+struct NamespaceDef;
 struct Scalor;
 struct List;
 struct Variant;
@@ -92,7 +93,8 @@ typedef boost::variant<
         boost::recursive_wrapper< ClassHeaderDef >,
         boost::recursive_wrapper< ClassFooterDef >,
         boost::recursive_wrapper< ModuleHeaderDef >,
-        boost::recursive_wrapper< ModuleFooterDef > >
+        boost::recursive_wrapper< ModuleFooterDef >,
+        boost::recursive_wrapper< NamespaceDef > >
         Declaration;
 
 typedef boost::variant<
@@ -164,6 +166,13 @@ struct ModuleFooterDef {
 
         ModuleFooterDef(){}
         ModuleFooterDef( const BulkText& x ) : data( x ) {}
+};
+
+struct NamespaceDef {
+        Identifier name;
+
+        NamespaceDef(){}
+        NamespaceDef( const Identifier& x ) : name( x ) {}
 };
 
 struct TypeDef {

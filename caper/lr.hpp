@@ -612,11 +612,9 @@ make_lr1_closure(
     const grammar<Token, Traits>&                 g) {
 
     typedef symbol<Token, Traits>               symbol_type;
-    typedef terminal<Token, Traits>             terminal_type;
     typedef rule<Token, Traits>                 rule_type;
     typedef item<Token, Traits>                 item_type;
     typedef symbol_set<Token, Traits>           symbol_set_type;
-    typedef terminal_set<Token, Traits>         terminal_set_type;
     typedef item_set<Token, Traits>             item_set_type;
     typedef std::vector<symbol<Token, Traits>>  symbol_vector_type;
 

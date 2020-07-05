@@ -3,7 +3,7 @@
 CC		= clang++
 CPPFLAGS	= -g -Wall -DLINUX -std=c++11
 TARGET		= capella
-OBJS		= $(TARGET).o capella_dependency.o capella_generate_boost.o capella_generate_cpp.o capella_generate_dot.o capella_generate_stub.o
+OBJS		= $(TARGET).o capella_dependency.o capella_generate_boost.o capella_generate_cpp.o capella_generate_dot.o capella_generate_stub.o capella_generate_cs.o
 DEPENDDIR	= ./depend
 
 VPATH = ./depend

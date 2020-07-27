@@ -17,6 +17,7 @@
 #include <vector>
 #include <sstream>
 #include <stdexcept>
+#include <functional>
 #include "grammar.hpp"
 #include "lr.hpp"
 

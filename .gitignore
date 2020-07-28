@@ -1,8 +1,10 @@
 *.o
 depend/
 caper/caper
+caper/caper.exe
 capella/capella.hpp
 capella/capella
+capella/capella.exe
 caper/samples/*/*.exe
 caper/samples/*/*.exe.mdb
 caper/samples/ruby/*_parser.rb
@@ -11,3 +13,7 @@ caper/vcproj/Debug
 caper/vcproj/Release
 caper/vcproj/*.sdf
 caper/vcproj/*.suo
+tmp/
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake

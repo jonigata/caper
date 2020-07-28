@@ -2,6 +2,7 @@
 #define CAPER_TOKEN_HPP_
 
 #include <boost/variant.hpp>
+#include <ostream>
 
 ////////////////////////////////////////////////////////////////
 // Token

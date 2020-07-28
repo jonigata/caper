@@ -13,7 +13,7 @@ caper/vcproj/Debug
 caper/vcproj/Release
 caper/vcproj/*.sdf
 caper/vcproj/*.suo
-tmp/
+tmp/*.zip
 CMakeCache.txt
 CMakeFiles
 cmake_install.cmake

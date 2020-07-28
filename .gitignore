@@ -21,3 +21,12 @@ Debug/
 Release/
 Win32/
 x64/
+.vs
+*.filters
+*.idb
+*.map
+*.ncb
+*.opensdf
+*.sdf
+*.suo
+*.user
